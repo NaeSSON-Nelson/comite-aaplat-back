@@ -3,12 +3,11 @@ import {  ParseIntPipe} from "@nestjs/common/pipes";
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { ValidRole } from 'src/interfaces/valid-auth.enum';
-import { Auth } from 'src/auth/decorators/auth.decorator';
+import { Authentication } from '../../../auth/decorators/auth.decorator';
 
 
 @Controller('roles')
-
+@Authentication()
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 

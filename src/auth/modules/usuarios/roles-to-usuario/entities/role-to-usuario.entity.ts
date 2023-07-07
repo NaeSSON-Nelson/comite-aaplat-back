@@ -1,7 +1,7 @@
 import { Estado } from 'src/interfaces/Entityes/entityes.res';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Role } from '../../../roles/roles/entities/role.entity';
 import { Usuario } from '../../entities/usuario.entity';
+import { Role } from '../../../../../manager/roles/roles/entities/role.entity';
 
 @Entity()
 export class RoleToUsuario {

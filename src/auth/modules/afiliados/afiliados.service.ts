@@ -7,9 +7,12 @@ import {
 } from '@nestjs/common';
 import { CreateAfiliadoDto } from './dto/create-afiliado.dto';
 import { UpdateAfiliadoDto } from './dto/update-afiliado.dto';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Afiliado } from './entities/afiliado.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { isNumberString } from 'class-validator';
+import { Barrio } from 'src/interfaces/enum/Entities.enum';
 
 @Injectable()
 export class AfiliadosService {
@@ -33,8 +36,28 @@ export class AfiliadosService {
     }
   }
 
-  async findAll() {
-    const data = await this.afiliadoRepository.find();
+  async findAll(paginationDto:PaginationDto) {
+    const {offset=0,limit=10,order='ASC',q=''} = paginationDto;
+    
+    const data = await this.afiliadoRepository.find(
+      {
+        where:[
+          {nombrePrimero:Like(`%${q}%`),},
+          {nombreSegundo:Like(`%${q}%`),},
+          {apellidoPrimero:Like(`%${q}%`),},
+          {apellidoSegundo:Like(`%${q}%`),},
+          {profesion:Like(`%${q}%`)},
+          // {barrio:Barrio.MendezFortaleza},
+          {CI:Like(`%${q}%`)}
+        ],
+
+        skip:offset,
+        take:limit,
+        order:{
+          id: order
+        },
+      }
+    );
     return {
       OK: true,
       msg: 'Listado de afiliados',
@@ -51,6 +74,23 @@ export class AfiliadosService {
       msg: 'Afiliado encontrado',
       data: afiliado,
     };
+  }
+  async findAllAfiliadosUnAsignedUser(){
+    const queryBuilder = this.afiliadoRepository.createQueryBuilder('afiliados');
+
+    const query = await queryBuilder
+                  .leftJoinAndSelect(
+                    'afiliados.usuario',
+                    'afiliado',
+                    'afiliado."afiliadoId" = null'
+                  )
+                  .getMany();
+    return {
+      OK:true,
+      msg:'lista de afiliados sin asignar usuario',
+      data:query
+    }
+
   }
 
   async update(id: number, updateAfiliadoDto: UpdateAfiliadoDto) {

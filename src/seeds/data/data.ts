@@ -59,6 +59,7 @@ import * as bcrypt from 'bcrypt';
   const padTo2Digits=(num)=> num.toString().padStart(2, '0');
   
 export const initialData: SeedData={
+    
     afiliados:[
         {
             nombrePrimero:'Juan',
@@ -471,80 +472,76 @@ export const initialData: SeedData={
             password:bcrypt.hashSync('123456',10),
             estado:Estado.ACTIVO
         },
-        {
-            userName:'afiliado',
-            password:bcrypt.hashSync('123456',10),
-            estado:Estado.ACTIVO
-        },
     ],
     medidores:[
         {
             nroMedidor:'98QW98E7SD',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('24/05/2012'),
+            // fechaInstalacion: new Date('24/05/2012'),
+            fechaInstalacion: new Date(2012,4,23),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'98CSX477744QW',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('18/08/2012'),
+            fechaInstalacion: new Date(2012,8,16),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'26HJT5645DF4D4W',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('09/09/2015'),
+            fechaInstalacion: new Date(2015,9,9),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'5R4ET45V4B4BVFGH5555',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('24/05/2019'),
+            fechaInstalacion: new Date(2019,5,18),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'138R78944165465E',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('06/08/2018'),
+            fechaInstalacion: new Date(2018,8,8),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'5995DASD4WQ4',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('05/04/2014'),
+            fechaInstalacion: new Date(2014,2,24),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'6QW8E7645ASD6W',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('11/11/2019'),
+            fechaInstalacion: new Date(2019,11,11),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'9QWE5QWE4ASD4W',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('06/02/2021'),
+            fechaInstalacion: new Date(2021,2,18),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'4E48R7WW44',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('11/11/2020'),
+            fechaInstalacion: new Date(2020,11,11),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },
         {
             nroMedidor:'59QWE89Q8WE98QWE4',
             marca:'LAO TAO',
-            fechaInstalacion: new Date('23/09/2022'),
+            fechaInstalacion: new Date(2022,8,9),
             lecturaInicial:0,
             estado:Estado.ACTIVO,
         },

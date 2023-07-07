@@ -2,8 +2,8 @@ import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException,
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { META_ROLES } from '../decorators/valid-protected.decorator';
-import { UsuariosService } from 'src/manager/usuarios/usuarios.service';
-import { Usuario } from 'src/manager/usuarios/entities';
+import { UsuariosService } from '../modules/usuarios/usuarios.service';
+import { Usuario } from '../modules/usuarios/entities';
 
 @Injectable()
 export class UserRoleGuard implements CanActivate {
@@ -21,6 +21,8 @@ export class UserRoleGuard implements CanActivate {
     if(validRoles.length===0) return true;
 
     const req = context.switchToHttp().getRequest();
+    // req.hola='hola papu'
+    // console.log(req);
     const usuario = req.user as Usuario;
     // console.log(usuario);
     if(!usuario) throw new BadRequestException(`Usuario not found`);

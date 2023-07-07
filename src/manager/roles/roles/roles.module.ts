@@ -4,8 +4,9 @@ import { RolesService } from './roles.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from './entities/role.entity';
 import { CommonModule } from '../../../common/common.module';
-import { RolesToUsuarioModule } from '../../usuarios/roles-to-usuario/roles-to-usuario.module';
 import { MenuToRoleModule } from '../menu-to-role/menu-to-role.module';
+import { RolesToUsuarioModule } from '../../../auth/modules/usuarios/roles-to-usuario/roles-to-usuario.module';
+import { AuthModule } from '../../../auth/auth.module';
 
 @Module({
   controllers: [RolesController],
@@ -15,6 +16,7 @@ import { MenuToRoleModule } from '../menu-to-role/menu-to-role.module';
     CommonModule,
     MenuToRoleModule,
     RolesToUsuarioModule,
+    AuthModule,
   ],
   exports: [
     TypeOrmModule, 

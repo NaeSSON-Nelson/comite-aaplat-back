@@ -20,6 +20,10 @@ export class CreateLecturaMedidorDto {
   @IsOptional()
   estadoMedidor?: string;
   
+  @IsInt()
+  @IsOptional()
+  estado?: number;
+  
   @IsObject()
   @IsNotEmptyObject({})
   @Type(() => Medidor)

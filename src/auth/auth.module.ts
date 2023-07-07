@@ -1,48 +1,46 @@
 import { Module } from '@nestjs/common';
-import {  forwardRef} from "@nestjs/common/utils";
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { AfiliadosModule } from 'src/afiliados/afiliados.module';
 
 import { AuthService } from './auth.service';
-// import { MenusService } from './menus/menus.service';
-// import { RolesService } from './roles/roles.service';
-// import { UsuariosService } from './usuarios/usuarios.service';
 
 import { AuthController } from './auth.controller';
-// import { UsuariosController } from './usuarios/usuarios.controller';
-// import { MenusController } from './menus/menus.controller';
-// import { RolesController } from './roles/roles.controller';
-
-// import { ItemMenu, ItemToMenu, Menu } from './menus/entities';
-// import { Role, MenuToRole } from './roles/entities/';
-// import { PerfilUsuario, RoleToUsuario, Usuario } from './usuarios/entities';
 import { CommonModule } from '../common/common.module';
 import { JwtStrategy } from './strategies/jwt.strategies';
-import { ManagerModule } from 'src/manager/manager.module';
-// import { ManagerModule } from './manager/manager.module';
-import { UsuariosModule } from '../manager/usuarios/usuarios.module';
+import { PerfilUsuario, Usuario } from './modules/usuarios/entities';
+import { Afiliado } from './modules/afiliados/entities/afiliado.entity';
+import { AfiliadosController } from './modules/afiliados/afiliados.controller';
+import { AfiliadosService } from './modules/afiliados/afiliados.service';
+import { UsuariosController } from './modules/usuarios/usuarios.controller';
+import { UsuariosService } from './modules/usuarios/usuarios.service';
+import { RolesToUsuarioModule } from './modules/usuarios/roles-to-usuario/roles-to-usuario.module';
 
 @Module({
   controllers: [
     AuthController,
-    // UsuariosController,
+    UsuariosController,
+    AfiliadosController,
     // MenusController,
     // RolesController,
   ],
   providers: [
     AuthService,
-    // UsuariosService,
+    UsuariosService,
+    AfiliadosService,
     // MenusService,
     // RolesService,
     JwtStrategy,
   ],
   imports: [
+    TypeOrmModule.forFeature([
+      Usuario,
+      Afiliado,
+      PerfilUsuario,
+    ]),
     ConfigModule,
-    CommonModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -56,14 +54,19 @@ import { UsuariosModule } from '../manager/usuarios/usuarios.module';
         };
       },
     }),
-    UsuariosModule,
+    CommonModule,
+    
+    RolesToUsuarioModule,
+    
   ],
   exports: [
-    // TypeOrmModule, 
+    TypeOrmModule, 
     JwtStrategy, 
     PassportModule, 
     JwtModule,
     AuthService,
+    AfiliadosService,
+    UsuariosService,
   ],
 })
 export class AuthModule {}

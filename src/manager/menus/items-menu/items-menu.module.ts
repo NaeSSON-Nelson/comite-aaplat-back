@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ItemsToMenuModule } from '../items-to-menu/items-to-menu.module';
 import { CommonModule } from '../../../common/common.module';
 import { ItemMenu } from './entities/item-menu.entity';
+import { AuthModule } from '../../../auth/auth.module';
 
 @Module({
   providers: [ItemsMenuService],
@@ -14,7 +15,8 @@ import { ItemMenu } from './entities/item-menu.entity';
       ItemMenu,
     ]),
     ItemsToMenuModule,
-    CommonModule
+    CommonModule,
+    AuthModule,
   ],
   exports:[
     TypeOrmModule,

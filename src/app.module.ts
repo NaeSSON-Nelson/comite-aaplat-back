@@ -2,12 +2,10 @@ import { Module } from '@nestjs/common';
 import {ConfigModule} from '@nestjs/config'
 import {TypeOrmModule} from '@nestjs/typeorm'
 
-import { AfiliadosModule } from './afiliados/afiliados.module';
 import { AuthModule } from './auth/auth.module';
-import { CommonModule } from './common/common.module';
-import { CommonService } from './common/common.service';
 import { SeedsModule } from './seeds/seeds.module';
 import { ManagerModule } from './manager/manager.module';
+import { MedidoresModule } from './medidores-agua/medidores.module';
 
 @Module({
   imports: [
@@ -24,10 +22,10 @@ import { ManagerModule } from './manager/manager.module';
       synchronize:true //PARA PRODUCCION EN false
     }
     ),
-    AfiliadosModule,
     ManagerModule,
     AuthModule,
     SeedsModule,
+    MedidoresModule,
   ],
 })
 export class AppModule {}

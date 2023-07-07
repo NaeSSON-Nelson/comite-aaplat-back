@@ -1,9 +1,9 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
-import { Afiliado } from "src/afiliados/entities/afiliado.entity";
 import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { RoleToUsuario } from "../roles-to-usuario/entities/role-to-usuario.entity";
 import { PerfilUsuario } from "./perfil-usuario.entity";
+import { Afiliado } from "../../afiliados/entities/afiliado.entity";
 
 @Entity({
     name:'usuarios'
@@ -24,6 +24,7 @@ export class Usuario {
         type:'varchar',
         length:200,
         nullable:false,
+        select:false
     })
     password:string;
     @Column({

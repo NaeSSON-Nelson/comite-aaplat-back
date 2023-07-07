@@ -11,9 +11,10 @@ import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { ValidRole } from 'src/interfaces/valid-auth.enum';
-import { Auth } from 'src/auth/decorators/auth.decorator';
+import { Authentication } from '../../../auth/decorators/auth.decorator';
 
 @Controller('menus')
+@Authentication()
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}
 

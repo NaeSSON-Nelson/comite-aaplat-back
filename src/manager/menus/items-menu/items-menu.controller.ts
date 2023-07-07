@@ -3,8 +3,10 @@ import { ParseIntPipe } from '@nestjs/common/pipes';
 import { CreateItemMenuDto } from './dto/create-Item-menu.dto';
 import { UpdateItemMenuDto } from './dto/update-item-menu.dto';
 import { ItemsMenuService } from './items-menu.service';
+import { Authentication } from '../../../auth/decorators/auth.decorator';
 
 @Controller('items-menu')
+@Authentication()
 export class ItemsMenuController {
 
   constructor(private readonly itemsMenuService: ItemsMenuService) {}

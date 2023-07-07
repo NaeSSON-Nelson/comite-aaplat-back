@@ -1,7 +1,7 @@
 import { IsArray, IsEmail, IsInt, IsNotEmpty, IsNotEmptyObject, IsNumber, IsObject, IsOptional, IsString, Min, MinLength } from "class-validator";
-import { Afiliado } from '../../../afiliados/entities/afiliado.entity';
+
 import { Type } from "class-transformer";
-import { Role } from '../../roles/roles/entities/role.entity';
+import { Afiliado } from "../../afiliados/entities/afiliado.entity";
 
 export class CreateUsuarioDto {
     

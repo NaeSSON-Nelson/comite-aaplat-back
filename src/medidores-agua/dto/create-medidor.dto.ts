@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNotEmptyObject,
@@ -11,8 +12,9 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { Afiliado } from 'src/afiliados/entities/afiliado.entity';
 import { patternDateFormat } from 'src/interfaces/validators';
+import { Afiliado } from '../../auth/modules/afiliados/entities/afiliado.entity';
+import { Barrio } from 'src/interfaces/enum/Entities.enum';
 
 export class CreateMedidorDto {
   @IsString()
@@ -24,6 +26,10 @@ export class CreateMedidorDto {
   })
   @IsNotEmpty()
   fechaInstalacion: Date;
+
+  @IsString()
+  @IsEnum(Barrio)
+  barrio: Barrio;
 
   @IsInt()
   @Min(0)

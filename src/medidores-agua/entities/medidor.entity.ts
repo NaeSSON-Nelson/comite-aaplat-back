@@ -1,11 +1,21 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { LecturaMedidor } from './lectura-medidor.entity';
 import { Estado } from 'src/interfaces/Entityes/entityes.res';
-import { Afiliado } from '../../entities/afiliado.entity';
+import { Afiliado } from '../../auth/modules/afiliados/entities/afiliado.entity';
+import { Barrio } from 'src/interfaces/enum/Entities.enum';
 
 @Entity('medidores')
 export class Medidor {
-    
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -14,7 +24,7 @@ export class Medidor {
     type: 'varchar',
     length: 100,
     nullable: false,
-    unique:true
+    unique: true,
   })
   nroMedidor: string;
 
@@ -26,6 +36,13 @@ export class Medidor {
   fechaInstalacion: Date;
 
   @Column({
+    type: 'varchar',
+    nullable: false,
+    default: Barrio.mendezFortaleza,
+  })
+  ubicacionBarrio: string;
+
+  @Column({
     name: 'lectura_inicial',
     type: 'integer',
     nullable: false,
@@ -34,7 +51,7 @@ export class Medidor {
   @Column({
     name: 'ultima_lectura',
     type: 'integer',
-    default:0
+    default: 0,
   })
   ultimaLectura: number;
 
@@ -43,7 +60,7 @@ export class Medidor {
     default: Estado.ACTIVO,
   })
   estado: number;
-  
+
   @Column({
     type: 'varchar',
     length: 100,
@@ -54,16 +71,31 @@ export class Medidor {
   @OneToMany(() => LecturaMedidor, (lecturaMedidor) => lecturaMedidor.medidor)
   lecturas: LecturaMedidor[];
 
-  @ManyToOne(()=>Afiliado,(afiliado)=>afiliado.medidores)
-  afiliado:Afiliado;
+  @ManyToOne(() => Afiliado, (afiliado) => afiliado.medidores)
+  afiliado: Afiliado;
 
+  @CreateDateColumn({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP(6)',
+    select:false
+  })
+  created_at: Date;
+
+  @UpdateDateColumn({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP(6)',
+    onUpdate: 'CURRENT_TIMESTAMP(6)',
+    select:false
+  })
+  updated_at: Date;
+  
   @BeforeInsert()
-  registrarNuevoMedidor(){
-    this.marca=this.marca.toUpperCase().trim();
-    this.nroMedidor=this.nroMedidor.toUpperCase().trim();
+  registrarNuevoMedidor() {
+    this.marca = this.marca.toUpperCase().trim();
+    this.nroMedidor = this.nroMedidor.toUpperCase().trim();
   }
   @BeforeUpdate()
-  actualizarMedidor(){
+  actualizarMedidor() {
     this.registrarNuevoMedidor();
   }
 }

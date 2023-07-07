@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
-import { Afiliado } from '../afiliados/entities/afiliado.entity';
-import { Medidor } from '../afiliados/medidores/entities/medidor.entity';
-import { AfiliadosService } from '../afiliados/afiliados.service';
-import { MedidoresService } from '../afiliados/medidores/medidores.service';
 import { initialData } from './data/data';
 import { CommonService } from '../common/common.service';
-import { Usuario } from 'src/manager/usuarios/entities';
 import { Menu } from '../manager/menus/menus/entities/menu.entity';
 import { ItemMenu } from '../manager/menus/items-menu/entities/item-menu.entity';
 import { Role } from '../manager/roles/roles/entities/role.entity';
+import { Afiliado } from '../auth/modules/afiliados/entities/afiliado.entity';
+import { Usuario } from 'src/auth/modules/usuarios/entities';
+import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 
 @Injectable()
 export class SeedsService {
@@ -32,7 +30,7 @@ export class SeedsService {
   ) {}
 
   async executeSeed() {
-    return 'In process';
+    // return 'In process';
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

@@ -10,7 +10,8 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
-  Matches
+  Matches,
+  IsEnum
 } from 'class-validator';
 import { patternDateFormat } from 'src/interfaces/validators';
 
@@ -50,10 +51,9 @@ export class CreateAfiliadoDto {
   @IsOptional()
   profesion?: string;
   
-  // @IsString()
-  // @MinLength(2)
-  // @IsOptional()
-  // direccion?: string;
+  @IsString()
+  @IsIn(['mendez fortaleza','20 de marzo','san antonio','verde olivo','primavera',])
+  barrio: string;
   
   @Matches(patternDateFormat,{
     message:'El patron de feches es: dd/mm/yyyy'

@@ -9,8 +9,6 @@ import { DataSource, Repository } from 'typeorm';
 
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
-import { Afiliado } from 'src/afiliados/entities/afiliado.entity';
-import { AfiliadosService } from 'src/afiliados/afiliados.service';
 
 import {
   uniqueUsernameGenerator,
@@ -18,12 +16,11 @@ import {
 } from 'unique-username-generator';
 import * as bcrypt from 'bcrypt';
 import * as pdgerantor from 'generate-password';
-import { CommonService } from '../../common/common.service';
 import { UpdatePerfilUsuarioDto } from './dto/update-perfil-usuario.dto';
 import { PerfilUsuario, Usuario } from './entities';
-import { Role } from '../roles/roles/entities/role.entity';
 import { RoleToUsuario } from './roles-to-usuario/entities/role-to-usuario.entity';
-import { RolesService } from '../roles/roles/roles.service';
+import { AfiliadosService } from '../afiliados/afiliados.service';
+import { CommonService } from '../../../common/common.service';
 @Injectable()
 export class UsuariosService {
   constructor(
@@ -97,7 +94,10 @@ export class UsuariosService {
       return {
         OK: true,
         msg: 'usuario creado',
-        data: usuario,
+        data: {usuario,
+        realPassword:password,
+        msg:'Por favor no comparta su informacion de acceso con otras personas'
+        },
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -147,10 +147,7 @@ export class UsuariosService {
     }
   }
   async findAll() {
-    const usuarios = (await this.usuarioRepository.find()).map(user=> {
-      delete user.password;
-      return user;
-    });
+    const usuarios = await this.usuarioRepository.find();
     return {
       OK: true,
       msg: 'lista de usuarios',
@@ -170,7 +167,7 @@ export class UsuariosService {
   }
 
   async findOneUserComplete(id: number) {
-    const { password, ...usuario } = await this.usuarioRepository.findOne({
+    const { ...usuario } = await this.usuarioRepository.findOne({
       where: { id },
       relations: { afiliado: true, perfil: true },
     });
@@ -183,15 +180,78 @@ export class UsuariosService {
     };
   }
   async findOnePlaneUsuario(id: number) {
-    const { roleToUsuario, password, ...data } =
-      await this.usuarioRepository.findOne({
-        where: { id },
-        relations: { roleToUsuario: { role: true },perfil:true,afiliado:true },
-      });
+    const { roleToUsuario, ...data } = await this.usuarioRepository.findOne({
+      where: { id },
+      relations: {
+        roleToUsuario: { role: true },
+        perfil: true,
+        afiliado: true,
+      },
+    });
     const roles = roleToUsuario.map((item) => item.role);
     return {
       ...data,
       roles,
+    };
+  }
+  async findOneUserRolesMenus(idRole: number, usuario: Usuario) {
+    const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
+    const query = await queryBuilder
+      .select('user.id', 'id')
+      .addSelect('user.userName')
+      .addSelect('user.id')
+      .innerJoinAndSelect(
+        'user.roleToUsuario',
+        'to_usuario',
+        'to_usuario."usuarioId" = user.id',
+      )
+      .innerJoinAndSelect('to_usuario.role', 'roles', 'roles.id = :roleId', {
+        roleId: idRole,
+      })
+      .innerJoinAndSelect('roles.menuToRole', 'to_role', 'roles.id = :roleId')
+      .innerJoinAndSelect('to_role.menu', 'menus', 'menus.id = to_role.menuId')
+      .innerJoinAndSelect(
+        'menus.itemMenu',
+        'to_menu',
+        'menus.id = to_menu.menuId',
+      )
+      .innerJoinAndSelect(
+        'to_menu.itemMenu',
+        'items',
+        'items.id = to_menu.itemMenuId',
+      )
+      .where('user.id= :idUsuario', { idUsuario: usuario.id })
+      .getOne();
+
+    if (!query)
+      throw new BadRequestException({
+        OK: false,
+        msg: `El usuario no tiene ese rol`,
+      });
+    const { roleToUsuario, ...userData } = query;
+    return {
+      OK: true,
+      msg: 'rol encontrado',
+      data: {
+        ...userData,
+        role: roleToUsuario.map((toUsuario) => {
+          const { menuToRole, roleToUsuario, estado, ...dataRole } =
+            toUsuario.role;
+          return {
+            ...dataRole,
+            menus: menuToRole.map((toRole) => {
+              const { itemMenu, ...dataMenu } = toRole.menu;
+              return {
+                ...dataMenu,
+                itemsMenu: itemMenu.map((toMenu) => {
+                  const { itemToMenu, ...dataItemMenu } = toMenu.itemMenu;
+                  return { ...dataItemMenu };
+                }),
+              };
+            }),
+          };
+        }),
+      },
     };
   }
   //TODO: UPDATE USUARIO DEBE SER PARA EL PERFIL DE USUARIO
@@ -211,11 +271,11 @@ export class UsuariosService {
     });
     try {
       await this.perfilUsuarioRepository.save(perfil);
-      return{
-        OK:true,
-        msg:'Perfil actualizado',
-        perfil
-      }
+      return {
+        OK: true,
+        msg: 'Perfil actualizado',
+        perfil,
+      };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
     }

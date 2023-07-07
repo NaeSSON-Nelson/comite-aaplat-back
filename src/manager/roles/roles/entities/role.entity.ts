@@ -1,7 +1,7 @@
 import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { MenuToRole } from "../../menu-to-role/entities/menuToRole.entity";
-import { RoleToUsuario } from '../../../usuarios/roles-to-usuario/entities/role-to-usuario.entity';
+import { RoleToUsuario } from "src/auth/modules/usuarios/roles-to-usuario/entities/role-to-usuario.entity";
 
 @Entity({
     name:'Rol_usuario'

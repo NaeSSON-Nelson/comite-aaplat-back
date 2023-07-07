@@ -1,12 +1,18 @@
+import { Medidor } from '../../../../medidores-agua/entities/medidor.entity';
 import {
   BeforeInsert,
   BeforeUpdate,
   Column,
+  CreateDateColumn,
   Entity,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Medidor } from '../medidores/entities/medidor.entity';
+import { Usuario } from '../../usuarios/entities';
+import { Barrio } from 'src/interfaces/enum/Entities.enum';
+
 
 @Entity({
   name: 'afiliados',
@@ -85,8 +91,33 @@ export class Afiliado {
   })
   estado: number;
 
+  @Column({
+    type: 'varchar',
+    nullable: false,
+    default: Barrio.mendezFortaleza,
+  })
+  barrio: string;
+
+  @CreateDateColumn({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP(6)',
+    select:false
+  })
+  created_at: Date;
+
+  @UpdateDateColumn({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP(6)',
+    onUpdate: 'CURRENT_TIMESTAMP(6)',
+    select:false
+  })
+  updated_at: Date;
+
   @OneToMany(() => Medidor, (medidor) => medidor.afiliado)
   medidores: Medidor[];
+
+  @OneToOne(() => Usuario, (usuario) => usuario.afiliado)
+  usuario: Usuario;
 
   @BeforeInsert()
   CrearNuevoAfiliado() {

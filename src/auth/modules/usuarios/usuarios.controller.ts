@@ -4,8 +4,12 @@ import { UsuariosService } from './usuarios.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { UpdatePerfilUsuarioDto } from './dto/update-perfil-usuario.dto';
+import { Authentication } from '../../decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { Usuario } from './entities';
 
 @Controller('usuarios')
+@Authentication()
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
@@ -22,6 +26,12 @@ export class UsuariosController {
   @Get(':id')
   findOne(@Param('id',ParseIntPipe) id: number) {
     return this.usuariosService.findOne(id);
+  }
+  @Get('roles/:id')
+  findOneAuth(@Param('id',ParseIntPipe) id: number,
+  @GetUser() user:Usuario,
+  ) {
+    return this.usuariosService.findOneUserRolesMenus(id,user);
   }
 
   @Patch(':id')

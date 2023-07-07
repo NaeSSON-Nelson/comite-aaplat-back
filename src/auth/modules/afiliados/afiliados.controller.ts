@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { AfiliadosService } from './afiliados.service';
 import { CreateAfiliadoDto } from './dto/create-afiliado.dto';
 import { UpdateAfiliadoDto } from './dto/update-afiliado.dto';
+import { Authentication } from '../../decorators/auth.decorator';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('afiliados')
+@Authentication()
 export class AfiliadosController {
   constructor(private readonly afiliadosService: AfiliadosService) {}
 
@@ -13,12 +16,16 @@ export class AfiliadosController {
   }
 
   @Get()
-  findAll() {
-    return this.afiliadosService.findAll();
+  findAll(@Query() paginationDto:PaginationDto) {
+    return this.afiliadosService.findAll(paginationDto);
+  }
+  @Get('usuarios')
+  findAllAfiliadosSinUsuario(@Query() paginationDto:PaginationDto) {
+    return this.afiliadosService.findAllAfiliadosUnAsignedUser();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string,@Query() paginationDto:PaginationDto) {
     return this.afiliadosService.findOne(+id);
   }
 

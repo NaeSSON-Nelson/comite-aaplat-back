@@ -22,7 +22,7 @@ export class LecturaMedidor {
     name: 'estado_medidor',
     type: 'varchar',
     length: 100,
-    nullable: true,
+    default:'sin observaciones'
   })
   estadoMedidor?: string;
 
@@ -35,6 +35,7 @@ export class LecturaMedidor {
   @CreateDateColumn({
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP(6)',
+    select:false
   })
   created_at: Date;
 
@@ -42,6 +43,7 @@ export class LecturaMedidor {
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP(6)',
     onUpdate: 'CURRENT_TIMESTAMP(6)',
+    select:false
   })
   updated_at: Date;
 

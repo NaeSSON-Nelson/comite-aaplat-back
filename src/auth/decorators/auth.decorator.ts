@@ -8,13 +8,13 @@ import { MenuValidGuard } from "../guards/menu-valid.guard";
 
 
 
-export function Auth(...roles:ValidRole[]){
+export function Authentication(...roles:ValidRole[]){
     return applyDecorators(
         RoleProtected(...roles),
         UseGuards(AuthGuard(),UserRoleGuard)
     )
 }
-export function MenuValid(...menus:ValidMenu[]){
+export function Authorization(...menus:ValidMenu[]){
     return applyDecorators(
         MenusProtected(...menus),
         UseGuards(AuthGuard(),MenuValidGuard)
