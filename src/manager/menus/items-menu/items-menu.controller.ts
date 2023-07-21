@@ -1,9 +1,10 @@
-import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Query } from '@nestjs/common';
 import { ParseIntPipe } from '@nestjs/common/pipes';
 import { CreateItemMenuDto } from './dto/create-Item-menu.dto';
 import { UpdateItemMenuDto } from './dto/update-item-menu.dto';
 import { ItemsMenuService } from './items-menu.service';
 import { Authentication } from '../../../auth/decorators/auth.decorator';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('items-menu')
 @Authentication()
@@ -11,14 +12,17 @@ export class ItemsMenuController {
 
   constructor(private readonly itemsMenuService: ItemsMenuService) {}
   
-  @Post('')
+  @Post()
   createItemMenu(@Body() createItemMenuDto: CreateItemMenuDto) {
     return this.itemsMenuService.create(createItemMenuDto);
   }
-  @Get('')
-  findAll() {
-    //TODO: AÑADIR PARAMETROS DE BUSQUEDA
-    return this.itemsMenuService.findAll();
+  @Get()
+  findAll(@Query() paginationDto:PaginationDto) {
+    return this.itemsMenuService.findAll(paginationDto);
+  }
+  @Get('link/:term')
+  findOneByLink(@Param('term') term:string) {
+    return this.itemsMenuService.findOneByLink(term);
   }
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {

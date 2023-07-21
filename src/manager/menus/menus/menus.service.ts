@@ -8,12 +8,13 @@ import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Menu } from './entities/menu.entity';
-import { And, DataSource, Repository } from 'typeorm';
+import { And, DataSource, Like, Repository } from 'typeorm';
 import { UpdateItemMenuDto } from '../items-menu/dto/update-item-menu.dto';
 import { CreateItemMenuDto } from '../items-menu/dto/create-Item-menu.dto';
 import { CommonService } from '../../../common/common.service';
 import { ItemMenu } from '../items-menu/entities/item-menu.entity';
 import { ItemToMenu } from '../items-to-menu/entities/item-to-menu.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class MenusService {
@@ -27,18 +28,18 @@ export class MenusService {
   ) {}
 
   async createMenu(createMenuDto: CreateMenuDto) {
-    const { itemsMenu:idsItemsMenu, ...dataMenu } = createMenuDto;
+    const { itemsMenu: idsItemsMenu, ...dataMenu } = createMenuDto;
     const queryRunner = this.dataSource.createQueryRunner();
     const menu = this.menuRepository.create(dataMenu);
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
       await queryRunner.manager.save(menu);
-      if (idsItemsMenu && idsItemsMenu.length>0) {
+      if (idsItemsMenu && idsItemsMenu.length > 0) {
         const themItemsMenu = idsItemsMenu.map((id) =>
           this.itemToMenuRepository.create({
             menuId: menu.id,
-            itemMenuId:id,
+            itemMenuId: id,
           }),
         );
 
@@ -94,7 +95,7 @@ export class MenusService {
       return {
         OK: true,
         msg: 'Items menu asignados correctamente',
-        data: menu,
+        data: this.findOnePlaneMenu(menu.id),
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -104,19 +105,29 @@ export class MenusService {
     }
   }
 
-  async findAll() {
-    try {
-      const menus = await this.menuRepository.find();
-      return {
-        OK: true,
-        msg: 'Lista de menus',
-        data: menus,
-      };
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
+  async findAll(paginationDto: PaginationDto) {
+    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    const { '0': data, '1': size } = await this.menuRepository.findAndCount({
+      where: [{ nombre: Like(`%${q}%`) }],
+      skip: offset,
+      take: limit,
+      order: {
+        id: order,
+      },
+    });
+    return {
+      OK: true,
+      msg: 'Listado de Menus',
+      data: {
+        data,
+        size,
+        offset,
+        limit,
+        order,
+      },
+    };
   }
-  
+
   async findOneMenu(id: number) {
     let menu = await this.menuRepository.findOne({
       where: { id },
@@ -129,12 +140,20 @@ export class MenusService {
       data: await this.findOnePlaneMenu(id),
     };
   }
-  
+  async findOneByLink(term: string) {
+    const item = await this.menuRepository.findOne({
+      where: { linkMenu:term },
+      select:{linkMenu:true,id:true}
+    });
+    return {
+      OK: true,
+      msg: 'data con linkMenu',
+      data: item,
+    };
+  }
   // findOne(id: number) {
   //   return `This action returns a #${id} menu`;
   // }
-
-  
 
   async updateStatusMenu(id: number, updateMenuDto: UpdateMenuDto) {
     const { estado, ...dataNotPermit } = updateMenuDto;
@@ -148,26 +167,24 @@ export class MenusService {
       return {
         OK: true,
         msg: `Menu ${menuPreload.estado ? 'habilitado' : 'inhabilitado'}`,
-        data: menuPreload,
+        data: await this.findOnePlaneMenu(menuPreload.id),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
     }
   }
-  
+
   async findOnePlaneMenu(id: number) {
     const { itemMenu, menu, ...data } = await this.menuRepository.findOne({
       where: { id },
       relations: { itemMenu: { itemMenu: true } },
     });
-    const itemsMenu = itemMenu.map((item) => item.itemMenu);
     return {
       ...data,
-      itemsMenu,
+      itemsMenu:itemMenu.map((item) => item.itemMenu),
     };
   }
   // remove(id: number) {
   //   return `This action removes a #${id} menu`;
   // }
-  
 }

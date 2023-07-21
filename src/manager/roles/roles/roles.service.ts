@@ -4,7 +4,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
 import { isNumber, isNumberString } from 'class-validator';
 import { Role } from './entities/role.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +12,7 @@ import { MenuToRole } from '../menu-to-role/entities/menuToRole.entity';
 import { CommonService } from 'src/common/common.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class RolesService {
@@ -60,19 +61,40 @@ export class RolesService {
     }
   }
 
-  async findAll() {
-    try {
-      const roles = await this.roleRepository.find();
+  async findAll(paginationDto:PaginationDto) {
+    const { offset = 0, limit = 5, order = 'ASC', q = '' } = paginationDto;
+    const { '0': data, '1': size } = await this.roleRepository.findAndCount({
+      where: [{ nombre: Like(`%${q}%`) }],
+      skip: offset,
+      take: limit,
+      order: {
+        id: order,
+      },
+    });
       return {
         OK: true,
         msg: 'Roles',
-        data: roles,
+        data: {
+          data,
+          size,
+          offset,
+          limit,
+          order,
+        },
       };
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-  }
 
+  }
+  async findOneByName(term:string){
+    const role = await this.roleRepository.findOne({
+      where: { nombre:term },
+      select:{nombre:true,id:true}
+    });
+    return {
+      OK: true,
+      msg: 'data con nombre',
+      data: role,
+    };
+  }
   async findOne(id: number) {
     const role = await this.roleRepository.findOneBy({ id });
     if (!role) throw new NotFoundException(`Role width id: ${id}`);
@@ -160,7 +182,7 @@ export class RolesService {
       return {
         OK: true,
         msg: role.estado === 1 ? 'Role habilitado' : 'Role deshabilitado',
-        data: role,
+        data: await this.findOnePlaneRole(role.id),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
@@ -177,10 +199,10 @@ export class RolesService {
         where: { id },
         relations: { menuToRole: { menu: true } },
       });
-    const menus = menuToRole.map((item) => item.menu);
+
     return {
       ...data,
-      menus,
+      menus: menuToRole.map((item) => item.menu),
     };
   }
 }

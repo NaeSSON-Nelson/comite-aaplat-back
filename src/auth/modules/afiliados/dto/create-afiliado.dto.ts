@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsString,
   MinLength,
@@ -11,7 +12,8 @@ import {
   IsInt,
   IsNotEmpty,
   Matches,
-  IsEnum
+  IsEnum,
+  IsDate
 } from 'class-validator';
 import { patternDateFormat } from 'src/interfaces/validators';
 
@@ -55,10 +57,10 @@ export class CreateAfiliadoDto {
   @IsIn(['mendez fortaleza','20 de marzo','san antonio','verde olivo','primavera',])
   barrio: string;
   
-  @Matches(patternDateFormat,{
-    message:'El patron de feches es: dd/mm/yyyy'
-  })
+  
   @IsNotEmpty()
+  @IsDate()
+  @Type(()=>Date)
   fechaNacimiento: Date;
   
   // @IsArray()

@@ -1,23 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import {  NotFoundException} from "@nestjs/common/exceptions";
+import { NotFoundException } from '@nestjs/common/exceptions';
 import { CreateItemMenuDto } from './dto/create-Item-menu.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { CommonService } from '../../../common/common.service';
 import { UpdateItemMenuDto } from './dto/update-item-menu.dto';
 import { ItemMenu } from './entities/item-menu.entity';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 @Injectable()
 export class ItemsMenuService {
-    constructor(
-        @InjectRepository(ItemMenu)
-        private readonly itemsMenuRepository:Repository<ItemMenu>,
-        private readonly commonService:CommonService
-    ){
+  constructor(
+    @InjectRepository(ItemMenu)
+    private readonly itemsMenuRepository: Repository<ItemMenu>,
+    private readonly commonService: CommonService,
+  ) {}
 
-    }
-
-    
   async create(createItemMenuDto: CreateItemMenuDto) {
     const itemMenu = this.itemsMenuRepository.create(createItemMenuDto);
     try {
@@ -31,18 +29,29 @@ export class ItemsMenuService {
       this.commonService.handbleDbErrors(error);
     }
   }
-  async findAll() {
-    try {
-        //todo: parameters
-      const itemsMenu = await this.itemsMenuRepository.find();
-      return {
-        OK: true,
-        msg: 'Items de menus',
-        data: itemsMenu,
-      };
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
+  async findAll(paginationDto: PaginationDto) {
+    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    //todo: parameters
+    const { '0': data, '1': size } =
+      await this.itemsMenuRepository.findAndCount({
+        where: [{ nombre: Like(`%${q}%`) }],
+        skip: offset,
+        take: limit,
+        order: {
+          id: order,
+        },
+      });
+    return {
+      OK: true,
+      msg: 'Listado de items de Menu',
+      data: {
+        data,
+        size,
+        offset,
+        limit,
+        order,
+      },
+    };
   }
   async findOne(id: number) {
     const item = await this.itemsMenuRepository.findOneBy({ id });
@@ -55,6 +64,17 @@ export class ItemsMenuService {
     };
   }
 
+  async findOneByLink(term: string) {
+    const item = await this.itemsMenuRepository.findOne({
+      where: { linkMenu:term },
+      select:{linkMenu:true,id:true}
+    });
+    return {
+      OK: true,
+      msg: 'data con linkMenu',
+      data: item,
+    };
+  }
   async update(id: number, updateItemMenuDto: UpdateItemMenuDto) {
     const { estado, ...dataMenu } = updateItemMenuDto;
     const itemMenuPreload = await this.itemsMenuRepository.preload({

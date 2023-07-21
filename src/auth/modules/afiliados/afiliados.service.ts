@@ -25,7 +25,7 @@ export class AfiliadosService {
     const afiliado = this.afiliadoRepository.create(createAfiliadoDto);
     try {
       await this.afiliadoRepository.save(afiliado);
-      
+
       return {
         OK: true,
         msg: 'Afiliado creado con exito',
@@ -36,35 +36,54 @@ export class AfiliadosService {
     }
   }
 
-  async findAll(paginationDto:PaginationDto) {
-    const {offset=0,limit=10,order='ASC',q=''} = paginationDto;
-    
-    const data = await this.afiliadoRepository.find(
+  async findAll(paginationDto: PaginationDto) {
+    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    const { '0': data, '1': size } = await this.afiliadoRepository.findAndCount(
       {
-        where:[
-          {nombrePrimero:Like(`%${q}%`),},
-          {nombreSegundo:Like(`%${q}%`),},
-          {apellidoPrimero:Like(`%${q}%`),},
-          {apellidoSegundo:Like(`%${q}%`),},
-          {profesion:Like(`%${q}%`)},
+        where: [
+          { nombrePrimero: Like(`%${q}%`) },
+          { nombreSegundo: Like(`%${q}%`) },
+          { apellidoPrimero: Like(`%${q}%`) },
+          { apellidoSegundo: Like(`%${q}%`) },
+          { profesion: Like(`%${q}%`) },
           // {barrio:Barrio.MendezFortaleza},
-          {CI:Like(`%${q}%`)}
+          { CI: Like(`%${q}%`) },
         ],
 
-        skip:offset,
-        take:limit,
-        order:{
-          id: order
+        skip: offset,
+        take: limit,
+        order: {
+          id: order,
         },
-      }
+      },
     );
     return {
       OK: true,
       msg: 'Listado de afiliados',
-      data,
+      data: {
+        data,
+        size,
+        offset,
+        limit,
+        order,
+      },
     };
   }
-
+  async findByCi(paginationDto: PaginationDto) {
+    const { q = '' } = paginationDto;
+    const afiliado = await this.afiliadoRepository.findOne({
+      where: { CI: q },
+      select: {
+        CI: true,
+        id: true,
+      },
+    });
+    return {
+      OK: true,
+      msg: 'Data con CI',
+      data: afiliado,
+    };
+  }
   async findOne(id: number) {
     const afiliado = await this.afiliadoRepository.findOneBy({ id });
     if (!afiliado)
@@ -75,22 +94,38 @@ export class AfiliadosService {
       data: afiliado,
     };
   }
-  async findAllAfiliadosUnAsignedUser(){
-    const queryBuilder = this.afiliadoRepository.createQueryBuilder('afiliados');
-
-    const query = await queryBuilder
-                  .leftJoinAndSelect(
-                    'afiliados.usuario',
-                    'afiliado',
-                    'afiliado."afiliadoId" = null'
-                  )
-                  .getMany();
+  async findAllAfiliadosUnAsignedUser(paginationDto: PaginationDto) {
+    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    const { '0': data, '1': size } = await this.afiliadoRepository.findAndCount(
+      {
+        where: [
+          { nombrePrimero: Like(`%${q}%`) },
+          { nombreSegundo: Like(`%${q}%`) },
+          { apellidoPrimero: Like(`%${q}%`) },
+          { apellidoSegundo: Like(`%${q}%`) },
+          { barrio: Like(`%${q}%`) },
+          // {barrio:Barrio.MendezFortaleza},
+          { CI: Like(`%${q}%`) },
+        ],
+        relations: { usuario: true },
+        skip: offset,
+        take: limit,
+        order: {
+          id: order,
+        },
+      },
+    );
     return {
-      OK:true,
-      msg:'lista de afiliados sin asignar usuario',
-      data:query
-    }
-
+      OK: true,
+      msg: 'lista de afiliados sin asignar usuario',
+      data: { 
+        data: data.filter((val) => val.usuario === null),
+        size,
+        offset,
+        limit,
+        order,
+      },
+    };
   }
 
   async update(id: number, updateAfiliadoDto: UpdateAfiliadoDto) {

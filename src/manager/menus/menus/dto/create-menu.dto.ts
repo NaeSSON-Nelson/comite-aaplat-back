@@ -24,8 +24,7 @@ export class CreateMenuDto {
 
   @IsString()
   @MinLength(2)
-  @IsOptional()
-  linkMenu?: string;
+  linkMenu: string;
 
   @IsInt()
   @Min(0)

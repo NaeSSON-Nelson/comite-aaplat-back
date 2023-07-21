@@ -40,8 +40,8 @@ export class MedidoresController {
   }
 
   @Get('afiliados')
-  findAllMedidoresWidthAfiliados() {
-    return this.medidoresService.findAllMedidoresWithAfiliados();
+  findAllMedidoresWidthAfiliados(@Query() paginationDto:PaginationDto) {
+    return this.medidoresService.findAllMedidoresWithAfiliados(paginationDto);
   }
   @Get('lecturas')
   findAllLecturas() {
@@ -50,6 +50,10 @@ export class MedidoresController {
   @Get('barrio')
   findAllMedidoresbyBarrio(@Query() paginationDto: PaginationDto) {
     return this.medidoresService.findMedidoresWithAfiliadoByBarrio(paginationDto);
+  }
+  @Get('nro-medidor/:nro')
+  findMedidorByNro(@Param('nro') nro: string){
+    return this.medidoresService.findMedidorByNro(nro);
   }
 
   @Get(':id')
@@ -77,4 +81,11 @@ export class MedidoresController {
   ) {
     return this.medidoresService.updateStatus(id, updateMedidoreDto);
   }
+
+  //TODO: SERVIRA ESTE CONTROLADOR?
+  // @Get('find/afiliado/:id')
+  // findAfiliadoByMedidores(@Param('id', ParseIntPipe) id: number){
+  //   return this.medidoresService.findAfiliadoByMedidores(id);
+
+  // }
 }

@@ -18,10 +18,10 @@ export class ItemMenu{
     @Column({
         type:'varchar',
         length:100,
-        nullable:true,
-        
+        nullable:false,
+        unique:true,
     })
-    linkMenu?:string;
+    linkMenu:string;
 
     @Column({
         type:'integer',

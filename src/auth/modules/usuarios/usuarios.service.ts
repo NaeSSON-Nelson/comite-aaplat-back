@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
 
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
@@ -21,6 +21,7 @@ import { PerfilUsuario, Usuario } from './entities';
 import { RoleToUsuario } from './roles-to-usuario/entities/role-to-usuario.entity';
 import { AfiliadosService } from '../afiliados/afiliados.service';
 import { CommonService } from '../../../common/common.service';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 @Injectable()
 export class UsuariosService {
   constructor(
@@ -94,9 +95,10 @@ export class UsuariosService {
       return {
         OK: true,
         msg: 'usuario creado',
-        data: {usuario,
-        realPassword:password,
-        msg:'Por favor no comparta su informacion de acceso con otras personas'
+        data: {
+          usuario,
+          realPassword: password,
+          msg: 'Por favor no comparta su informacion de acceso con otras personas',
         },
       };
     } catch (error) {
@@ -146,12 +148,58 @@ export class UsuariosService {
       await queryRunner.release();
     }
   }
-  async findAll() {
-    const usuarios = await this.usuarioRepository.find();
+  async findAll(paginationDto: PaginationDto) {
+    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    // const qb = this.usuarioRepository.createQueryBuilder('user');
+
+    const { '0': data, '1': size } = await this.usuarioRepository.findAndCount({
+      where: [
+        { userName: Like(`%${q}%`) },
+        {
+          afiliado: [
+            { nombrePrimero: Like(`%${q}%`) },
+            { nombreSegundo: Like(`%${q}%`) },
+            { apellidoPrimero: Like(`%${q}%`) },
+            { apellidoSegundo: Like(`%${q}%`) },
+            { barrio: Like(`%${q}%`) },
+            // {barrio:Barrio.MendezFortaleza},
+            { CI: Like(`%${q}%`) },
+          ],
+        },
+      ],
+      relations: {
+        afiliado: true,
+      },
+      take: limit,
+      skip: offset,
+      order: { id: order },
+    });
+    // const { '0': data, '1': size } = await qb
+    //   .innerJoinAndSelect(
+    //     'user.afiliado',
+    //     'afiliado',
+    //     `afiliado.nombrePrimero like :q
+    //                          OR afiliado.nombreSegundo like :q
+    //                          OR afiliado.apellidoPrimero like :q
+    //                          OR afiliado.apellidoSegundo like :q
+    //                          OR afiliado.CI like :q`,
+    //     { q: `%${q}%` },
+    //   )
+    //   // .orWhere('user.userName like :q',{q:`%${q}%`})
+    //   .offset(offset)
+    //   .limit(limit)
+    //   .orderBy('user.id', order)
+    //   .getManyAndCount();
     return {
       OK: true,
       msg: 'lista de usuarios',
-      data: usuarios,
+      data: {
+        data,
+        size,
+        offset,
+        limit,
+        order,
+      },
     };
   }
 
@@ -167,7 +215,7 @@ export class UsuariosService {
   }
 
   async findOneUserComplete(id: number) {
-    const { ...usuario } = await this.usuarioRepository.findOne({
+    const usuario = await this.usuarioRepository.findOne({
       where: { id },
       relations: { afiliado: true, perfil: true },
     });
@@ -265,6 +313,7 @@ export class UsuariosService {
     });
     if (!usuario)
       throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+
     const perfil = await this.perfilUsuarioRepository.preload({
       id: usuario.perfil.id,
       ...updatePerfilUsuarioDto,
@@ -280,6 +329,45 @@ export class UsuariosService {
       this.commonService.handbleDbErrors(error);
     }
   }
+
+  async updateRolesUser(id: number, updateUsuarioDto: UpdateUsuarioDto) {
+    const { roles } = updateUsuarioDto;
+    const usuario = await this.usuarioRepository.preload({ id });
+    if (roles.length === 0)
+      throw new BadRequestException(`No contiene ningun rol para asignar`);
+    if (!usuario) throw new NotFoundException(`Rol con id ${id} no encontrado`);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    await queryRunner.manager.delete(RoleToUsuario, {
+      usuario: { id: usuario.id },
+    });
+
+    const thems = roles.map((id) =>
+      this.roleToUsuarioRepository.create({
+        roleId: id,
+        usuarioId: usuario.id,
+      }),
+    );
+    try {
+      await queryRunner.manager.save(thems);
+      await queryRunner.manager.save(usuario);
+      await queryRunner.commitTransaction();
+      return {
+        OK: true,
+        msg: 'Roles de usuario actualizado',
+        data: await this.findOnePlaneUsuario(id),
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async updateStatus(id: number, updateUsuarioDto: UpdateUsuarioDto) {
     const { estado } = updateUsuarioDto;
     const usuario = await this.usuarioRepository.preload({ id, estado });
@@ -291,21 +379,35 @@ export class UsuariosService {
       return {
         OK: true,
         msg: `Usuario ${usuario.estado ? 'habilitado' : 'inhabilitado'}`,
+        data: await this.findOnePlaneUsuario(usuario.id),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
     }
   }
-  // findMenusWidthUsuarioByRoles(idRole:number){
-  //   const queryBuilder = this.usuarioRepository.find();
-  // }
-  // remove(id: number) {
-  //   return `This action removes a #${id} usuario`;
-  // }
-  // private generateUserLength(id: number) {
-  //   //TAMAÑO DE LA CUENTA DE USUARIO
-  //   let length = 10000;
 
-  //   return (length + id).toString();
-  // }
+  async findUserByEmail(term: string) {
+    const perfil = await this.perfilUsuarioRepository.findOne({
+      where: {
+        correo: term,
+      },
+    });
+    return {
+      OK: true,
+      msg: 'Perfil con email',
+      data: perfil,
+    };
+  }
+  async findUserByPostalCode(term: string) {
+    const perfil = await this.perfilUsuarioRepository.findOne({
+      where: {
+        codigoPostal: term,
+      },
+    });
+    return {
+      OK: true,
+      msg: 'Perfil con codigo postal',
+      data: perfil,
+    };
+  }
 }

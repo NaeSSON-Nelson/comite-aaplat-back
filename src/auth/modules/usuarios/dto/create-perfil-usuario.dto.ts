@@ -1,6 +1,12 @@
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreatePerfilUsuarioDto {
+
+
+  @IsString()
+  @IsOptional()
+  nombreUsuario?: string;
+
   @IsString()
   @IsEmail()
   @IsOptional()
@@ -10,13 +16,19 @@ export class CreatePerfilUsuarioDto {
   @IsOptional()
   codigoPostal?: string;
 
-  @IsString()
+  @IsString({each:true})
+  @IsArray()
   @IsOptional()
   contactos?: string[];
 
   @IsString() 
   @IsOptional() 
   direccion?:string;
+  
+  @IsInt()
+  @Min(0) 
+  @IsOptional() 
+  estado?:number;
 
 
   //TODO: DATOS PARA GEOLOCALICACION

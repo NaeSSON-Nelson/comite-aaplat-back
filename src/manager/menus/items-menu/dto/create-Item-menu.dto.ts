@@ -8,8 +8,7 @@ export class CreateItemMenuDto {
 
   @IsString()
   @MinLength(2)
-  @IsOptional()
-  linkMenu?: string;
+  linkMenu: string;
 
   @IsInt()
   @Min(0)

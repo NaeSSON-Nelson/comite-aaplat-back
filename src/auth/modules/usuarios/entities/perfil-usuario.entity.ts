@@ -20,11 +20,13 @@ export class PerfilUsuario {
 
   @Column('text', {
     nullable: true,
+    unique:true,
   })
   correo: string;
 
   @Column('text', {
     nullable: true,
+    unique:true,
   })
   codigoPostal: string;
 

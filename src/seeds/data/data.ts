@@ -416,7 +416,7 @@ export const initialData: SeedData={
         },
         {
             nombre:'medidores',
-            linkMenu:'afiliados',
+            linkMenu:'medidores',
             estado:Estado.ACTIVO
         },
     ],
