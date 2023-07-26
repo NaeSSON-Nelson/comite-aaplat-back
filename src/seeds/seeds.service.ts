@@ -57,28 +57,7 @@ export class SeedsService {
       const usuariosSave = await this.insertUsuarios(afiliadosSave);
       await queryRunner.manager.save(usuariosSave);
       
-      //INSERT INTO RELATIONS TABLES
       
-      //INSERT INTO RELATIONS ITEMS TO MENU 
-      const itemToMenuRelationsAfiliado = await this.insertRelationsItemMenuToMenu('afiliado','afiliado')
-      await queryRunner.manager.save(itemToMenuRelationsAfiliado);
-      const itemToMenuRelationsItemsMenu = await this.insertRelationsItemMenuToMenu('item-menu','items-menu')
-      await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
-      const itemToMenuRelationsMenu = await this.insertRelationsItemMenuToMenu('menu','menus')
-      await queryRunner.manager.save(itemToMenuRelationsMenu);
-      const itemToMenuRelationsRoles = await this.insertRelationsItemMenuToMenu('role','roles')
-      await queryRunner.manager.save(itemToMenuRelationsRoles);
-      const itemToMenuRelationsUsuarios = await this.insertRelationsItemMenuToMenu('usuario','usuarios')
-      await queryRunner.manager.save(itemToMenuRelationsUsuarios);
-      const itemToMenuRelationsMedidores = await this.insertRelationsItemMenuToMenu('medidor','medidores')
-      await queryRunner.manager.save(itemToMenuRelationsMedidores);
-      //INSERT INTO RELATIONS MENU TO ROLE
-      
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['afiliados','menus','items-menu','roles','usuarios','medidores'],'root');
-      await queryRunner.manager.save(menuToRoleRelationsRoot);
-      
-      const roleToUsuario = await this.insertRolesToUsuario(['root'],'admin');
-      await queryRunner.manager.save(roleToUsuario);
       
       const medidoresSave = await this.insertMedidores(afiliadosSave);
       await queryRunner.manager.save(medidoresSave);
@@ -228,5 +207,40 @@ export class SeedsService {
     })
     return roleToUsuario
   }
-  
+  async executeSeedPartTwo() {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      //INSERT INTO RELATIONS TABLES
+      
+      //INSERT INTO RELATIONS ITEMS TO MENU 
+      const itemToMenuRelationsAfiliado = await this.insertRelationsItemMenuToMenu('afiliado','afiliado')
+      await queryRunner.manager.save(itemToMenuRelationsAfiliado);
+      const itemToMenuRelationsItemsMenu = await this.insertRelationsItemMenuToMenu('item-menu','items-menu')
+      await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
+      const itemToMenuRelationsMenu = await this.insertRelationsItemMenuToMenu('menu','menus')
+      await queryRunner.manager.save(itemToMenuRelationsMenu);
+      const itemToMenuRelationsRoles = await this.insertRelationsItemMenuToMenu('role','roles')
+      await queryRunner.manager.save(itemToMenuRelationsRoles);
+      const itemToMenuRelationsUsuarios = await this.insertRelationsItemMenuToMenu('usuario','usuarios')
+      await queryRunner.manager.save(itemToMenuRelationsUsuarios);
+      const itemToMenuRelationsMedidores = await this.insertRelationsItemMenuToMenu('medidor','medidores')
+      await queryRunner.manager.save(itemToMenuRelationsMedidores);
+      //INSERT INTO RELATIONS MENU TO ROLE
+      
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['afiliados','menus','items-menu','roles','usuarios','medidores'],'root');
+      await queryRunner.manager.save(menuToRoleRelationsRoot);
+      
+      const roleToUsuario = await this.insertRolesToUsuario(['root'],'admin');
+      await queryRunner.manager.save(roleToUsuario);
+      await queryRunner.commitTransaction();
+      return { OK: true, msg: 'SEED PART TWO EXECUTE' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
 }
