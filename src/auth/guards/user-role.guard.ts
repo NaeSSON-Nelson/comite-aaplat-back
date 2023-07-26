@@ -16,7 +16,7 @@ export class UserRoleGuard implements CanActivate {
     context: ExecutionContext,
   ): Promise<boolean> {
     const validRoles:string[] = this.reflector.get(META_ROLES,context.getHandler());
-    // console.log(validRoles);
+    
     if(!validRoles) return true;
     if(validRoles.length===0) return true;
 
@@ -24,6 +24,7 @@ export class UserRoleGuard implements CanActivate {
     // req.hola='hola papu'
     // console.log(req);
     const usuario = req.user as Usuario;
+
     // console.log(usuario);
     if(!usuario) throw new BadRequestException(`Usuario not found`);
     const {roles}= await this.usuarioService.findOnePlaneUsuario(usuario.id);

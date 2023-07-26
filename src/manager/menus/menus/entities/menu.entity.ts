@@ -32,7 +32,7 @@ export class Menu {
         
         default:Estado.ACTIVO
     })
-    estado?:number;
+    estado:number;
 
     @OneToMany(()=>MenuToRole,(menuToRole)=>menuToRole.menu)
     menu:MenuToRole[];

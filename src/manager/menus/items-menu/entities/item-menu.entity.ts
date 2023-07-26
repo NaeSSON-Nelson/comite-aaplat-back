@@ -29,7 +29,7 @@ export class ItemMenu{
         
         default:Estado.ACTIVO
     })
-    estado?:number;
+    estado:number;
 
     @OneToMany(()=>ItemToMenu,(itemToMenu)=>itemToMenu.itemMenu)
     itemToMenu?:ItemToMenu[];

@@ -23,15 +23,11 @@ import { RolesToUsuarioModule } from './modules/usuarios/roles-to-usuario/roles-
     AuthController,
     UsuariosController,
     AfiliadosController,
-    // MenusController,
-    // RolesController,
   ],
   providers: [
     AuthService,
     UsuariosService,
     AfiliadosService,
-    // MenusService,
-    // RolesService,
     JwtStrategy,
   ],
   imports: [

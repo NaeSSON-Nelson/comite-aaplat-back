@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { SeedsService } from './seeds.service';
-import { Authentication } from '../auth/decorators/auth.decorator';
+import { Authentication } from '../auth/decorators/authentication.decorator';
 import { ValidRole } from 'src/interfaces/valid-auth.enum';
 
 @Controller('seeds')

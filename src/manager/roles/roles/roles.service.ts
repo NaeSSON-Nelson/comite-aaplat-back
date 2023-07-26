@@ -47,7 +47,7 @@ export class RolesService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'Role creado con exito',
+        message: 'Role creado con exito',
         data: {
           role,
           menus,
@@ -73,7 +73,7 @@ export class RolesService {
     });
       return {
         OK: true,
-        msg: 'Roles',
+        message: 'Roles',
         data: {
           data,
           size,
@@ -91,7 +91,7 @@ export class RolesService {
     });
     return {
       OK: true,
-      msg: 'data con nombre',
+      message: 'data con nombre',
       data: role,
     };
   }
@@ -101,7 +101,7 @@ export class RolesService {
 
     return {
       OK: true,
-      msg: 'Role encontrado',
+      message: 'Role encontrado',
       data: await this.findOnePlaneRole(id),
     };
   }
@@ -111,7 +111,7 @@ export class RolesService {
       relations: { menuToRole: { menu: {itemMenu:{itemMenu:true}} } },
       // select:{nombre:true,menuToRole:true}
     });
-    if(!roles) throw new NotFoundException({OK:false,msg:'rol no encontrado'})
+    if(!roles) throw new NotFoundException('rol no encontrado')
      const menus = roles.menuToRole.map(to=>to.menu);
      const result = menus.map(({itemMenu,menu,...dataMenu})=>{
       return{
@@ -127,7 +127,7 @@ export class RolesService {
       
     return {
       OK:true,
-      msg:'listado de menus',
+      message:'listado de menus',
       data:result
     }
   }
@@ -161,7 +161,7 @@ export class RolesService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'Role actualizado',
+        message: 'Role actualizado',
         data: await this.findOnePlaneRole(id),
       };
     } catch (error) {
@@ -181,7 +181,7 @@ export class RolesService {
       await this.roleRepository.save(role);
       return {
         OK: true,
-        msg: role.estado === 1 ? 'Role habilitado' : 'Role deshabilitado',
+        message: role.estado === 1 ? 'Role habilitado' : 'Role deshabilitado',
         data: await this.findOnePlaneRole(role.id),
       };
     } catch (error) {

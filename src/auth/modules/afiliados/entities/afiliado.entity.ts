@@ -88,6 +88,7 @@ export class Afiliado {
     name: 'estado',
     type: 'integer',
     nullable: false,
+    
   })
   estado: number;
 

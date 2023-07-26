@@ -22,7 +22,7 @@ export class ItemsMenuService {
       await this.itemsMenuRepository.save(itemMenu);
       return {
         OK: true,
-        msg: 'Item de menu creado correctamente',
+        message: 'Item de menu creado correctamente',
         itemMenu,
       };
     } catch (error) {
@@ -43,7 +43,7 @@ export class ItemsMenuService {
       });
     return {
       OK: true,
-      msg: 'Listado de items de Menu',
+      message: 'Listado de items de Menu',
       data: {
         data,
         size,
@@ -59,7 +59,7 @@ export class ItemsMenuService {
       throw new NotFoundException(`El Item con ID: ${id} no se encontró`);
     return {
       OK: true,
-      msg: 'Item Menu encontrado',
+      message: 'Item Menu encontrado',
       data: item,
     };
   }
@@ -71,7 +71,7 @@ export class ItemsMenuService {
     });
     return {
       OK: true,
-      msg: 'data con linkMenu',
+      message: 'data con linkMenu',
       data: item,
     };
   }
@@ -87,7 +87,7 @@ export class ItemsMenuService {
       await this.itemsMenuRepository.save(itemMenuPreload);
       return {
         OK: true,
-        msg: 'menu item actualizado',
+        message: 'menu item actualizado',
         data: itemMenuPreload,
       };
     } catch (error) {
@@ -108,7 +108,7 @@ export class ItemsMenuService {
       await this.itemsMenuRepository.save(itemMenuPreload);
       return {
         OK: true,
-        msg: `Menu ${itemMenuPreload.estado ? 'habilitado' : 'inhabilitado'}`,
+        message: `Menu ${itemMenuPreload.estado ? 'habilitado' : 'inhabilitado'}`,
         data: itemMenuPreload,
       };
     } catch (error) {

@@ -11,6 +11,8 @@ import { META_MENUS } from '../decorators/valid-protected.decorator';
 import { RolesService } from '../../manager/roles/roles/roles.service';
 import { UsuariosService } from '../modules/usuarios/usuarios.service';
 import { Usuario } from '../modules/usuarios/entities';
+import { Menu } from '../../manager/menus/menus/entities/menu.entity';
+import { Request } from 'express';
 
 
 @Injectable()
@@ -21,27 +23,28 @@ export class MenuValidGuard implements CanActivate {
     // private readonly rolesService: RolesService,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const validMenus: string[] = this.reflector.get(
-      META_MENUS,
-      context.getHandler(),
-    );
-    // console.log(validRoles);
-    // console.log(validMenus);
+    const validMenus: string[] = this.reflector.get(META_MENUS,context.getHandler());
+    
     if (!validMenus) return true;
     if (validMenus.length === 0) return true;
-
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<Request>();
+    // console.log(req);
     const usuario = req.user as Usuario;
     if (!usuario) throw new BadRequestException(`Usuario not found`);
     const { roles } = await this.usuarioService.findOnePlaneUsuario(usuario.id);
-    // for (const rol of roles) {
-    //   const { menus } = await this.rolesService.findOnePlaneRole(rol.id);
-    //   for (const { nombre } of menus) {
-    //     if (validMenus.includes(nombre)) return true;
-    //   }
-    // }
-    throw new ForbiddenException(
-      `El usuario ${usuario.userName} no tiene acceso (menu)`,
+    let menu:Menu;
+    for(const rol of roles){
+       menu = await this.usuarioService.findMenuByRole(validMenus,rol.id,usuario);
+      if(menu) continue;
+    }
+    // console.log('tiene',menu);
+    if(!menu)throw new ForbiddenException(
+      `El usuario ${usuario.userName} no tiene acceso a este menu`,
+      );
+    if(menu.estado===0) throw new ForbiddenException(
+      `El menu ${menu.nombre} no se encuentra disponible`,
     );
+
+    return true;
   }
 }

@@ -94,11 +94,11 @@ export class UsuariosService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'usuario creado',
+        message: 'usuario creado',
         data: {
           usuario,
           realPassword: password,
-          msg: 'Por favor no comparta su informacion de acceso con otras personas',
+          message: 'Por favor no comparta su informacion de acceso con otras personas',
         },
       };
     } catch (error) {
@@ -138,7 +138,7 @@ export class UsuariosService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'Roles asignados',
+        message: 'Roles asignados',
         data: await this.findOnePlaneUsuario(usuario.id),
       };
     } catch (error) {
@@ -192,7 +192,7 @@ export class UsuariosService {
     //   .getManyAndCount();
     return {
       OK: true,
-      msg: 'lista de usuarios',
+      message: 'lista de usuarios',
       data: {
         data,
         size,
@@ -204,13 +204,23 @@ export class UsuariosService {
   }
 
   async findOne(id: number) {
-    const usuario = await this.usuarioRepository.findOneBy({ id });
-    if (!usuario)
-      throw new NotFoundException(`Usuario width id: ${id} not found`);
+    const qr = this.dataSource.createQueryBuilder()
+    const queryBuilder = this.usuarioRepository.createQueryBuilder();
+    // const qb = await queryBuilder
+    //           .select()
+              
+    //           .getMany();
+    const qb = await this.usuarioRepository.find({
+      where:{
+         id
+      },
+      relations:{roleToUsuario:{role:{menuToRole:{menu:{itemMenu:{itemMenu:true}}}}}},
+      select:{roleToUsuario:{role:{menuToRole:{menu:{itemMenu:{}}}}}}
+    })
     return {
       OK: true,
-      msg: 'usuario encontrado',
-      data: await this.findOnePlaneUsuario(id),
+      message: 'usuario encontrado',
+      data: qb
     };
   }
 
@@ -223,7 +233,7 @@ export class UsuariosService {
       throw new NotFoundException(`Usuario con id ${id} no encontrado`);
     return {
       OK: true,
-      msg: 'usuario encontrado',
+      message: 'usuario encontrado',
       data: usuario,
     };
   }
@@ -272,14 +282,11 @@ export class UsuariosService {
       .getOne();
 
     if (!query)
-      throw new BadRequestException({
-        OK: false,
-        msg: `El usuario no tiene ese rol`,
-      });
+      throw new BadRequestException(`El usuario no tiene ese rol`);
     const { roleToUsuario, ...userData } = query;
     return {
       OK: true,
-      msg: 'rol encontrado',
+      message: 'rol encontrado',
       data: {
         ...userData,
         role: roleToUsuario.map((toUsuario) => {
@@ -302,6 +309,70 @@ export class UsuariosService {
       },
     };
   }
+  async findMenuByRole(menus: string[], idRole: number, usuario: Usuario) {
+    const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
+    const { roleToUsuario, userName } = await queryBuilder
+      .innerJoinAndSelect(
+        'user.roleToUsuario',
+        'to_usuario',
+        'to_usuario."usuarioId" = user.id',
+      )
+      .innerJoinAndSelect('to_usuario.role', 'roles', 'roles.id = :roleId', {
+        roleId: idRole,
+      })
+      .innerJoinAndSelect('roles.menuToRole', 'to_role', 'roles.id = :roleId')
+      .innerJoinAndSelect('to_role.menu', 'menus', 'menus.id = to_role.menuId')
+      .where('user.id= :idUsuario', { idUsuario: usuario.id })
+      .getOne();
+
+    const roles = roleToUsuario.map((toUsuario) => toUsuario.role);
+    const menusExist = roles.map((rol) =>
+      rol.menuToRole.map((toRole) => toRole.menu),
+    );
+    for (const menu of menusExist) {
+      for (const item of menu) if (menus.includes(item.nombre)) return item;
+    }
+    // console.log(menusExist);
+    return null;
+  }
+  async findItemMenuByRole(items: string[], idRole: number, usuario: Usuario) {
+    const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
+    const { roleToUsuario } = await queryBuilder
+          .innerJoinAndSelect(
+            'user.roleToUsuario',
+            'to_usuario',
+            'to_usuario."usuarioId" = user.id',
+          )
+          .innerJoinAndSelect('to_usuario.role', 'roles', 'roles.id = :roleId', {
+            roleId: idRole,
+          })
+          .innerJoinAndSelect('roles.menuToRole', 'to_role', 'roles.id = :roleId')
+          .innerJoinAndSelect('to_role.menu', 'menus', 'menus.id = to_role.menuId')
+          .innerJoinAndSelect(
+            'menus.itemMenu',
+            'to_menu',
+            'menus.id = to_menu.menuId',
+          )
+          .innerJoinAndSelect(
+            'to_menu.itemMenu',
+            'items',
+            'items.id = to_menu.itemMenuId',
+          )
+          .where('user.id= :idUsuario', { idUsuario: usuario.id })
+          .getOne();
+    const resultMap = roleToUsuario
+                      .map((toUsuario) => toUsuario.role.menuToRole
+                      .map(toRole=> toRole.menu.itemMenu
+                      .map(toMenu=>toMenu.itemMenu)));
+    for(const res of resultMap){
+      for(const res2 of res){
+        for(const item of res2){
+          if(items.includes(item.linkMenu)) return item;
+        }
+      }
+    }
+    return null;
+  }
   //TODO: UPDATE USUARIO DEBE SER PARA EL PERFIL DE USUARIO
   async updateProfile(
     id: number,
@@ -322,7 +393,7 @@ export class UsuariosService {
       await this.perfilUsuarioRepository.save(perfil);
       return {
         OK: true,
-        msg: 'Perfil actualizado',
+        message: 'Perfil actualizado',
         perfil,
       };
     } catch (error) {
@@ -357,7 +428,7 @@ export class UsuariosService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'Roles de usuario actualizado',
+        message: 'Roles de usuario actualizado',
         data: await this.findOnePlaneUsuario(id),
       };
     } catch (error) {
@@ -378,7 +449,7 @@ export class UsuariosService {
       await this.usuarioRepository.save(usuario);
       return {
         OK: true,
-        msg: `Usuario ${usuario.estado ? 'habilitado' : 'inhabilitado'}`,
+        message: `Usuario ${usuario.estado ? 'habilitado' : 'inhabilitado'}`,
         data: await this.findOnePlaneUsuario(usuario.id),
       };
     } catch (error) {
@@ -394,7 +465,7 @@ export class UsuariosService {
     });
     return {
       OK: true,
-      msg: 'Perfil con email',
+      message: 'Perfil con email',
       data: perfil,
     };
   }
@@ -406,7 +477,7 @@ export class UsuariosService {
     });
     return {
       OK: true,
-      msg: 'Perfil con codigo postal',
+      message: 'Perfil con codigo postal',
       data: perfil,
     };
   }

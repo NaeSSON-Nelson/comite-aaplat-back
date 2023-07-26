@@ -49,7 +49,7 @@ export class MenusService {
       // console.log(menu);
       return {
         OK: true,
-        msg: 'menu creado con exito',
+        message: 'menu creado con exito',
         data: {
           menu,
         },
@@ -94,7 +94,7 @@ export class MenusService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'Items menu asignados correctamente',
+        message: 'Items menu asignados correctamente',
         data: this.findOnePlaneMenu(menu.id),
       };
     } catch (error) {
@@ -117,7 +117,7 @@ export class MenusService {
     });
     return {
       OK: true,
-      msg: 'Listado de Menus',
+      message: 'Listado de Menus',
       data: {
         data,
         size,
@@ -136,7 +136,7 @@ export class MenusService {
     if (!menu) throw new NotFoundException(`Menu not found with Id:${id}`);
     return {
       OK: true,
-      msg: 'Menu encontrado',
+      message: 'Menu encontrado',
       data: await this.findOnePlaneMenu(id),
     };
   }
@@ -147,7 +147,7 @@ export class MenusService {
     });
     return {
       OK: true,
-      msg: 'data con linkMenu',
+      message: 'data con linkMenu',
       data: item,
     };
   }
@@ -166,7 +166,7 @@ export class MenusService {
       await this.menuRepository.save(menuPreload);
       return {
         OK: true,
-        msg: `Menu ${menuPreload.estado ? 'habilitado' : 'inhabilitado'}`,
+        message: `Menu ${menuPreload.estado ? 'habilitado' : 'inhabilitado'}`,
         data: await this.findOnePlaneMenu(menuPreload.id),
       };
     } catch (error) {

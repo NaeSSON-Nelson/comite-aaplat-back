@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { LoginUserDto } from './dto/login-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ExtractJwt } from 'passport-jwt';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { CommonService } from '../common/common.service';
@@ -18,6 +17,7 @@ import { Usuario } from './modules/usuarios/entities';
 import { UsuariosService } from './modules/usuarios/usuarios.service';
 @Injectable()
 export class AuthService {
+  
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
@@ -49,7 +49,8 @@ export class AuthService {
       const { password, afiliado, estado, roleToUsuario, ...data } = usuario;
       // console.log(usuario);
       return {
-        ok: true,
+        OK: true,
+        message:'Logueado con exito',
         usuario: {
           ...data,
           roles: roleToUsuario.map((toUsuario) => {
@@ -63,22 +64,18 @@ export class AuthService {
       this.commonService.handbleDbErrors(error);
     }
   }
-  async tokenRefresh(token: string) {
-    if (!token) throw new BadRequestException(` there's not token in request`);
+  async tokenRefresh(user: Usuario) {
     try {
-      const { id, userName } = this.jwtService.verify<JwtPayload>(
-        token,
-        this.configService.get('JWT_TOKEN_KEY'),
-      );
       const usuario = await this.usuarioRepository.findOne({
-        where: { id },
+        where: { id: user.id },
         relations: { roleToUsuario: { role: true } },
       });
       if (!usuario) throw new BadRequestException(`Usuario incorrecto`);
       const { roleToUsuario, afiliado, perfil, password, estado, ...data } =
         usuario;
       return {
-        ok: true,
+        OK: true,
+        message:'token refrescado',
         usuario: {
           ...data,
           roles: roleToUsuario.map((toUsuario) => {
@@ -86,17 +83,33 @@ export class AuthService {
             return { nombre, id };
           }),
         },
-        token: this.getJwtToken({ id, userName }),
+        token: this.getJwtToken({ id: usuario.id, userName: usuario.userName }),
       };
     } catch (error) {
       console.log(error);
-      throw new InternalServerErrorException({
-        ok: false,
-        msg: 'Error en el servidor',
-      });
+      throw new InternalServerErrorException('Error en el servidor');
     }
   }
   private getJwtToken(payload: JwtPayload) {
     return this.jwtService.sign(payload);
+  }
+  async accessResource(usuario: Usuario) {
+    console.log(usuario);
+    const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
+    const query = await queryBuilder
+      .select('user.id', 'id')
+      .addSelect('user.userName')
+      .addSelect('user.id')
+      .innerJoinAndSelect('user.roleToUsuario', 'to_usuario', 'to_usuario."usuarioId" = user.id',)
+      .innerJoinAndSelect('to_usuario.role',    'roles',      'roles.id = to_usuario."roleId"')
+      .innerJoinAndSelect('roles.menuToRole',   'to_role',    'to_role."roleId" = roles.id')
+      .innerJoinAndSelect('to_role.menu',       'menus',      'menus.id = to_role."menuId"')
+      .innerJoinAndSelect('menus.itemMenu',     'to_menu',    'menus.id = to_menu.menuId',)
+      .innerJoinAndSelect('to_menu.itemMenu',   'items',      'items.id = to_menu.itemMenuId',)
+      .where('user.id= :idUsuario', { idUsuario: usuario.id })
+      .getOne();
+        return {
+          data:query
+        }
   }
 }

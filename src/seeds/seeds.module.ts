@@ -21,8 +21,8 @@ import { MedidoresModule } from 'src/medidores-agua/medidores.module';
     ItemsToMenuModule,
     MenusModule,
     MenuToRoleModule,
-    RolesToUsuarioModule,
     RolesModule,
+    RolesToUsuarioModule,
     CommonModule,
     MedidoresModule,
   ]

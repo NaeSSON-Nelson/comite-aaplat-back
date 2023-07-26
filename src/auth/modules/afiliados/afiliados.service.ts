@@ -28,7 +28,7 @@ export class AfiliadosService {
 
       return {
         OK: true,
-        msg: 'Afiliado creado con exito',
+        message: 'Afiliado creado con exito',
         data: afiliado,
       };
     } catch (error) {
@@ -80,7 +80,7 @@ export class AfiliadosService {
     });
     return {
       OK: true,
-      msg: 'Data con CI',
+      message: 'Data con CI',
       data: afiliado,
     };
   }
@@ -90,7 +90,7 @@ export class AfiliadosService {
       throw new NotFoundException(`Afiliado with id: ${id} not found`);
     return {
       OK: true,
-      msg: 'Afiliado encontrado',
+      message: 'Afiliado encontrado',
       data: afiliado,
     };
   }
@@ -117,7 +117,7 @@ export class AfiliadosService {
     );
     return {
       OK: true,
-      msg: 'lista de afiliados sin asignar usuario',
+      message: 'lista de afiliados sin asignar usuario',
       data: { 
         data: data.filter((val) => val.usuario === null),
         size,
@@ -140,7 +140,7 @@ export class AfiliadosService {
       await this.afiliadoRepository.save(afiliado);
       return {
         OK: true,
-        msg: 'Afiliado actualizado',
+        message: 'Afiliado actualizado',
         data: afiliado,
       };
     } catch (error) {
@@ -157,7 +157,7 @@ export class AfiliadosService {
       await this.afiliadoRepository.save(afiliado);
       return {
         OK: true,
-        msg:
+        message:
           afiliado.estado === 1
             ? 'Afiliado habilitado'
             : 'Afiliado deshabilitado',

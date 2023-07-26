@@ -5,7 +5,7 @@ import { GetUser } from './decorators/get-user.decorator';
 import { ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 import { IncomingHttpHeaders } from 'http';
 import { Usuario } from './modules/usuarios/entities';
-import { Authentication, Authorization } from './decorators/auth.decorator';
+import { Authentication } from './decorators/authentication.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -31,9 +31,15 @@ export class AuthController {
 
   @Get('refresh')
   @Authentication()
-  validToken(@Headers('authorization') authorization:string){
-     
-    return this.authService.tokenRefresh(authorization.split(' ')[1]);
+  validToken(@GetUser() user:Usuario){
+
+    return this.authService.tokenRefresh(user);
   }
 
+  // @Get('access-valid')
+  // @Authentication()
+  // accessResourse(@GetUser() user:Usuario,@Headers() headers:IncomingHttpHeaders ){
+  //   console.log(headers);
+  //   return this.authService.accessResource(user);
+  // }
 }

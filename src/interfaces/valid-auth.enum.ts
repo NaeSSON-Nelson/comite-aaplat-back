@@ -11,44 +11,51 @@ export enum ValidRole{
 export enum ValidMenu{
     afiliados="afiliados",
     menus="menus",
-    itemsMenu="itemsMenu",
+    itemsMenu="items-menu",
     roles="roles",
     usuarios="usuarios",
+    medidores="medidores"
     // afiliados="afiliados",
 }
 
 //VALID ITEM MENU
-export enum ValidItemMenuAfiliado{
+export enum ValidItemMenu{
+    //RECURSOS DE AFILIADOS
     afiliadoRegister ="afiliado-register",
     afiliadoUpdate ="afiliado-update",
     afiliadoStatus ="afiliado-update-status",
     afiliadoList ="afiliado-list",
-    afiliadoFind="afiliado-find",
-    afiliadoDetail ="afiliado-detail",
-}
-export enum ValidItemMenu{
-    itemMenuRegister ="itemMenu-register",
-    itemMenuUpdate ="itemMenu-update",
-    itemMenuStatus ="itemMenu-status",
-    itemMenuList ="itemMenu-list",
-    itemMenuFind ="itemMenu-find",
-    itemMenuDetail ="itemMenu-detail",
-}
-export enum ValidItemMenuMenu{
+    afiliadoDetails ="afiliado-details",
+    //RECURSOS DE GESTION DE LOS MENUS
     menuRegister ="menu-register",
     menuUpdate ="menu-update",
     menuStatus ="menu-status",
     menuList ="menu-list",
-    menuFind ="menu-find",
-    menuDetail ="menu-detail",
-}
-export enum ValidItemMenuUsuario{
+    menuDetails ="menu-details",
+    //RECURSOS DE GESTION DE LOS ITEMS MENU
+    itemMenuRegister ="item-menu-register",
+    itemMenuUpdate ="item-menu-update",
+    itemMenuStatus ="item-menu-status",
+    itemMenuList ="item-menu-list",
+    itemMenuDetails ="item-menu-details",
+    //RECURSOS DE GESTION DE ROLES D
+    roleRegister="role-register",
+    roleUpdate="role-update",
+    roleUpdateStatus="role-update-status",
+    roleList="role-list",
+    roleDetails='role-details',
+    //RECURSOS DE GESTION DE LOS USUARIOS
     usuarioRegister ="usuario-register",
-    usuarioUpdate ="usuario-asignar",
-    usuarioProfile ="usuario-asignar",
-    usuarioStatus ="usuario-status",
+    usuarioUpdate ="usuario-update",
+    usuarioStatus ="usuario-update-status",
+    usuarioUpdateProfile ="usuario-update-profile",
     usuarioList ="usuario-list",
-    usuarioFind ="usuario-find",
-    usuarioDetail ="usuario-detail",
+    usuarioDetails ="usuario-details",
 
+    //RECURSOS DE GESTION DE MEDIDORES
+    medidorRegister="medidor-register",
+    medidorUpdate="medidor-update",
+    medidorUpdateStatus="medidor-update-status",
+    medidorList="medidor-list",
+    medidorDetails='medidor-details',
 }

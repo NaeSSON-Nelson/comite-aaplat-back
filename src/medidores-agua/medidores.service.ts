@@ -35,7 +35,7 @@ export class MedidoresService {
       await this.medidorRepository.save(medidor);
       return {
         OK: true,
-        msg: 'Medidor creado con exito',
+        message: 'Medidor creado con exito',
         data: medidor,
       };
     } catch (error) {
@@ -48,7 +48,7 @@ export class MedidoresService {
       const medidores = await this.medidorRepository.find();
       return {
         OK: true,
-        msg: 'lista de medidores',
+        message: 'lista de medidores',
         data: medidores,
       };
     } catch (error) {
@@ -62,10 +62,10 @@ export class MedidoresService {
       relations: { afiliado: true },
     });
     if (!medidor)
-      throw new NotFoundException({ OK: false, msg: 'Medidor no encontrado' });
+      throw new NotFoundException('Medidor no encontrado');
     return {
       OK: true,
-      msg: 'medidor encontrado',
+      message: 'medidor encontrado',
       data: medidor,
     };
   }
@@ -87,7 +87,7 @@ export class MedidoresService {
     });
     return {
       OK: true,
-      msg: 'listado de afiliados con medidores asignados',
+      message: 'listado de afiliados con medidores asignados',
       data: { 
         data,
         size,
@@ -135,7 +135,7 @@ export class MedidoresService {
       .getMany();
     return {
       OK: true,
-      msg: 'listado de medidores por barrio',
+      message: 'listado de medidores por barrio',
       data: query,
     };
   }
@@ -153,7 +153,7 @@ export class MedidoresService {
       throw new NotFoundException(`Afiliado with Id: ${idAfiliado} not found`);
     return {
       OK: true,
-      msg: 'lista de medidores de afiliado',
+      message: 'lista de medidores de afiliado',
       data: afiliadoWithMedidores,
     };
   }
@@ -176,7 +176,7 @@ export class MedidoresService {
 
     return {
       OK: true,
-      msg: 'todas las lecturas',
+      message: 'todas las lecturas',
       data: lecturas,
     };
   }
@@ -193,7 +193,7 @@ export class MedidoresService {
       await this.medidorRepository.save(medidor);
       return {
         OK: true,
-        msg: 'Medidor actualizado',
+        message: 'Medidor actualizado',
         data: await this.findAfiliadoByMedidores(medidor.id),
       };
     } catch (error) {
@@ -213,7 +213,7 @@ export class MedidoresService {
       await this.medidorRepository.save(medidor);
       return {
         OK: true,
-        msg: `Medidor status: ${
+        message: `Medidor status: ${
           estado === 1
             ? 'habilitado'
             : estado === 0
@@ -238,10 +238,7 @@ export class MedidoresService {
       throw new NotFoundException(`Medidor con id ${medidor.id} no encontrado`);
 
     if (dataLectura.lectura < medidorActual.ultimaLectura)
-      throw new BadRequestException({
-        OK: false,
-        msg: 'La Lectura es inferior a la ultima lectura registrada ',
-      });
+      throw new BadRequestException('La Lectura es inferior a la ultima lectura registrada ');
     // console.log((dataLectura.lectura - medidorActual.ultimaLectura));
     const newLectura = this.lecturasRepository.create({
       medidor,
@@ -254,7 +251,7 @@ export class MedidoresService {
       await this.medidorRepository.save(medidorActual);
       return {
         OK: true,
-        msg: 'lectura registrada',
+        message: 'lectura registrada',
         data: newLectura,
       };
     } catch (error) {
@@ -264,10 +261,7 @@ export class MedidoresService {
   async registrarLecturas(registrarLecturas: RegistrarLecturasDto) {
     const { lecturas: lecturasRegister } = registrarLecturas;
     if (lecturasRegister.length === 0)
-      throw new BadRequestException({
-        OK: true,
-        msg: 'No hay registros de lecturas',
-      });
+      throw new BadRequestException('No hay registros de lecturas');
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -282,10 +276,7 @@ export class MedidoresService {
           `El medidor con id ${medidor.id} no existe`,
         );
       if (lectura < medidorActual.ultimaLectura)
-        throw new BadRequestException({
-          OK: false,
-          msg: 'La Lectura es inferior a la ultima lectura registrada ',
-        });
+        throw new BadRequestException('La Lectura es inferior a la ultima lectura registrada');
       const newLectura = this.lecturasRepository.create({
         medidor,
         lectura,
@@ -302,7 +293,7 @@ export class MedidoresService {
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        msg: 'Lecturas registradas con exito',
+        message: 'Lecturas registradas con exito',
         data: lecturasNew,
       };
     } catch (error) {
@@ -324,7 +315,7 @@ export class MedidoresService {
       );
     return {
       OK: true,
-      msg: 'listado de lecturas del medidor',
+      message: 'listado de lecturas del medidor',
       data: medidor,
     };
   }
@@ -334,7 +325,7 @@ export class MedidoresService {
     const data = await this.medidorRepository.findOneBy({nroMedidor});
     return{
       OK:true,
-      msg:'Medidor con nro',
+      message:'Medidor con nro',
       data
     }
   }

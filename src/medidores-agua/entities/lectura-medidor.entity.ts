@@ -30,7 +30,7 @@ export class LecturaMedidor {
     type: 'integer',
     default: Estado.ACTIVO,
   })
-  estado?: number;
+  estado: number;
 
   @CreateDateColumn({
     type: 'timestamp',
