@@ -100,15 +100,15 @@ export class ItemsMenuService {
       id,
       estado,
     });
-
     if (!itemMenuPreload)
-      throw new NotFoundException(`Menu width id: ${id} not found`);
-
+    throw new NotFoundException(`Menu width id: ${id} not found`);
+    if(estado==='INACTIVO')
+    itemMenuPreload.isActive=false;else itemMenuPreload.isActive=true;
     try {
       await this.itemsMenuRepository.save(itemMenuPreload);
       return {
         OK: true,
-        message: `Menu ${itemMenuPreload.estado ? 'habilitado' : 'inhabilitado'}`,
+        message: `estado del menu cambiado'}`,
         data: itemMenuPreload,
       };
     } catch (error) {

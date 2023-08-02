@@ -10,12 +10,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { LecturaMedidor } from './lectura-medidor.entity';
-import { Estado } from 'src/interfaces/Entityes/entityes.res';
-import { Afiliado } from '../../auth/modules/afiliados/entities/afiliado.entity';
-import { Barrio } from 'src/interfaces/enum/Entities.enum';
+import { Afiliado } from '../../auth/modules/usuarios/entities/afiliado.entity';
+import { Barrio } from 'src/interfaces/enum/enum-entityes';
+import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
 
 @Entity('medidores')
-export class Medidor {
+export class Medidor extends ColumnsAlways{
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -35,12 +35,8 @@ export class Medidor {
   })
   fechaInstalacion: Date;
 
-  @Column({
-    type: 'varchar',
-    nullable: false,
-    default: Barrio.mendezFortaleza,
-  })
-  ubicacionBarrio: string;
+  @Column(() => Ubicacion)
+  ubicacion:Ubicacion;
 
   @Column({
     name: 'lectura_inicial',
@@ -55,11 +51,6 @@ export class Medidor {
   })
   ultimaLectura: number;
 
-  @Column({
-    type: 'integer',
-    default: Estado.ACTIVO,
-  })
-  estado: number;
 
   @Column({
     type: 'varchar',

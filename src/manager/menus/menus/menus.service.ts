@@ -8,11 +8,8 @@ import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Menu } from './entities/menu.entity';
-import { And, DataSource, Like, Repository } from 'typeorm';
-import { UpdateItemMenuDto } from '../items-menu/dto/update-item-menu.dto';
-import { CreateItemMenuDto } from '../items-menu/dto/create-Item-menu.dto';
+import { DataSource, Like, Repository } from 'typeorm';
 import { CommonService } from '../../../common/common.service';
-import { ItemMenu } from '../items-menu/entities/item-menu.entity';
 import { ItemToMenu } from '../items-to-menu/entities/item-to-menu.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
@@ -30,7 +27,7 @@ export class MenusService {
   async createMenu(createMenuDto: CreateMenuDto) {
     const { itemsMenu: idsItemsMenu, ...dataMenu } = createMenuDto;
     const queryRunner = this.dataSource.createQueryRunner();
-    const menu = this.menuRepository.create(dataMenu);
+    const menu = this.menuRepository.create({...dataMenu});
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
@@ -161,7 +158,8 @@ export class MenusService {
 
     if (!menuPreload)
       throw new NotFoundException(`Menu width id: ${id} not found`);
-
+    if(estado==='INACTIVO')
+    menuPreload.isActive=false;else menuPreload.isActive=true;
     try {
       await this.menuRepository.save(menuPreload);
       return {

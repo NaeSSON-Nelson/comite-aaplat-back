@@ -1,16 +1,11 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
-import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { Menu } from "../../../menus/menus/entities/menu.entity";
 import { Role } from "../../roles/entities/role.entity";
+import { ColumnsAlways } from "src/common/inherints-db";
 
 @Entity()
-export class MenuToRole{
-
-    constructor(menuId:number,roleId:number){
-        this.menuId=menuId;
-        this.roleId=roleId;
-    }
+export class MenuToRole extends ColumnsAlways{
 
     @PrimaryGeneratedColumn()
     id: number;
@@ -19,10 +14,6 @@ export class MenuToRole{
     menuId:number;
     @Column()
     roleId:number;
-    @Column({
-        default:Estado.ACTIVO
-    })
-    estado:number;
 
     @ManyToOne(()=>Menu,(menu)=>menu.menu)
     menu:Menu;

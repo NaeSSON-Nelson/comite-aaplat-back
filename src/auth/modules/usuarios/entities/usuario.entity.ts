@@ -1,14 +1,13 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
-import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { RoleToUsuario } from "../roles-to-usuario/entities/role-to-usuario.entity";
-import { PerfilUsuario } from "./perfil-usuario.entity";
-import { Afiliado } from "../../afiliados/entities/afiliado.entity";
+import { Perfil } from ".";
+import { ColumnsAlways } from "src/common/inherints-db/column-always";
 
 @Entity({
     name:'usuarios'
 })
-export class Usuario {
+export class Usuario  extends ColumnsAlways{
     @PrimaryGeneratedColumn('increment')
     id: number;
 
@@ -19,7 +18,7 @@ export class Usuario {
         unique:true,
         nullable:false,
     })
-    userName:string;
+    username:string;
     @Column({
         type:'varchar',
         length:200,
@@ -28,20 +27,25 @@ export class Usuario {
     })
     password:string;
     @Column({
-        type:'integer',
-        nullable:false,
-        default:Estado.ACTIVO
+        type:"text",
+        nullable:true,
+        unique:true,
     })
-    estado:number;
+    correo:string;
+    @Column({
+        name:'correo_verificado',
+        type:'bool',
+        default:false,
+    })
+    correoVerify:boolean;
 
-    @OneToOne(() => PerfilUsuario)
+    @OneToOne(() => Perfil, (perfil) => perfil.usuario)
     @JoinColumn()
-    perfil: PerfilUsuario;
+    perfil: Perfil;
   
     @OneToMany(()=>RoleToUsuario,(roleToUsuario)=>roleToUsuario.usuario)
     roleToUsuario:RoleToUsuario[];
 
-    @OneToOne(()=> Afiliado)
-    @JoinColumn()
-    afiliado: Afiliado;
+
+
 }

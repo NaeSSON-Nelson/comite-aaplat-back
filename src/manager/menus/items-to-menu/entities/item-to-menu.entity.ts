@@ -1,16 +1,10 @@
-import { Estado } from 'src/interfaces/Entityes/entityes.res';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Menu } from '../../menus/entities/menu.entity';
 import { ItemMenu } from '../../items-menu/entities/item-menu.entity';
+import { ColumnsAlways } from 'src/common/inherints-db';
 
 @Entity()
-export class ItemToMenu {
-    constructor(
-        menuId:number,itemMenuId:number
-    ){
-        this.menuId=menuId;
-        this.itemMenuId=itemMenuId;
-    }
+export class ItemToMenu extends ColumnsAlways{
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -18,10 +12,7 @@ export class ItemToMenu {
   menuId: number;
   @Column()
   itemMenuId: number;
-  @Column({
-    default: Estado.ACTIVO,
-  })
-  estado: number;
+  
 
   @ManyToOne(() => Menu, (menu) => menu.menu)
   menu: Menu;

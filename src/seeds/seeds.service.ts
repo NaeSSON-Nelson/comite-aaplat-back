@@ -6,8 +6,8 @@ import { CommonService } from '../common/common.service';
 import { Menu } from '../manager/menus/menus/entities/menu.entity';
 import { ItemMenu } from '../manager/menus/items-menu/entities/item-menu.entity';
 import { Role } from '../manager/roles/roles/entities/role.entity';
-import { Afiliado } from '../auth/modules/afiliados/entities/afiliado.entity';
-import { Usuario } from 'src/auth/modules/usuarios/entities';
+import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
+import { Perfil, Usuario } from 'src/auth/modules/usuarios/entities';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { ItemToMenu } from 'src/manager/menus/items-to-menu/entities/item-to-menu.entity';
 import { MenuToRole } from 'src/manager/roles/menu-to-role/entities/menuToRole.entity';
@@ -16,6 +16,8 @@ import { RoleToUsuario } from 'src/auth/modules/usuarios/roles-to-usuario/entiti
 @Injectable()
 export class SeedsService {
   constructor(
+    @InjectRepository(Perfil)
+    private readonly perfilRepository:Repository<Perfil>,
     @InjectRepository(Afiliado)
     private readonly afiliadoRepository: Repository<Afiliado>,
     @InjectRepository(Menu)
@@ -46,22 +48,25 @@ export class SeedsService {
     try {
       // await this.deleteTables();
       //INSERT INTO TABLES
-      const afiliadosSave = await this.insertAfiliados();
-      await queryRunner.manager.save(afiliadosSave);
+      const perfilesSave = await this.insertPerfiles();
+      await queryRunner.manager.save(perfilesSave);
       const itemsMenusSave = await this.insertItemsMenu();
       await queryRunner.manager.save(itemsMenusSave);
       const menusSave = await this.insertMenus();
       await queryRunner.manager.save(menusSave);
       const rolesSave = await this.insertRoles();
       await queryRunner.manager.save(rolesSave);
-      const usuariosSave = await this.insertUsuarios(afiliadosSave);
+      //CON DEPDENDENCIA
+      const afiliadosSave = await this.insertAfiliados(perfilesSave);
+      await queryRunner.manager.save(afiliadosSave);
+      const usuariosSave = await this.insertUsuarios(perfilesSave);
       await queryRunner.manager.save(usuariosSave);
       
       
       
       const medidoresSave = await this.insertMedidores(afiliadosSave);
       await queryRunner.manager.save(medidoresSave);
-      console.log('hola:3');
+      // console.log('hola:3');
       await queryRunner.commitTransaction();
       return { OK: true, msg: 'SEED EXECUTE' };
 
@@ -103,11 +108,20 @@ export class SeedsService {
       await queryRunner.release();
     }
   }
-  private async insertAfiliados() {
+  private async insertPerfiles(){
+    const seedPerfiles = initialData.perfiles;
+    const perfiles:Perfil[]=[];
+    seedPerfiles.forEach(val=>{
+      perfiles.push(this.perfilRepository.create(val));
+    })
+    return perfiles;
+  }
+  private async insertAfiliados(perfiles:Perfil[]) {
     const seedAfiliados = initialData.afiliados;
     const afiliados: Afiliado[] = [];
-    seedAfiliados.forEach((afi) => {
-      afiliados.push(this.afiliadoRepository.create(afi));
+    seedAfiliados.forEach((afi,index) => {
+      afiliados.push(
+        this.afiliadoRepository.create({...afi,perfil:perfiles[index]}));
     });
     return afiliados;
   }
@@ -135,14 +149,14 @@ export class SeedsService {
     });
     return roles;
   }
-  private async insertUsuarios(afiliados: Afiliado[]) {
+  private async insertUsuarios(perfiles:Perfil[]) {
     const seedUsuarios = initialData.usuarios;
     const usuarios: Usuario[] = [];
     seedUsuarios.forEach((usuario, index) => {
       usuarios.push(
         this.usuarioRepository.create({
           ...usuario,
-          afiliado: afiliados[index],
+          perfil: perfiles[index],
         }),
       );
     });
@@ -190,14 +204,14 @@ export class SeedsService {
     })
     return menuToRole;
   }
-  private async insertRolesToUsuario(roles:string[],userName:string){
+  //TODO: REPARAR
+  private async insertRolesToUsuario(roles:string[],username:string){
     const rolesExist:Role[]=[];
     roles.forEach(async roleName=>{
       const role = await this.roleRepository.findOne({where:{nombre:roleName}});
-      if(role)
       rolesExist.push(role);
     })
-    const usuario = await this.usuarioRepository.findOne({where:{userName}})
+    const usuario = await this.usuarioRepository.findOne({where:{username}})
     const roleToUsuario:RoleToUsuario[]=[];
     rolesExist.forEach(role=>{
       roleToUsuario.push(this.roleToUsuarioRepository.create({
@@ -213,7 +227,7 @@ export class SeedsService {
     await queryRunner.startTransaction();
     try {
       //INSERT INTO RELATIONS TABLES
-      
+      // const datita = new Date();
       //INSERT INTO RELATIONS ITEMS TO MENU 
       const itemToMenuRelationsAfiliado = await this.insertRelationsItemMenuToMenu('afiliado','afiliado')
       await queryRunner.manager.save(itemToMenuRelationsAfiliado);
@@ -232,8 +246,19 @@ export class SeedsService {
       const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['afiliados','menus','items-menu','roles','usuarios','medidores'],'root');
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
-      const roleToUsuario = await this.insertRolesToUsuario(['root'],'admin');
-      await queryRunner.manager.save(roleToUsuario);
+      const roleToUsuarioAdmin = await this.insertRolesToUsuario(['root','admin'],'admin');
+      await queryRunner.manager.save(roleToUsuarioAdmin);
+      const roleToUsuarioAdministrativo = await this.insertRolesToUsuario(['administrativo'],'administrativo');
+      await queryRunner.manager.save(roleToUsuarioAdministrativo);
+      const roleToUsuarioAdministrativoContador = await this.insertRolesToUsuario(['administrativo','contador'],'contador');
+      await queryRunner.manager.save(roleToUsuarioAdministrativoContador);
+      const roleToUsuarioContador = await this.insertRolesToUsuario(['contador'],'afiliado2');
+      await queryRunner.manager.save(roleToUsuarioContador);
+      const roleToUsuarioAfiliadoUser1 = await this.insertRolesToUsuario(['afiliado','user'],'user');
+      await queryRunner.manager.save(roleToUsuarioAfiliadoUser1);
+      const roleToUsuarioAfiliadoUser2 = await this.insertRolesToUsuario(['afiliado','user'],'afiliado');
+      await queryRunner.manager.save(roleToUsuarioAfiliadoUser2);
+
       await queryRunner.commitTransaction();
       return { OK: true, msg: 'SEED PART TWO EXECUTE' };
     } catch (error) {

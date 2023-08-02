@@ -2,26 +2,28 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Like, Repository } from 'typeorm';
 
-import { CreateUsuarioDto } from './dto/create-usuario.dto';
-import { UpdateUsuarioDto } from './dto/update-usuario.dto';
-
-import {
-  uniqueUsernameGenerator,
-  generateUsername,
-} from 'unique-username-generator';
+import { generateUsername } from 'unique-username-generator';
 import * as bcrypt from 'bcrypt';
 import * as pdgerantor from 'generate-password';
-import { UpdatePerfilUsuarioDto } from './dto/update-perfil-usuario.dto';
-import { PerfilUsuario, Usuario } from './entities';
 import { RoleToUsuario } from './roles-to-usuario/entities/role-to-usuario.entity';
-import { AfiliadosService } from '../afiliados/afiliados.service';
 import { CommonService } from '../../../common/common.service';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Afiliado, Perfil, Usuario } from './entities';
+import {
+  CreateAfiliadoDto,
+  CreatePerfilDto,
+  UpdateAfiliadoDto,
+  UpdatePerfilDto,
+  UpdateUsuarioDto,
+} from './dto';
+import { Role } from 'src/manager/roles/roles/entities/role.entity';
+import { SearchPerfil } from './querys/search-perfil';
+import { Ubicacion } from 'src/common/inherints-db';
+import { CreateUsuarioDto } from './dto/create-usuario.dto';
+
 @Injectable()
 export class UsuariosService {
   constructor(
@@ -29,76 +31,93 @@ export class UsuariosService {
     private readonly usuarioRepository: Repository<Usuario>,
     @InjectRepository(RoleToUsuario)
     private readonly roleToUsuarioRepository: Repository<RoleToUsuario>,
-    @InjectRepository(PerfilUsuario)
-    private readonly perfilUsuarioRepository: Repository<PerfilUsuario>,
+    @InjectRepository(Perfil)
+    private readonly perfilRepository: Repository<Perfil>,
+    @InjectRepository(Afiliado)
+    private readonly afiliadoRepository: Repository<Afiliado>,
+
     private readonly dataSource: DataSource,
-    private readonly afiliadoService: AfiliadosService,
     private readonly commonService: CommonService,
   ) {}
 
-  async create(createUsuarioDto: CreateUsuarioDto) {
-    const { afiliado, roles } = createUsuarioDto;
-    const { data: dataAfiliado } = await this.afiliadoService.findOne(
-      afiliado.id,
-    );
-    if (!dataAfiliado)
-      throw new NotFoundException(
-        `Afiliado con id ${afiliado.id} no encontrado`,
-      );
-    if (!roles)
-      throw new BadRequestException(
-        `Debe existir al menos 1 role en la request`,
-      );
+  async create(createPerfilDto: CreatePerfilDto) {
+    const { usuarioForm, afiliadoForm, ...dataPerfil } = createPerfilDto;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    const perfil = this.perfilRepository.create({ ...dataPerfil });
+    // console.log(usuarioForm);
+    // console.log(afiliadoForm);
+    let messagePassword=null;
+    let passwordImplict=null;
+    if (usuarioForm) {
+      const { roles, ...dataUsuario } = usuarioForm;
+    //CREATE USUARIO
+    const username = generateUsername();
     const password = pdgerantor.generate({
       numbers: true,
     });
-
-    //TODO: MEJORAR LA CREACION DE USERNAME RANDOM
-    const characters = [
-      'IronMan',
-      'DoctorStrange',
-      'Hulk',
-      'CaptainAmerica',
-      'Thanos',
-    ];
-    const { nombrePrimero, nombreSegundo, apellidoPrimero, apellidoSegundo } =
-      dataAfiliado;
-    const perfil = this.perfilUsuarioRepository.create({
-      nombreUsuario: nombrePrimero
-        .concat(' ')
-        .concat(nombreSegundo ? nombreSegundo + ' ' : '')
-        .concat(apellidoPrimero + ' ')
-        .concat(apellidoSegundo ? apellidoSegundo : ''),
-    });
-    await queryRunner.manager.save(perfil);
-    const userName = generateUsername();
     const usuario = this.usuarioRepository.create({
       password: bcrypt.hashSync(password, 10),
-      userName,
-      afiliado,
-      perfil,
+      username,
+      ...dataUsuario,
     });
+    // const rolesThem: RoleToUsuario[] = [];
+    perfil.usuario=usuario;
+    perfil.accessAcount = true;
+    passwordImplict=password;
+    messagePassword='No muestre la contraseña a cualquier individuo si no es el usuario'
     await queryRunner.manager.save(usuario);
-    const rolesThem = roles.map((id) =>
-      this.roleToUsuarioRepository.create({
-        usuarioId: usuario.id,
-        roleId: id,
-      }),
-    );
+    const qb = this.dataSource.getRepository(Role).createQueryBuilder('roles');
+    roles.forEach(async (id) => {
+    const role = await qb.where('roles.id = :id', { id }).getOne();
+    if (!role)
+    throw new BadRequestException(
+      `El role con id: ${id} no fue encontrado`,
+      );
+      const roleToUsuario = this.roleToUsuarioRepository.create({
+        role,
+        usuario,
+      });
+      await queryRunner.manager.save(roleToUsuario);
+      // rolesThem.push(roleToUsuario);
+    });
+    // console.log(password);
+      // await queryRunner.manager.save(perfil.usuario);
+    }
+    if (afiliadoForm) {
+      //CREATE AFILIADO
+      const { barrio, latitud, longitud, nroVivienda, ...dataAFiliado } =
+        afiliadoForm;
+      const ubicacion: Ubicacion = {
+        barrio,
+        latitud,
+        longitud,
+        numeroVivienda: nroVivienda,
+      };
+      const afiliado = this.afiliadoRepository.create({
+        ...dataAFiliado,
+        ubicacion,
+      });
+      // console.log(afiliado);
+      perfil.afiliado = afiliado;
+      await queryRunner.manager.save(afiliado);
+    }
+
+    //TODO: MEJORAR LA CREACION DE USERNAME RANDOM
     //TODO: MEJORAR ASIGNAR ROLES A USUARIO
     try {
-      await queryRunner.manager.save(rolesThem);
+      await queryRunner.manager.save(perfil);
       await queryRunner.commitTransaction();
       return {
         OK: true,
-        message: 'usuario creado',
-        data: {
-          usuario,
-          realPassword: password,
-          message: 'Por favor no comparta su informacion de acceso con otras personas',
+        message: 'perfil creado',
+        data: {perfil,
+          dataUser:{
+            therePassword: perfil.usuario?true:false,
+            messagePassword,
+            passwordImplict,
+          }
         },
       };
     } catch (error) {
@@ -106,6 +125,70 @@ export class UsuariosService {
       this.commonService.handbleDbErrors(error);
     } finally {
       await queryRunner.release();
+    }
+  }
+  async createAfiliado(idPerfil: number, createAfiliadoDto: CreateAfiliadoDto) {
+    const perfil = await this.perfilRepository.findOne({
+      where: { id: idPerfil },
+      relations: { afiliado: true },
+    });
+    if (!perfil)
+      throw new BadRequestException(`Perfil width id: ${idPerfil} not found`);
+
+    if (perfil.afiliado)
+      throw new BadRequestException(
+        `El perfil con id: ${idPerfil} ya tiene asignado un afiliado!`,
+      );
+    const { estado, ...dataUbicacion } = createAfiliadoDto;
+    const afiliado = this.afiliadoRepository.create({
+      ubicacion: { ...dataUbicacion },
+      estado,
+      perfil,
+    });
+    perfil.afiliado = afiliado;
+    try {
+      await this.afiliadoRepository.save(afiliado);
+
+      return {
+        OK: true,
+        message: 'Afiliado creado!',
+        data: perfil,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async createUsuario(idPerfil: number, createUsuarioDto: CreateUsuarioDto) {
+    const perfil = await this.perfilRepository.findOne({
+      where: { id: idPerfil },
+      relations: { usuario: true },
+    });
+    if (!perfil)
+      throw new BadRequestException(`Perfil width id: ${idPerfil} not found`);
+
+    if (perfil.usuario)
+      throw new BadRequestException(
+        `Perfil width id: ${idPerfil} ya tienen un usuario asignado!`,
+      );
+
+    const { password, usuario } = await this.createUsuarioPriv(
+      createUsuarioDto,
+    );
+    usuario.perfil = perfil;
+    perfil.accessAcount = true;
+    // console.log(password);
+    // console.log(usuario);
+    const perfilPreload=await this.perfilRepository.preload({id:perfil.id,accessAcount:true});
+    try {
+      await this.usuarioRepository.save(usuario);
+      await this.perfilRepository.save(perfilPreload);
+      return {
+        OK: true,
+        message: 'Usuario de perfil creado!',
+        data: perfil,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
     }
   }
   //TODO: ASIGNAR ROLES A USUARIO
@@ -148,51 +231,43 @@ export class UsuariosService {
       await queryRunner.release();
     }
   }
-  async findAll(paginationDto: PaginationDto) {
-    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+  async findAll(paginationDto: SearchPerfil) {
+    const {
+      offset = 0,
+      limit = 10,
+      order = 'ASC',
+      q = '',
+      tipoPerfil,
+      accessAccount = true,
+      barrio,
+      genero,
+    } = paginationDto;
     // const qb = this.usuarioRepository.createQueryBuilder('user');
 
-    const { '0': data, '1': size } = await this.usuarioRepository.findAndCount({
+    const { '0': data, '1': size } = await this.perfilRepository.findAndCount({
       where: [
-        { userName: Like(`%${q}%`) },
+        { nombrePrimero: Like(`%${q}%`) },
+        { nombreSegundo: Like(`%${q}%`) },
+        { apellidoPrimero: Like(`%${q}%`) },
+        { apellidoSegundo: Like(`%${q}%`) },
+        { CI: Like(`%${q}%`) },
+        { usuario: [{ username: Like(`%${q}%`) }] },
         {
-          afiliado: [
-            { nombrePrimero: Like(`%${q}%`) },
-            { nombreSegundo: Like(`%${q}%`) },
-            { apellidoPrimero: Like(`%${q}%`) },
-            { apellidoSegundo: Like(`%${q}%`) },
-            { barrio: Like(`%${q}%`) },
-            // {barrio:Barrio.MendezFortaleza},
-            { CI: Like(`%${q}%`) },
-          ],
+          // tipoPerfil: tipoPerfil ? tipoPerfil : TipoPerfil.afiliado,
+          accessAcount: accessAccount,
         },
       ],
       relations: {
         afiliado: true,
+        usuario: true,
       },
       take: limit,
       skip: offset,
       order: { id: order },
     });
-    // const { '0': data, '1': size } = await qb
-    //   .innerJoinAndSelect(
-    //     'user.afiliado',
-    //     'afiliado',
-    //     `afiliado.nombrePrimero like :q
-    //                          OR afiliado.nombreSegundo like :q
-    //                          OR afiliado.apellidoPrimero like :q
-    //                          OR afiliado.apellidoSegundo like :q
-    //                          OR afiliado.CI like :q`,
-    //     { q: `%${q}%` },
-    //   )
-    //   // .orWhere('user.userName like :q',{q:`%${q}%`})
-    //   .offset(offset)
-    //   .limit(limit)
-    //   .orderBy('user.id', order)
-    //   .getManyAndCount();
     return {
       OK: true,
-      message: 'lista de usuarios',
+      message: 'lista de perfiles',
       data: {
         data,
         size,
@@ -204,30 +279,21 @@ export class UsuariosService {
   }
 
   async findOne(id: number) {
-    const qr = this.dataSource.createQueryBuilder()
-    const queryBuilder = this.usuarioRepository.createQueryBuilder();
-    // const qb = await queryBuilder
-    //           .select()
-              
-    //           .getMany();
-    const qb = await this.usuarioRepository.find({
-      where:{
-         id
-      },
-      relations:{roleToUsuario:{role:{menuToRole:{menu:{itemMenu:{itemMenu:true}}}}}},
-      select:{roleToUsuario:{role:{menuToRole:{menu:{itemMenu:{}}}}}}
-    })
+    const qb = await this.perfilRepository.findOne({
+      where: { id },
+      relations: { afiliado: true, usuario: true },
+    });
+    if (!qb) throw new NotFoundException(`Perfil no encontrado!`);
     return {
       OK: true,
-      message: 'usuario encontrado',
-      data: qb
+      message: 'perfil',
+      data: qb,
     };
   }
 
   async findOneUserComplete(id: number) {
     const usuario = await this.usuarioRepository.findOne({
       where: { id },
-      relations: { afiliado: true, perfil: true },
     });
     if (!usuario)
       throw new NotFoundException(`Usuario con id ${id} no encontrado`);
@@ -242,8 +308,6 @@ export class UsuariosService {
       where: { id },
       relations: {
         roleToUsuario: { role: true },
-        perfil: true,
-        afiliado: true,
       },
     });
     const roles = roleToUsuario.map((item) => item.role);
@@ -281,8 +345,7 @@ export class UsuariosService {
       .where('user.id= :idUsuario', { idUsuario: usuario.id })
       .getOne();
 
-    if (!query)
-      throw new BadRequestException(`El usuario no tiene ese rol`);
+    if (!query) throw new BadRequestException(`El usuario no tiene ese rol`);
     const { roleToUsuario, ...userData } = query;
     return {
       OK: true,
@@ -311,7 +374,7 @@ export class UsuariosService {
   }
   async findMenuByRole(menus: string[], idRole: number, usuario: Usuario) {
     const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
-    const { roleToUsuario, userName } = await queryBuilder
+    const { roleToUsuario, username } = await queryBuilder
       .innerJoinAndSelect(
         'user.roleToUsuario',
         'to_usuario',
@@ -338,63 +401,60 @@ export class UsuariosService {
   async findItemMenuByRole(items: string[], idRole: number, usuario: Usuario) {
     const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
     const { roleToUsuario } = await queryBuilder
-          .innerJoinAndSelect(
-            'user.roleToUsuario',
-            'to_usuario',
-            'to_usuario."usuarioId" = user.id',
-          )
-          .innerJoinAndSelect('to_usuario.role', 'roles', 'roles.id = :roleId', {
-            roleId: idRole,
-          })
-          .innerJoinAndSelect('roles.menuToRole', 'to_role', 'roles.id = :roleId')
-          .innerJoinAndSelect('to_role.menu', 'menus', 'menus.id = to_role.menuId')
-          .innerJoinAndSelect(
-            'menus.itemMenu',
-            'to_menu',
-            'menus.id = to_menu.menuId',
-          )
-          .innerJoinAndSelect(
-            'to_menu.itemMenu',
-            'items',
-            'items.id = to_menu.itemMenuId',
-          )
-          .where('user.id= :idUsuario', { idUsuario: usuario.id })
-          .getOne();
-    const resultMap = roleToUsuario
-                      .map((toUsuario) => toUsuario.role.menuToRole
-                      .map(toRole=> toRole.menu.itemMenu
-                      .map(toMenu=>toMenu.itemMenu)));
-    for(const res of resultMap){
-      for(const res2 of res){
-        for(const item of res2){
-          if(items.includes(item.linkMenu)) return item;
+      .innerJoinAndSelect(
+        'user.roleToUsuario',
+        'to_usuario',
+        'to_usuario."usuarioId" = user.id',
+      )
+      .innerJoinAndSelect('to_usuario.role', 'roles', 'roles.id = :roleId', {
+        roleId: idRole,
+      })
+      .innerJoinAndSelect('roles.menuToRole', 'to_role', 'roles.id = :roleId')
+      .innerJoinAndSelect('to_role.menu', 'menus', 'menus.id = to_role.menuId')
+      .innerJoinAndSelect(
+        'menus.itemMenu',
+        'to_menu',
+        'menus.id = to_menu.menuId',
+      )
+      .innerJoinAndSelect(
+        'to_menu.itemMenu',
+        'items',
+        'items.id = to_menu.itemMenuId',
+      )
+      .where('user.id= :idUsuario', { idUsuario: usuario.id })
+      .getOne();
+    const resultMap = roleToUsuario.map((toUsuario) =>
+      toUsuario.role.menuToRole.map((toRole) =>
+        toRole.menu.itemMenu.map((toMenu) => toMenu.itemMenu),
+      ),
+    );
+    for (const res of resultMap) {
+      for (const res2 of res) {
+        for (const item of res2) {
+          if (items.includes(item.linkMenu)) return item;
         }
       }
     }
     return null;
   }
   //TODO: UPDATE USUARIO DEBE SER PARA EL PERFIL DE USUARIO
-  async updateProfile(
-    id: number,
-    updatePerfilUsuarioDto: UpdatePerfilUsuarioDto,
-  ) {
-    const usuario = await this.usuarioRepository.findOne({
-      where: { id },
-      relations: { perfil: true },
+  async updateProfile(id: number, updatePerfilDto: UpdatePerfilDto) {
+    const { estado, usuarioForm, afiliadoForm, ...dataPerfilUpdate } =
+      updatePerfilDto;
+    const perfilUpdate = await this.perfilRepository.preload({
+      id,
+      ...dataPerfilUpdate,
     });
-    if (!usuario)
-      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
 
-    const perfil = await this.perfilUsuarioRepository.preload({
-      id: usuario.perfil.id,
-      ...updatePerfilUsuarioDto,
-    });
+    if (!perfilUpdate)
+      throw new NotFoundException(`Perfil con id ${id} no encontrado`);
+
     try {
-      await this.perfilUsuarioRepository.save(perfil);
+      await this.perfilRepository.save(perfilUpdate);
       return {
         OK: true,
         message: 'Perfil actualizado',
-        perfil,
+        perfilUpdate,
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
@@ -438,27 +498,117 @@ export class UsuariosService {
       await queryRunner.release();
     }
   }
-
-  async updateStatus(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-    const { estado } = updateUsuarioDto;
-    const usuario = await this.usuarioRepository.preload({ id, estado });
-    if (!usuario)
-      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
-
+  async updateAfiliado(idPerfil: number, updateAfiliadoDto: UpdateAfiliadoDto) {
+    const perfil = await this.perfilRepository.findOne({
+      where: { id: idPerfil },
+      relations: { afiliado: true },
+    });
+    if (!perfil)
+      throw new BadRequestException(`Perfil width id: ${idPerfil} not found`);
+    if (!perfil.afiliado)
+      throw new BadRequestException(`El perfil no tiene asignado un afiliado`);
+    const { estado, barrio, latitud, longitud, nroVivienda, ...dataAfiliado } =
+      updateAfiliadoDto;
+    const afiliado = await this.afiliadoRepository.preload({
+      id: perfil.afiliado.id,
+      ubicacion: { barrio, latitud, longitud, numeroVivienda: nroVivienda },
+    });
     try {
-      await this.usuarioRepository.save(usuario);
+      await this.afiliadoRepository.save(afiliado);
       return {
         OK: true,
-        message: `Usuario ${usuario.estado ? 'habilitado' : 'inhabilitado'}`,
-        data: await this.findOnePlaneUsuario(usuario.id),
+        message: 'Datos de afiliado actualizado',
+        data: perfil,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async updateUsuario(idPerfil: number, updateUsuarioDto: UpdateUsuarioDto) {
+    const perfil = await this.perfilRepository.findOne({
+      where: { id: idPerfil },
+      relations: { usuario: true },
+    });
+    if (!perfil)
+      throw new BadRequestException(`Perfil width id: ${idPerfil} not found`);
+    if (!perfil.usuario)
+      throw new BadRequestException(`El perfil no tiene asignado un usuario`);
+    const { estado, roles, ...dataUsuario } = updateUsuarioDto;
+    const usuario = await this.usuarioRepository.preload({
+      id: perfil.usuario.id,
+      ...dataUsuario,
+    });
+    if (dataUsuario.correo) usuario.correoVerify = false;
+    try {
+      await this.usuarioRepository.save(usuario);
+
+      return {
+        OK: true,
+        message: 'Datos de usuario actualizado',
+        data: perfil,
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
     }
   }
 
+  async updateStatus(id: number, updatePerfilDto: UpdatePerfilDto) {
+    const { estado } = updatePerfilDto;
+    const perfil = await this.perfilRepository.preload({ id, estado });
+    if (!perfil)
+      throw new NotFoundException(`perfil con id ${id} no encontrado`);
+
+    try {
+      await this.usuarioRepository.save(perfil);
+      return {
+        OK: true,
+        message: `estado de perfil actualizado'}`,
+        data: perfil,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async updateUsuarioStatus(id: number, updateUsuarioDto: UpdateUsuarioDto) {
+    const perfil = await this.perfilRepository.findOne({where:{id},relations:{usuario:true}});
+    if (!perfil)
+    throw new NotFoundException(`perfil con id ${id} no encontrado`);
+    if(!perfil.usuario) throw new BadRequestException(`El perfil ${id} no tiene asignado un usuario`);
+    
+    const { estado } = updateUsuarioDto;
+    const usuarioPreload = await this.usuarioRepository.preload({id:perfil.usuario.id,estado});
+    try {
+      await this.usuarioRepository.save(usuarioPreload);
+      return {
+        OK: true,
+        message: `estado de usuario actualizado'}`,
+        data: perfil,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async updateAfiliadoStatus(id: number, updateAfiliadoDto: UpdateAfiliadoDto) {
+    const perfil = await this.perfilRepository.findOne({where:{id},relations:{afiliado:true}});
+    if (!perfil)
+    throw new NotFoundException(`perfil con id ${id} no encontrado`);
+    if(!perfil.usuario) throw new BadRequestException(`El perfil ${id} no tiene asignado una afiliacion`);
+    
+    const { estado } = updateAfiliadoDto;
+    const perfilPreload = await this.usuarioRepository.preload({id:perfil.afiliado.id,estado});
+    try {
+      await this.afiliadoRepository.save(perfilPreload);
+      return {
+        OK: true,
+        message: `estado de afiliado actualizado'}`,
+        data: perfil,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
   async findUserByEmail(term: string) {
-    const perfil = await this.perfilUsuarioRepository.findOne({
+    const perfil = await this.usuarioRepository.findOne({
       where: {
         correo: term,
       },
@@ -469,16 +619,51 @@ export class UsuariosService {
       data: perfil,
     };
   }
-  async findUserByPostalCode(term: string) {
-    const perfil = await this.perfilUsuarioRepository.findOne({
-      where: {
-        codigoPostal: term,
-      },
+  private async createUsuarioPriv(usuarioForm: CreateUsuarioDto) {
+    const { roles, ...dataUsuario } = usuarioForm;
+    //CREATE USUARIO
+    const username = generateUsername();
+    const password = pdgerantor.generate({
+      numbers: true,
     });
-    return {
-      OK: true,
-      message: 'Perfil con codigo postal',
-      data: perfil,
-    };
+    const usuario = this.usuarioRepository.create({
+      password: bcrypt.hashSync(password, 10),
+      username,
+      ...dataUsuario,
+    });
+    try {
+      await this.usuarioRepository.save(usuario);
+      //ASIGNACION DE ROLES A UN USUARIO
+      usuario.roleToUsuario = await this.asignarRolesPriv(roles, usuario);
+      // console.log(usuario);
+      return { usuario, password };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+
+  private async asignarRolesPriv(roles: number[], usuario: Usuario) {
+    const rolesThem: RoleToUsuario[] = [];
+    const qb = this.dataSource.getRepository(Role).createQueryBuilder('roles');
+    roles.forEach(async (id) => {
+      const role = await qb.where('roles.id = :id', { id }).getOne();
+      if (!role)
+        throw new BadRequestException(
+          `El role con id: ${id} no fue encontrado`,
+        );
+      const roleToUsuario = this.roleToUsuarioRepository.create({
+        role,
+        usuario,
+      });
+      await this.roleToUsuarioRepository.save(roleToUsuario);
+      rolesThem.push(roleToUsuario);
+    });
+    console.log('array a insertar: ', rolesThem);
+    try {
+      console.log('insertados: ', roles);
+      return rolesThem;
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
   }
 }

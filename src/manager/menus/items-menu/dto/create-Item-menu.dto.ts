@@ -1,4 +1,5 @@
-import { IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 
 export class CreateItemMenuDto {
@@ -10,8 +11,8 @@ export class CreateItemMenuDto {
   @MinLength(2)
   linkMenu: string;
 
-  @IsInt()
-  @Min(0)
+  
+  @IsEnum(Estado)
   @IsOptional()
-  estado?: number;
+  estado?: Estado;
 }

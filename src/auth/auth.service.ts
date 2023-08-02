@@ -27,12 +27,12 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
   async loginUser(login: LoginUserDto) {
-    const { password, userName } = login;
+    const { password, username } = login;
 
     const usuario = await this.usuarioRepository.findOne({
-      where: { userName },
+      where: { username },
       select: {
-        userName: true,
+        username: true,
         password: true,
         id: true,
       },
@@ -46,7 +46,7 @@ export class AuthService {
       throw new UnauthorizedException(`Credentials are not valid`);
     try {
       //TODO: RESPUESTA DE ACUERDO A LO NECESITADO
-      const { password, afiliado, estado, roleToUsuario, ...data } = usuario;
+      const { password, perfil, estado, roleToUsuario, ...data } = usuario;
       // console.log(usuario);
       return {
         OK: true,
@@ -58,7 +58,7 @@ export class AuthService {
             return { nombre, id };
           }),
         },
-        token: this.getJwtToken({ id: usuario.id, userName: usuario.userName }),
+        token: this.getJwtToken({ id: usuario.id, username: usuario.username }),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
@@ -71,7 +71,7 @@ export class AuthService {
         relations: { roleToUsuario: { role: true } },
       });
       if (!usuario) throw new BadRequestException(`Usuario incorrecto`);
-      const { roleToUsuario, afiliado, perfil, password, estado, ...data } =
+      const { roleToUsuario, perfil, password, estado, ...data } =
         usuario;
       return {
         OK: true,
@@ -83,7 +83,7 @@ export class AuthService {
             return { nombre, id };
           }),
         },
-        token: this.getJwtToken({ id: usuario.id, userName: usuario.userName }),
+        token: this.getJwtToken({ id: usuario.id, username:usuario.username }),
       };
     } catch (error) {
       console.log(error);

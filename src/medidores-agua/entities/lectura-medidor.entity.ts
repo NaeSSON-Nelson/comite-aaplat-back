@@ -1,9 +1,9 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { Medidor } from './medidor.entity';
-import { Estado } from 'src/interfaces/Entityes/entityes.res';
+import { ColumnsAlways } from 'src/common/inherints-db';
 
 @Entity('lecturas_medidor')
-export class LecturaMedidor {
+export class LecturaMedidor extends ColumnsAlways{
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -26,11 +26,6 @@ export class LecturaMedidor {
   })
   estadoMedidor?: string;
 
-  @Column({
-    type: 'integer',
-    default: Estado.ACTIVO,
-  })
-  estado: number;
 
   @CreateDateColumn({
     type: 'timestamp',

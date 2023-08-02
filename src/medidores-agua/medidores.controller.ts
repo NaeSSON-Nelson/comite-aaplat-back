@@ -28,14 +28,14 @@ import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
 
 @Controller('medidores')
 @Authentication()
-@Authorization()
-@AuthorizationResource()
+// @Authorization()
+// @AuthorizationResource()
 export class MedidoresController {
   constructor(private readonly medidoresService: MedidoresService) {}
 
   @Post()
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorRegister)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorRegister)
   create(@Body() createMedidoreDto: CreateMedidorDto) {
     return this.medidoresService.create(createMedidoreDto);
   }
@@ -49,15 +49,15 @@ export class MedidoresController {
   }
 
   @Get()
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorList)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorList)
   findAll() {
     return this.medidoresService.findAll();
   }
 
   @Get('afiliados')
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorList)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorList)
   findAllMedidoresWidthAfiliados(@Query() paginationDto: PaginationDto) {
     return this.medidoresService.findAllMedidoresWithAfiliados(paginationDto);
   }
@@ -65,36 +65,36 @@ export class MedidoresController {
   findAllLecturas() {
     return this.medidoresService.findAllLecturas();
   }
-  @Get('barrio')
-  findAllMedidoresbyBarrio(@Query() paginationDto: PaginationDto) {
-    return this.medidoresService.findMedidoresWithAfiliadoByBarrio(
-      paginationDto,
-    );
-  }
+  // @Get('barrio')
+  // findAllMedidoresbyBarrio(@Query() paginationDto: PaginationDto) {
+  //   return this.medidoresService.findMedidoresWithAfiliadoByBarrio(
+  //     paginationDto,
+  //   );
+  // }
   @Get('nro-medidor/:nro')
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorRegister)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorRegister)
   findMedidorByNro(@Param('nro') nro: string) {
     return this.medidoresService.findMedidorByNro(nro);
   }
 
   @Get(':id')
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorDetails)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorDetails)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.medidoresService.findOne(id);
   }
 
   @Get('afiliado/:id')
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorDetails)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorDetails)
   findAllMedidoresOfAfiliado(@Param('id', ParseIntPipe) id: number) {
     return this.medidoresService.findAllMedidorOneAfiliado(id);
   }
 
   @Patch(':id')
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorUpdate)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorUpdate)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMedidoreDto: UpdateMedidorDto,
@@ -103,8 +103,8 @@ export class MedidoresController {
   }
 
   @Patch('status/:id')
-  @MenusProtected(ValidMenu.medidores)
-  @ItemMenuProtected(ValidItemMenu.medidorUpdateStatus)
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorUpdateStatus)
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMedidoreDto: UpdateMedidorDto,

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsDate,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -13,17 +14,15 @@ import {
   MinLength,
 } from 'class-validator';
 import { patternDateFormat } from 'src/interfaces/validators';
-import { Afiliado } from '../../auth/modules/afiliados/entities/afiliado.entity';
-import { Barrio } from 'src/interfaces/enum/Entities.enum';
+import { Afiliado } from '../../auth/modules/usuarios/entities/afiliado.entity';
+import { Barrio, Estado } from 'src/interfaces/enum/enum-entityes';
 
 export class CreateMedidorDto {
   @IsString()
   @MinLength(4)
   nroMedidor: string;
 
-  @Matches(patternDateFormat, {
-    message: 'El patron de feches es: dd/mm/yyyy',
-  })
+  @IsDate()
   @IsNotEmpty()
   fechaInstalacion: Date;
 
@@ -35,10 +34,9 @@ export class CreateMedidorDto {
   @Min(0)
   lecturaInicial: number;
 
-  @IsInt()
-  @Min(0)
+  @IsEnum(Estado)
   @IsOptional()
-  estado?: number;
+  estado?: Estado;
 
   @IsString()
   @MinLength(1)

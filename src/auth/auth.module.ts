@@ -10,31 +10,27 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { CommonModule } from '../common/common.module';
 import { JwtStrategy } from './strategies/jwt.strategies';
-import { PerfilUsuario, Usuario } from './modules/usuarios/entities';
-import { Afiliado } from './modules/afiliados/entities/afiliado.entity';
-import { AfiliadosController } from './modules/afiliados/afiliados.controller';
-import { AfiliadosService } from './modules/afiliados/afiliados.service';
+import { Afiliado } from './modules/usuarios/entities/afiliado.entity';
 import { UsuariosController } from './modules/usuarios/usuarios.controller';
 import { UsuariosService } from './modules/usuarios/usuarios.service';
 import { RolesToUsuarioModule } from './modules/usuarios/roles-to-usuario/roles-to-usuario.module';
+import { Perfil, Usuario } from './modules/usuarios/entities';
 
 @Module({
   controllers: [
     AuthController,
     UsuariosController,
-    AfiliadosController,
   ],
   providers: [
     AuthService,
     UsuariosService,
-    AfiliadosService,
     JwtStrategy,
   ],
   imports: [
     TypeOrmModule.forFeature([
       Usuario,
       Afiliado,
-      PerfilUsuario,
+      Perfil,
     ]),
     ConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
@@ -61,7 +57,6 @@ import { RolesToUsuarioModule } from './modules/usuarios/roles-to-usuario/roles-
     PassportModule, 
     JwtModule,
     AuthService,
-    AfiliadosService,
     UsuariosService,
   ],
 })

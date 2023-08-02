@@ -1,29 +1,17 @@
-import { IsArray, IsEmail, IsInt, IsNotEmpty, IsNotEmptyObject, IsNumber, IsObject, IsOptional, IsString, Min, MinLength } from "class-validator";
-
-import { Type } from "class-transformer";
-import { Afiliado } from "../../afiliados/entities/afiliado.entity";
+import { IsArray, IsEmail, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 export class CreateUsuarioDto {
-    
-    @IsObject()
-    @IsNotEmptyObject({})
-    @Type(()=>Afiliado)
-    afiliado:Afiliado;
-    
-    @IsArray()
-    @IsInt({each:true})
-    roles:number[];
+  @IsArray()
+  @IsInt({ each: true })
+  roles: number[];
 
-    // @IsString()
-    // @MinLength(5)
-    // @IsNotEmpty()
-    // userName:string;
-    // @IsString()
-    // @MinLength(5)
-    // @IsNotEmpty()
-    // password:string;
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    estado?:number;
+  @IsString()
+  @IsEmail()
+  @IsOptional()
+  correo?: string;
+
+  @IsEnum(Estado)
+  @IsOptional()
+  estado?: Estado;
 }

@@ -1,12 +1,12 @@
-import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { MenuToRole } from '../../../roles/menu-to-role/entities/menuToRole.entity';
 import { ItemToMenu } from "../../items-to-menu/entities/item-to-menu.entity";
+import { ColumnsAlways } from "src/common/inherints-db";
 
 @Entity({
     name:'menus'
 })
-export class Menu {
+export class Menu extends ColumnsAlways{
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -26,13 +26,6 @@ export class Menu {
     })
     linkMenu:string;
 
-    @Column({
-        type:'integer',
-        nullable:false,
-        
-        default:Estado.ACTIVO
-    })
-    estado:number;
 
     @OneToMany(()=>MenuToRole,(menuToRole)=>menuToRole.menu)
     menu:MenuToRole[];

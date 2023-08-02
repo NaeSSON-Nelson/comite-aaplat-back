@@ -1,12 +1,12 @@
-import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { MenuToRole } from "../../menu-to-role/entities/menuToRole.entity";
 import { RoleToUsuario } from "src/auth/modules/usuarios/roles-to-usuario/entities/role-to-usuario.entity";
+import { ColumnsAlways } from "src/common/inherints-db";
 
 @Entity({
     name:'Rol_usuario'
 })
-export class Role {
+export class Role extends ColumnsAlways{
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -17,13 +17,6 @@ export class Role {
         unique:true
     })
     nombre:string;
-    
-    @Column({
-        type:'integer',
-        nullable:false,
-        default:Estado.ACTIVO
-    })
-    estado:number;
 
     @OneToMany(()=>MenuToRole,menuToRole=>menuToRole.role)
     menuToRole:MenuToRole[];

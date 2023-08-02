@@ -1,4 +1,5 @@
 import {
+  IsEnum,
   IsInt,
   IsNotEmptyObject,
   IsObject,
@@ -9,6 +10,7 @@ import {
 } from 'class-validator';
 import { Medidor } from '../entities/medidor.entity';
 import { Type } from 'class-transformer';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 export class CreateLecturaMedidorDto {
   @IsInt()
@@ -20,10 +22,11 @@ export class CreateLecturaMedidorDto {
   @IsOptional()
   estadoMedidor?: string;
   
-  @IsInt()
-  @IsOptional()
-  estado?: number;
   
+  @IsEnum(Estado)
+  @IsOptional()
+  estado?: Estado;
+
   @IsObject()
   @IsNotEmptyObject({})
   @Type(() => Medidor)

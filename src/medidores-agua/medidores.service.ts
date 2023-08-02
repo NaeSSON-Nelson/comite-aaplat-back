@@ -12,21 +12,21 @@ import { CommonService } from '../common/common.service';
 import { CreateLecturaMedidorDto } from './dto/create-lectura-medidor.dto';
 import { LecturaMedidor } from './entities/lectura-medidor.entity';
 import { RegistrarLecturasDto } from './dto/registrar-lecturas.dto';
-import { Afiliado } from '../auth/modules/afiliados/entities/afiliado.entity';
-import { AfiliadosService } from '../auth/modules/afiliados/afiliados.service';
+import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { UsuariosService } from 'src/auth/modules/usuarios/usuarios.service';
+import { Perfil } from 'src/auth/modules/usuarios/entities';
 
 @Injectable()
 export class MedidoresService {
   constructor(
     @InjectRepository(Medidor)
     private readonly medidorRepository: Repository<Medidor>,
-    @InjectRepository(Afiliado)
-    private readonly AfiliadoRepository: Repository<Afiliado>,
+    @InjectRepository(Perfil)
+    private readonly perfilRepository: Repository<Perfil>,
     @InjectRepository(LecturaMedidor)
     private readonly lecturasRepository: Repository<LecturaMedidor>,
     private readonly commonService: CommonService,
-    private readonly afiliadoService: AfiliadosService,
     private readonly dataSource: DataSource,
   ) {}
   async create(createMedidoreDto: CreateMedidorDto) {
@@ -72,17 +72,22 @@ export class MedidoresService {
 
   async findAllMedidoresWithAfiliados(paginationDto: PaginationDto) {
     const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
-    const {"0":data,"1":size} = await this.AfiliadoRepository.findAndCount({
-      relations: { medidores: true },
+    const {"0":data,"1":size} = await this.perfilRepository.findAndCount({
+      relations: { afiliado:{medidores:true} },
       where: [
         { nombrePrimero: Like(`%${q}%`) },
         { nombreSegundo: Like(`%${q}%`) },
         { apellidoPrimero: Like(`%${q}%`) },
         { apellidoSegundo: Like(`%${q}%`) },
-        { barrio: Like(`%${q}%`) },
-        // {barrio:Barrio.MendezFortaleza},
         { CI: Like(`%${q}%`) },
-        { medidores: [{ nroMedidor: Like(`%${q}%`) }] },
+        { 
+          afiliado:[
+            {medidores:[
+              {nroMedidor:Like(`%${q}%`)},
+            ]}
+          ]
+        // {barrio:Barrio.MendezFortaleza},
+        },
       ],
     });
     return {
@@ -97,60 +102,61 @@ export class MedidoresService {
       },
     };
   }
-  async findMedidoresWithAfiliadoByBarrio(paginationDto: PaginationDto) {
-    let {
-      q = '',
-      order = 'ASC',
-      offset = 0,
-      limit = 50,
-      barrio = 'mendez-fortaleza',
-    } = paginationDto;
+  //TODO: BUSCAR AFILIADOS CON MEDIDORES POR BARRIO
+  // async findMedidoresWithAfiliadoByBarrio(paginationDto: PaginationDto) {
+  //   let {
+  //     q = '',
+  //     order = 'ASC',
+  //     offset = 0,
+  //     limit = 50,
+  //     barrio = 'mendez-fortaleza',
+  //   } = paginationDto;
 
-    if (barrio) barrio = barrio.replace('-', ' ');
+  //   if (barrio) barrio = barrio.replace('-', ' ');
 
-    // const medidores = await this.medidorRepository.find({
-    //   relations:{afiliado:true},
-    //   where:{
-    //     ubicacionBarrio:barrio
-    //   },
-    //   skip:offset,
-    //   take:limit,
-    //   order:{
-    //     id:order
-    //   }
-    // });
-    const queryBuilder =
-      this.AfiliadoRepository.createQueryBuilder('afiliados');
+  //   // const medidores = await this.medidorRepository.find({
+  //   //   relations:{afiliado:true},
+  //   //   where:{
+  //   //     ubicacionBarrio:barrio
+  //   //   },
+  //   //   skip:offset,
+  //   //   take:limit,
+  //   //   order:{
+  //   //     id:order
+  //   //   }
+  //   // });
+  //   const queryBuilder =
+  //     this.AfiliadoRepository.createQueryBuilder('afiliados');
 
-    const query = await queryBuilder
-      .innerJoinAndSelect(
-        'afiliados.medidores',
-        'medidor',
-        'medidor.ubicacionBarrio = :barrio and medidor.estado = 1',
-        { barrio },
-      )
-      .skip(offset)
-      .limit(limit)
-      .where('afiliados.estado = 1')
-      .getMany();
-    return {
-      OK: true,
-      message: 'listado de medidores por barrio',
-      data: query,
-    };
-  }
-  async findAllMedidorOneAfiliado(idAfiliado: number) {
+  //   const query = await queryBuilder
+  //     .innerJoinAndSelect(
+  //       'afiliados.medidores',
+  //       'medidor',
+  //       'medidor.ubicacionBarrio = :barrio and medidor.estado = 1',
+  //       { barrio },
+  //     )
+  //     .skip(offset)
+  //     .limit(limit)
+  //     .where('afiliados.estado = 1')
+  //     .getMany();
+  //   return {
+  //     OK: true,
+  //     message: 'listado de medidores por barrio',
+  //     data: query,
+  //   };
+  // }
+  async findAllMedidorOneAfiliado(id: number) {
     // const { data: afiliado } = await this.afiliadoService.findOne(idAfiliado);
     // const medidoresOfAfiliado = await this.medidorRepository.find({
     //   relations: { afiliado: true },
     //   where: { afiliado: { id: afiliado.id } },
     // });
-    const afiliadoWithMedidores = await this.AfiliadoRepository.findOne({
-      relations: { medidores: { lecturas: true } },
-      where: { id: idAfiliado },
+    const afiliadoWithMedidores = await this.perfilRepository.findOne({
+      relations: { afiliado:{medidores: { lecturas: true }} },
+      where: { id },
     });
     if (!afiliadoWithMedidores)
-      throw new NotFoundException(`Afiliado with Id: ${idAfiliado} not found`);
+      throw new NotFoundException(`Perfil de afiliado with Id: ${id} not found`);
     return {
       OK: true,
       message: 'lista de medidores de afiliado',
@@ -159,13 +165,15 @@ export class MedidoresService {
   }
   private async findAfiliadoByMedidores(idMedidor:number){
 
-    return await this.AfiliadoRepository.findOne({
+    return await this.perfilRepository.findOne({
       where:{
-        medidores:[
-          {id:idMedidor}
-        ]
+        afiliado:{
+          medidores:[
+            {id:idMedidor}
+          ]
+        }
       },
-      relations:{medidores:true},
+      relations:{afiliado:{medidores:true}},
 
     })
     
@@ -202,24 +210,20 @@ export class MedidoresService {
   }
 
   async updateStatus(id: number, updateMedidoreDto: UpdateMedidorDto) {
-    const { estado = 0 } = updateMedidoreDto;
+    const { estado } = updateMedidoreDto;
     const medidor = await this.medidorRepository.preload({
       id,
       estado,
     });
     if (!medidor)
       throw new NotFoundException(`Medidor with id ${id} not found`);
-    try {
+      if(estado==='INACTIVO')
+      medidor.isActive=false;else medidor.isActive=true;
+      try {
       await this.medidorRepository.save(medidor);
       return {
         OK: true,
-        message: `Medidor status: ${
-          estado === 1
-            ? 'habilitado'
-            : estado === 0
-            ? 'inhabilitado'
-            : `estado:${estado}`
-        }`,
+        message: `estado del medidor cambiado`,
         data: await this.findAfiliadoByMedidores(medidor.id),
       };
     } catch (error) {

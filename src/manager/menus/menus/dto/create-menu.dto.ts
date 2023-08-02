@@ -12,10 +12,12 @@ import {
   IsNotEmptyObject,
   IsDefined,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
 import { MenuItemsC } from 'src/interfaces/menuItems-c.interface';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 export class CreateMenuDto {
   @IsString()
@@ -26,10 +28,10 @@ export class CreateMenuDto {
   @MinLength(2)
   linkMenu: string;
 
-  @IsInt()
-  @Min(0)
+ 
+  @IsEnum(Estado)
   @IsOptional()
-  estado?: number;
+  estado?: Estado;
 
   @IsArray()
   @IsInt({ each: true })

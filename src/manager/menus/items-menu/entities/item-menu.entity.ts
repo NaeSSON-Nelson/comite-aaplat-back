@@ -1,9 +1,9 @@
-import { Estado } from "src/interfaces/Entityes/entityes.res";
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { ItemToMenu } from "../../items-to-menu/entities/item-to-menu.entity";
+import { ColumnsAlways } from "src/common/inherints-db";
 
 @Entity('menu-items')
-export class ItemMenu{
+export class ItemMenu extends ColumnsAlways{
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -23,13 +23,6 @@ export class ItemMenu{
     })
     linkMenu:string;
 
-    @Column({
-        type:'integer',
-        nullable:false,
-        
-        default:Estado.ACTIVO
-    })
-    estado:number;
 
     @OneToMany(()=>ItemToMenu,(itemToMenu)=>itemToMenu.itemMenu)
     itemToMenu?:ItemToMenu[];

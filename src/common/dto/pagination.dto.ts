@@ -9,10 +9,10 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { Barrio } from 'src/interfaces/enum/Entities.enum';
+import { Barrio } from 'src/interfaces/enum/enum-entityes';
 import { patternTextLine } from 'src/interfaces/validators';
 
-export class PaginationDto {
+export  abstract class PaginationDto {
   @IsNumber()
   @Type(() => Number)
   @IsOptional()
@@ -37,14 +37,4 @@ export class PaginationDto {
   })
   q?: string; //PALABRAS DE BUSQUEDA
 
-  @IsIn([
-    'mendez-fortaleza',
-    '20-de-marzo',
-    'san-antonio',
-    'verde-olivo',
-    'primavera',
-  ])
-  @IsString()
-  @IsOptional()
-  barrio?: string;
 }

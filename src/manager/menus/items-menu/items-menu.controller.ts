@@ -10,39 +10,39 @@ import { ItemMenuProtected, MenusProtected } from '../../../auth/decorators/vali
 
 @Controller('items-menu')
 @Authentication()
-@Authorization()
-@AuthorizationResource()
+// @Authorization()
+// @AuthorizationResource()
 export class ItemsMenuController {
 
   constructor(private readonly itemsMenuService: ItemsMenuService) {}
   
   @Post()
-  @MenusProtected(ValidMenu.itemsMenu)
-  @ItemMenuProtected(ValidItemMenu.itemMenuRegister)
+  // @MenusProtected(ValidMenu.itemsMenu)
+  // @ItemMenuProtected(ValidItemMenu.itemMenuRegister)
   createItemMenu(@Body() createItemMenuDto: CreateItemMenuDto) {
     return this.itemsMenuService.create(createItemMenuDto);
   }
   @Get()
-  @MenusProtected(ValidMenu.itemsMenu)
-  @ItemMenuProtected(ValidItemMenu.itemMenuList)
+  // @MenusProtected(ValidMenu.itemsMenu)
+  // @ItemMenuProtected(ValidItemMenu.itemMenuList)
   findAll(@Query() paginationDto:PaginationDto) {
     return this.itemsMenuService.findAll(paginationDto);
   }
   @Get('link/:term')
-  @MenusProtected(ValidMenu.itemsMenu)
-  @ItemMenuProtected(ValidItemMenu.itemMenuRegister)
+  // @MenusProtected(ValidMenu.itemsMenu)
+  // @ItemMenuProtected(ValidItemMenu.itemMenuRegister)
   findOneByLink(@Param('term') term:string) {
     return this.itemsMenuService.findOneByLink(term);
   }
   @Get(':id')
-  @MenusProtected(ValidMenu.itemsMenu)
-  @ItemMenuProtected(ValidItemMenu.itemMenuDetails)
+  // @MenusProtected(ValidMenu.itemsMenu)
+  // @ItemMenuProtected(ValidItemMenu.itemMenuDetails)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.itemsMenuService.findOne(id);
   }
   @Patch(':id')
-  @MenusProtected(ValidMenu.itemsMenu)
-  @ItemMenuProtected(ValidItemMenu.itemMenuUpdate)
+  // @MenusProtected(ValidMenu.itemsMenu)
+  // @ItemMenuProtected(ValidItemMenu.itemMenuUpdate)
   updateItemMenu(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateItemMenuDto: UpdateItemMenuDto,
@@ -50,8 +50,8 @@ export class ItemsMenuController {
     return this.itemsMenuService.update(id, updateItemMenuDto);
   }
   @Patch('status/:id')
-  @MenusProtected(ValidMenu.itemsMenu)
-  @ItemMenuProtected(ValidItemMenu.itemMenuStatus)
+  // @MenusProtected(ValidMenu.itemsMenu)
+  // @ItemMenuProtected(ValidItemMenu.itemMenuStatus)
   updateItemMenuStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateItemMenuDto: UpdateItemMenuDto,

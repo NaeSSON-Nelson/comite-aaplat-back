@@ -1,48 +1,60 @@
-import { Estado } from 'src/interfaces/Entityes/entityes.res';
 import * as bcrypt from 'bcrypt';
+import { Ubicacion } from 'src/common/inherints-db';
+import { Barrio, Estado, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 
-class AfiliadoSeed {
+class PerfilSeed {
   nombrePrimero: string;
   nombreSegundo?: string;
   apellidoPrimero: string;
   apellidoSegundo?: string;
   CI: string;
   genero: string;
+  direccion?: string;
+  accessAcount?: boolean;
   profesion?: string;
   fechaNacimiento: Date;
-  estado: number;
+  tipoPerfil: TipoPerfil[];
+  estado: Estado;
+}
+class AfiliadoSeed {
+  estado: Estado;
+  ubicacion: Ubicacion;
+  perfil?:PerfilSeed
+}
+class UsuarioSeed {
+  username: string;
+  password: string;
+  correo?: string;
+  estado?: Estado;
+  perfil?: PerfilSeed;
 }
 class MenuSeed {
   nombre: string;
   linkMenu?: string;
-  estado?: number;
+  estado?: Estado;
   itemsMenu?: MenuItemSeed[];
 }
 class MenuItemSeed {
   nombre: string;
   linkMenu?: string;
-  estado?: number;
+  estado?: Estado;
 }
 class RoleSeed {
   nombre: string;
-  estado?: number;
+  estado?: Estado;
   menus?: MenuSeed[];
 }
-class UsuarioSeed {
-  userName: string;
-  password: string;
-  estado?: number;
-  afiliado?: AfiliadoSeed;
-}
+
 class MedidorSeed {
   nroMedidor: string;
   fechaInstalacion: Date;
   lecturaInicial: number;
-  estado?: number;
+  estado?: Estado;
   marca: string;
   afiliado?: AfiliadoSeed;
 }
 class SeedData {
+  perfiles: PerfilSeed[];
   afiliados: AfiliadoSeed[];
   menus: MenuSeed[];
   itemsMenu: MenuItemSeed[];
@@ -60,7 +72,7 @@ const formatDate = (date) =>
 const padTo2Digits = (num) => num.toString().padStart(2, '0');
 
 export const initialData: SeedData = {
-  afiliados: [
+  perfiles: [
     {
       nombrePrimero: 'Juan',
       nombreSegundo: 'Robles',
@@ -71,6 +83,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1995, 2, 24),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.administrativo],
     },
     {
       nombrePrimero: 'Arturo',
@@ -81,6 +94,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1987, 8, 10),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Franz',
@@ -91,6 +105,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1990, 6, 10),
       genero: 'masculino',
       profesion: 'Ingenieria Electrica',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Gwato',
@@ -100,6 +115,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1998, 7, 24),
       genero: 'masculino',
       profesion: 'Contaduria',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Luis',
@@ -111,6 +127,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1995, 1, 18),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Rosa',
@@ -121,6 +138,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1974, 8, 19),
       genero: 'femenino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Victor',
@@ -131,6 +149,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 10, 17),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Ricardo',
@@ -141,6 +160,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1990, 4, 5),
       genero: 'masculino',
       profesion: 'Contador',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Ricardo',
@@ -151,6 +171,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 8, 8),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Ana',
@@ -162,6 +183,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1989, 4, 24),
       genero: 'femenino',
       profesion: 'Doctorado',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Kira',
@@ -173,6 +195,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1987, 12, 17),
       genero: 'masculino',
       profesion: 'Ingenieria Industrial',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Marina',
@@ -182,6 +205,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1985, 5, 10),
       genero: 'femenino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Reyna',
@@ -193,6 +217,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1995, 5, 18),
       genero: 'femenino',
       profesion: 'Modelo',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Juan',
@@ -203,6 +228,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1997, 8, 17),
       genero: 'masculino',
       profesion: 'Ingenieria Informatica',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Hector',
@@ -213,6 +239,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 1, 24),
       genero: 'masculino',
       profesion: 'Doctorado',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Arturo',
@@ -224,6 +251,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 5, 18),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Jimena',
@@ -234,6 +262,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 10, 10),
       genero: 'femenino',
       profesion: 'dentista',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Noemi',
@@ -245,6 +274,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1990, 8, 24),
       genero: 'femenino',
       profesion: 'Ingenieria',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Samuel',
@@ -255,6 +285,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1975, 5, 1),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
     },
     {
       nombrePrimero: 'Robin',
@@ -264,6 +295,88 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1997, 5, 2),
       genero: 'masculino',
       profesion: 'comerciante',
+      tipoPerfil: [TipoPerfil.afiliado],
+    },
+  ],
+  afiliados: [
+    {
+      ubicacion: { 
+        barrio: Barrio._20DeMarzo, 
+        numeroVivienda: '270588'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.mendezFortaleza, 
+        numeroVivienda: '55804'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '99804'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.sanAntonio, 
+        numeroVivienda: '270588'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.verdeOlivo, 
+        numeroVivienda: '270588'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '270588'
+      },
+      estado: Estado.ACTIVO,
+    },
+  ],
+  usuarios: [
+    {
+      username: 'admin',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'root',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'administrativo',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'contador',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'user',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'afiliado',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'afiliado2',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
     },
   ],
   itemsMenu: [
@@ -478,33 +591,6 @@ export const initialData: SeedData = {
     },
     {
       nombre: 'user',
-      estado: Estado.ACTIVO,
-    },
-  ],
-  usuarios: [
-    {
-      userName: 'admin',
-      password: bcrypt.hashSync('123456', 10),
-      estado: Estado.ACTIVO,
-    },
-    {
-      userName: 'root',
-      password: bcrypt.hashSync('123456', 10),
-      estado: Estado.ACTIVO,
-    },
-    {
-      userName: 'contador',
-      password: bcrypt.hashSync('123456', 10),
-      estado: Estado.ACTIVO,
-    },
-    {
-      userName: 'user',
-      password: bcrypt.hashSync('123456', 10),
-      estado: Estado.ACTIVO,
-    },
-    {
-      userName: 'afiliado',
-      password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
   ],

@@ -22,12 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy){
     }
     async validate(payload:JwtPayload):Promise<Usuario>{
         
-        const {id,userName} =payload; 
+        const {id,username} =payload; 
 
-        const usuario = await this.usuarioRepository.findOneBy({userName});
+        const usuario = await this.usuarioRepository.findOneBy({username});
         if(!usuario) throw new UnauthorizedException(`Token not valid`);
         //TODO: MEJORAR LOS ESTADOS DEL USUARIO
-        if(usuario.estado==0) throw new UnauthorizedException(`The usuario is block, please talk with admin server`);
+        if(usuario.isActive) throw new UnauthorizedException(`The usuario is block, please talk with admin server`);
         return usuario;
     }
 }

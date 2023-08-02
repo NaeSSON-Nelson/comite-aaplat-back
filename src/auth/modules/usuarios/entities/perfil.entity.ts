@@ -1,24 +1,20 @@
-import { Medidor } from '../../../../medidores-agua/entities/medidor.entity';
 import {
   BeforeInsert,
   BeforeUpdate,
   Column,
-  CreateDateColumn,
   Entity,
-  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
-import { Usuario } from '../../usuarios/entities';
-import { Barrio } from 'src/interfaces/enum/Entities.enum';
 
+import { ColumnsAlways } from 'src/common/inherints-db/column-always';
+import { TipoPerfil } from '../../../../interfaces/enum/enum-entityes';
+import { Usuario } from './usuario.entity';
+import { Afiliado } from './afiliado.entity';
 
-@Entity({
-  name: 'afiliados',
-})
-export class Afiliado {
-  @PrimaryGeneratedColumn('increment')
+@Entity()
+export class Perfil extends ColumnsAlways {
+  @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
@@ -58,6 +54,7 @@ export class Afiliado {
     type: 'varchar',
     length: 100,
     nullable: false,
+    unique:true,
   })
   CI: string;
 
@@ -73,9 +70,9 @@ export class Afiliado {
     name: 'profesion',
     type: 'varchar',
     length: 100,
-    nullable: true,
+    nullable: false,
   })
-  profesion?: string;
+  profesion: string;
 
   @Column({
     name: 'fecha_nacimiento',
@@ -85,43 +82,35 @@ export class Afiliado {
   fechaNacimiento: Date;
 
   @Column({
-    name: 'estado',
-    type: 'integer',
-    nullable: false,
-    
+    name: 'tipo_perfil',
+    type: 'enum',
+    array: true,
+    enum:TipoPerfil,
+    nullable:false,
   })
-  estado: number;
+  tipoPerfil: TipoPerfil[];
 
   @Column({
     type: 'varchar',
-    nullable: false,
-    default: Barrio.mendezFortaleza,
+    length: 100,
+    nullable: true,
   })
-  barrio: string;
+  direccion: string;
 
-  @CreateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP(6)',
-    select:false
+  @Column({
+    type: 'bool',
+    default: false,
   })
-  created_at: Date;
+  accessAcount: boolean;
 
-  @UpdateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP(6)',
-    onUpdate: 'CURRENT_TIMESTAMP(6)',
-    select:false
-  })
-  updated_at: Date;
+  @OneToOne(() => Usuario, (usuario) => usuario.perfil) // specify inverse side as a second parameter
+  usuario: Usuario
+  @OneToOne(() => Afiliado, (afiliado) => afiliado.perfil) // specify inverse side as a second parameter
+  afiliado: Afiliado
 
-  @OneToMany(() => Medidor, (medidor) => medidor.afiliado)
-  medidores: Medidor[];
-
-  @OneToOne(() => Usuario, (usuario) => usuario.afiliado)
-  usuario: Usuario;
-
+  
   @BeforeInsert()
-  CrearNuevoAfiliado() {
+  CreatePerfil() {
     this.nombrePrimero = this.nombrePrimero.toLocaleLowerCase().trim();
     if (this.nombreSegundo)
       this.nombreSegundo = this.nombreSegundo.toLocaleLowerCase().trim();
@@ -133,6 +122,6 @@ export class Afiliado {
   }
   @BeforeUpdate()
   actualizarAfiliado() {
-    this.CrearNuevoAfiliado();
+    this.CreatePerfil();
   }
 }

@@ -32,7 +32,7 @@ export class UserRoleGuard implements CanActivate {
     for(const {nombre} of roles){
       if(validRoles.includes(nombre)) return true;
     }
-    throw new ForbiddenException(`User ${usuario.userName} not has access`);
+    throw new ForbiddenException(`User ${usuario.username} not has access`);
   
   }
 }

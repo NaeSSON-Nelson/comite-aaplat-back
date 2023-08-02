@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -7,6 +8,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 export class CreateRoleDto {
   @IsString()
@@ -14,10 +16,9 @@ export class CreateRoleDto {
   @IsNotEmpty()
   nombre: string;
 
-  @IsInt()
-  @Min(0)
+  @IsEnum(Estado)
   @IsOptional()
-  estado?: number;
+  estado?: Estado;
 
   @IsArray()
   @IsInt({ each: true })

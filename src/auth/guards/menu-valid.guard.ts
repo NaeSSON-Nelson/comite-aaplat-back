@@ -39,9 +39,9 @@ export class MenuValidGuard implements CanActivate {
     }
     // console.log('tiene',menu);
     if(!menu)throw new ForbiddenException(
-      `El usuario ${usuario.userName} no tiene acceso a este menu`,
+      `El usuario ${usuario.username} no tiene acceso a este menu`,
       );
-    if(menu.estado===0) throw new ForbiddenException(
+    if(menu.isActive) throw new ForbiddenException(
       `El menu ${menu.nombre} no se encuentra disponible`,
     );
 

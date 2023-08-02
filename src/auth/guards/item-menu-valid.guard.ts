@@ -31,9 +31,9 @@ export class ItemMenuValidGuard implements CanActivate {
       if(item) continue;
     }
     if(!item) throw new ForbiddenException(
-      `El usuario ${usuario.userName} no tiene acceso a este recurso`,
+      `El usuario ${usuario.username} no tiene acceso a este recurso`,
       );
-    if(item.estado===0)throw new ForbiddenException(
+    if(item.isActive)throw new ForbiddenException(
       `El recurso no se encuentra actualmente disponible`,
       );
     return true;

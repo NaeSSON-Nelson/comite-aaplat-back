@@ -177,11 +177,13 @@ export class RolesService {
 
     const role = await this.roleRepository.preload({ id, estado });
     if (!role) throw new NotFoundException(`Rol con id ${id} no encontrado`);
+    if(estado==='INACTIVO')
+    role.isActive=false;else role.isActive=true;
     try {
       await this.roleRepository.save(role);
       return {
         OK: true,
-        message: role.estado === 1 ? 'Role habilitado' : 'Role deshabilitado',
+        message: 'estado del rol cambiado',
         data: await this.findOnePlaneRole(role.id),
       };
     } catch (error) {
