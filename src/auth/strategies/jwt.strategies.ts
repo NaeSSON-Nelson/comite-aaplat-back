@@ -24,10 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy){
         
         const {id,username} =payload; 
 
-        const usuario = await this.usuarioRepository.findOneBy({username});
+        const usuario = await this.usuarioRepository.findOne({where:{username},relations:{roleToUsuario:{role:{menuToRole:{menu:true}}}}});
         if(!usuario) throw new UnauthorizedException(`Token not valid`);
         //TODO: MEJORAR LOS ESTADOS DEL USUARIO
-        if(usuario.isActive) throw new UnauthorizedException(`The usuario is block, please talk with admin server`);
+        // console.log(usuario);
+        if(!usuario.isActive) throw new UnauthorizedException(`The usuario is block, please talk with admin server`);
         return usuario;
     }
 }

@@ -28,5 +28,5 @@ export abstract  class ColumnsAlways {
         enum:Estado,
         default:Estado.ACTIVO
       })
-      estado:Estado;
+      estado: Estado;
 }

@@ -31,20 +31,24 @@ export class MenuValidGuard implements CanActivate {
     // console.log(req);
     const usuario = req.user as Usuario;
     if (!usuario) throw new BadRequestException(`Usuario not found`);
-    const { roles } = await this.usuarioService.findOnePlaneUsuario(usuario.id);
+    const roles = usuario.roleToUsuario.map(toUsuario=>{
+      return toUsuario.role
+    })
     let menu:Menu;
-    for(const rol of roles){
-       menu = await this.usuarioService.findMenuByRole(validMenus,rol.id,usuario);
-      if(menu) continue;
-    }
-    // console.log('tiene',menu);
+    roles.forEach(role=>{
+     const menus=role.menuToRole.map(toRole=>toRole.menu);
+     for(const item of menus){
+       if(validMenus.includes(item.nombre)) {menu=item; continue;}
+     } if(menu) return;
+    })
+    // const menu:Menu = await this.usuarioService.findMenuByRole(validMenus,roles);
+    console.log('menu:',menu);
     if(!menu)throw new ForbiddenException(
       `El usuario ${usuario.username} no tiene acceso a este menu`,
-      );
-    if(menu.isActive) throw new ForbiddenException(
+    );
+    if(!menu.isActive) throw new ForbiddenException(
       `El menu ${menu.nombre} no se encuentra disponible`,
     );
-
     return true;
   }
 }

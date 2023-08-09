@@ -98,6 +98,12 @@ export class Perfil extends ColumnsAlways {
   direccion: string;
 
   @Column({
+    type:'text',
+    array:true,
+    default:[],
+  })
+  contactos:string[];
+  @Column({
     type: 'bool',
     default: false,
   })

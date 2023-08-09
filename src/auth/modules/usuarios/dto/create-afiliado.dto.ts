@@ -10,7 +10,7 @@ export class CreateAfiliadoDto {
 
   @IsString()
   @IsOptional()
-  nroVivienda?: string;
+  numeroVivienda?: string;
 
   @IsString()
   @IsOptional()

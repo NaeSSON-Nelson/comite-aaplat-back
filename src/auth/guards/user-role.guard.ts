@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { META_ROLES } from '../decorators/valid-protected.decorator';
 import { UsuariosService } from '../modules/usuarios/usuarios.service';
 import { Usuario } from '../modules/usuarios/entities';
+import { ValidRole } from 'src/interfaces/valid-auth.enum';
 
 @Injectable()
 export class UserRoleGuard implements CanActivate {
@@ -16,7 +17,7 @@ export class UserRoleGuard implements CanActivate {
     context: ExecutionContext,
   ): Promise<boolean> {
     const validRoles:string[] = this.reflector.get(META_ROLES,context.getHandler());
-    
+    // console.log(validRoles);
     if(!validRoles) return true;
     if(validRoles.length===0) return true;
 
@@ -27,10 +28,14 @@ export class UserRoleGuard implements CanActivate {
 
     // console.log(usuario);
     if(!usuario) throw new BadRequestException(`Usuario not found`);
-    const {roles}= await this.usuarioService.findOnePlaneUsuario(usuario.id);
+    // const {roles}= await this.usuarioService.findOnePlaneUsuario(usuario.id);
+    const roles = usuario.roleToUsuario.map(toUsuario=>{
+      return toUsuario.role.nombre
+    })
     // console.log(roles);
-    for(const {nombre} of roles){
-      if(validRoles.includes(nombre)) return true;
+    if(roles.includes(ValidRole.root)) {console.log('es usuario root');return true;}
+    for(const nombre of roles){
+      if(validRoles.includes(nombre) ) return true;
     }
     throw new ForbiddenException(`User ${usuario.username} not has access`);
   

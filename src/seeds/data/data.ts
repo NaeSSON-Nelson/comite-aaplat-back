@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Ubicacion } from 'src/common/inherints-db';
-import { Barrio, Estado, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 
 class PerfilSeed {
   nombrePrimero: string;
@@ -41,6 +41,7 @@ class MenuItemSeed {
 }
 class RoleSeed {
   nombre: string;
+  nivel:  Nivel;
   estado?: Estado;
   menus?: MenuSeed[];
 }
@@ -572,26 +573,32 @@ export const initialData: SeedData = {
     {
       nombre: 'root',
       estado: Estado.ACTIVO,
+      nivel:Nivel.root
     },
     {
       nombre: 'admin',
       estado: Estado.ACTIVO,
+      nivel:Nivel.administrativo,
     },
     {
       nombre: 'administrativo',
       estado: Estado.ACTIVO,
+      nivel:Nivel.administrativo,
     },
     {
       nombre: 'contador',
       estado: Estado.ACTIVO,
+      nivel:Nivel.contador,
     },
     {
       nombre: 'afiliado',
       estado: Estado.ACTIVO,
+      nivel:Nivel.afiliado,
     },
     {
       nombre: 'user',
       estado: Estado.ACTIVO,
+      nivel:Nivel.afiliado,
     },
   ],
   medidores: [

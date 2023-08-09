@@ -5,10 +5,10 @@ import { UsuariosService } from './usuarios.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { ItemMenuProtected, MenusProtected } from 'src/auth/decorators/valid-protected.decorator';
+import { ItemMenuProtected, MenusProtected, RoleProtected } from 'src/auth/decorators/valid-protected.decorator';
 import {Authentication,Authorization,AuthorizationResource} from '../../decorators'
 
-import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
+import { ValidItemMenu, ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 
 import { Usuario } from './entities';
 import { CreateAfiliadoDto, CreatePerfilDto, CreateUsuarioDto, UpdateAfiliadoDto, UpdatePerfilDto, UpdateUsuarioDto } from './dto';
@@ -16,9 +16,9 @@ import { SearchPerfil } from './querys/search-perfil';
 
 
 @Controller('perfiles')
-// @Authentication()
 // @Authorization()
 // @AuthorizationResource()
+@Authentication()
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
@@ -39,54 +39,45 @@ export class UsuariosController {
   }
 
   @Get()
-  // @MenusProtected(ValidMenu.usuarios)
+  @RoleProtected(ValidRole.admin,ValidRole.administrativo)
+  @MenusProtected(ValidMenu.perfiles)
   // @ItemMenuProtected(ValidItemMenu.usuarioList)
   findAll(@Query() paginationDto:SearchPerfil) {
     return this.usuariosService.findAll(paginationDto);
   }
-  @Get('user/:id')
+  @Get('usuario/:id')
   // @MenusProtected(ValidMenu.usuarios)
   // @ItemMenuProtected(ValidItemMenu.usuarioDetails)
-  findOneUser(@Param('id',ParseIntPipe) id: number) {
-    return this.usuariosService.findOneUserComplete(id);
+  findOnePerfilUser(@Param('id',ParseIntPipe) id: number) {
+    return this.usuariosService.findOnePerfilUsuario(id);
+  }
+  @Get('afiliado/:id')
+  // @MenusProtected(ValidMenu.usuarios)
+  // @ItemMenuProtected(ValidItemMenu.usuarioDetails)
+  findOnePerfilAfiliado(@Param('id',ParseIntPipe) id: number) {
+    return this.usuariosService.findOnePerfilAfiliado(id);
   }
 
-  @Get('email/:term')
+
+  @Get('usuario/email/:term')
   // @MenusProtected(ValidMenu.usuarios)
   // @ItemMenuProtected(ValidItemMenu.usuarioRegister)
   findOneUserByEmail(@Param('term') term: string) {
     return this.usuariosService.findUserByEmail(term);
   }
-  //TODO: BUSCAR POR CODIGO POSTAL
-  // @Get('code/:term')
-  // @MenusProtected(ValidMenu.usuarios)
-  // @ItemMenuProtected(ValidItemMenu.usuarioRegister)
-  // findOneUserByPostalCode(@Param('term') term: string) {
-  //   return this.usuariosService.findUserByPostalCode(term);
-  // }
   
   @Get(':id')
   // @MenusProtected(ValidMenu.usuarios)
   findOne(@Param('id',ParseIntPipe) id: number) {
     return this.usuariosService.findOne(id);
   }
-  @Get('roles/:id')
-  findOneAuth(@Param('id',ParseIntPipe) id: number,
-  @GetUser() user:Usuario,
-  ) {
-    return this.usuariosService.findOneUserRolesMenus(id,user);
-  }
-  @Patch('profile/:id')
-  // @MenusProtected(ValidMenu.usuarios)
-  // @ItemMenuProtected(ValidItemMenu.usuarioUpdateProfile)
-  updateProfile(@Param('id',ParseIntPipe) id: number, @Body() updatePerfilDto: UpdatePerfilDto) {
-    return this.usuariosService.updateProfile(id, updatePerfilDto);
-  }
-  @Patch('asignar-roles/:id') 
+  
+  
+  @Patch('usuario/roles/:id') 
   // @MenusProtected(ValidMenu.usuarios)
   // @ItemMenuProtected(ValidItemMenu.usuarioUpdate)
   asignarRoles(@Param('id',ParseIntPipe) id: number, @Body() updateUsuario: UpdateUsuarioDto) {
-    return this.usuariosService.asignarRoles(id, updateUsuario);
+    return this.usuariosService.updateRolesUser(id, updateUsuario);
   }
 
   @Patch('afiliado/:id')
@@ -116,7 +107,12 @@ export class UsuariosController {
   updateAfiliadoStatus(@Param('id',ParseIntPipe) id: number, @Body() updateAfiliadoDto: UpdateAfiliadoDto) {
     return this.usuariosService.updateAfiliadoStatus(id, updateAfiliadoDto);
   }
-
+  @Patch(':id')
+  // @MenusProtected(ValidMenu.usuarios)
+  // @ItemMenuProtected(ValidItemMenu.usuarioUpdateProfile)
+  updateProfile(@Param('id',ParseIntPipe) id: number, @Body() updatePerfilDto: UpdatePerfilDto) {
+    return this.usuariosService.updateProfile(id, updatePerfilDto);
+  }
   // @Get('menus/:id')
   // findMenusWidthUsuarioByRoles(@Param('id',ParseIntPipe) id:number){
   //   return this.usuariosService.findMenusWidthUsuarioByRoles(id);

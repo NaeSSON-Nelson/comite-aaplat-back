@@ -4,7 +4,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { DataSource, Like, Repository } from 'typeorm';
+import { DataSource, Like, Repository,In,LessThan } from 'typeorm';
 import { isNumber, isNumberString } from 'class-validator';
 import { Role } from './entities/role.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +13,8 @@ import { CommonService } from 'src/common/common.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Usuario } from 'src/auth/modules/usuarios/entities';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 @Injectable()
 export class RolesService {
@@ -61,10 +63,11 @@ export class RolesService {
     }
   }
 
-  async findAll(paginationDto:PaginationDto) {
+  async findAll(paginationDto:PaginationDto,usuario:Usuario) {
+    const nivel = usuario.roleToUsuario.map(rol=>rol.role.nivel);
     const { offset = 0, limit = 5, order = 'ASC', q = '' } = paginationDto;
     const { '0': data, '1': size } = await this.roleRepository.findAndCount({
-      where: [{ nombre: Like(`%${q}%`) }],
+      where: [{ nombre: Like(`%${q}%`),nivel:LessThan(In(nivel)) }],
       skip: offset,
       take: limit,
       order: {
@@ -175,10 +178,8 @@ export class RolesService {
   async updateRoleStatus(id: number, updateRoleDto: UpdateRoleDto) {
     const { estado } = updateRoleDto;
 
-    const role = await this.roleRepository.preload({ id, estado });
+    const role = await this.roleRepository.preload({ id, estado,isActive:estado===Estado.INACTIVO?false:true, });
     if (!role) throw new NotFoundException(`Rol con id ${id} no encontrado`);
-    if(estado==='INACTIVO')
-    role.isActive=false;else role.isActive=true;
     try {
       await this.roleRepository.save(role);
       return {

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { LoginUserDto } from './dto/login-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { CommonService } from '../common/common.service';
 
@@ -15,6 +15,7 @@ import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { ConfigService } from '@nestjs/config';
 import { Usuario } from './modules/usuarios/entities';
 import { UsuariosService } from './modules/usuarios/usuarios.service';
+import { Role } from 'src/manager/roles/roles/entities/role.entity';
 @Injectable()
 export class AuthService {
   
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly usuarioService: UsuariosService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly dataSource:DataSource,
   ) {}
   async loginUser(login: LoginUserDto) {
     const { password, username } = login;
@@ -69,6 +71,11 @@ export class AuthService {
       const usuario = await this.usuarioRepository.findOne({
         where: { id: user.id },
         relations: { roleToUsuario: { role: true } },
+        select: {
+          username: true,
+          password: true,
+          id: true,
+        },
       });
       if (!usuario) throw new BadRequestException(`Usuario incorrecto`);
       const { roleToUsuario, perfil, password, estado, ...data } =
@@ -111,5 +118,56 @@ export class AuthService {
         return {
           data:query
         }
+  }
+  async findOneUserRolesMenus(idRole:number,usuario: Usuario) {
+    // const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
+    const role = await this.usuarioRepository.exist({where:{roleToUsuario:{roleId:idRole},id:usuario.id}});
+    // console.log(role);
+    if(!role) throw new BadRequestException(`El usuario no contiene ese rol`);
+    const query = await this.dataSource.getRepository(Role).findOne({
+      relations: {
+        menuToRole:{
+          menu:{
+            itemMenu:{
+              itemMenu:true
+            }
+          }
+        }
+      },
+      where:{
+      id:idRole,
+      isActive:true,
+      menuToRole:{
+        isActive:true,
+        menu:{
+          isActive:true,
+          itemMenu:{
+            isActive:true,
+            itemMenu:{
+              isActive:true
+            }
+          }
+        }
+      }
+      }
+    });
+    if (!query) throw new BadRequestException(`Rol no encontrado`);
+    const { menuToRole, ...roleData } = query;
+
+    return {
+      OK: true,
+      message: 'rol encontrado',
+      data: {
+        ...roleData,
+        menus:menuToRole.map(toRole=>{
+          const {itemMenu,menu,...dataMenu} = toRole.menu
+          return{
+            ...dataMenu,
+            itemsMenu:itemMenu.map(toMenu=> toMenu.itemMenu)
+          }
+        })
+      },
+      // data: queryC,
+    };
   }
 }

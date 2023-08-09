@@ -9,48 +9,65 @@ export enum ValidRole{
 
 //VALID MENU
 export enum ValidMenu{
-    afiliados="afiliados",
+    
     menus="menus",
     itemsMenu="items-menu",
     roles="roles",
-    usuarios="usuarios",
+    perfiles="perfiles",
     medidores="medidores"
     // afiliados="afiliados",
+    //  usuarios="usuarios",
 }
 
 //VALID ITEM MENU
 export enum ValidItemMenu{
+    //recursos de perfiles
+    perfilRegister="perfil-register",
+    perfilUpdate="perfil-update",
+    perfilUpdateStatus="perfil-update-status",
+    perfilList="perfil-list",
+    perfilDetails="perfil-details",
+    //recursos de perfil usuarios
+    perfilUserRegister="perfil-user-register",
+    perfilUserUpdate="perfil-user-update",
+    perfilUserUpdateStatus="perfil-user-update-status",
+    //recursos de perfil afiliado
+    perfilAfiliadoRegister="perfil-afiliado-register",
+    perfilAfiliadoUpdate="perfil-afiliado-update",
+    perfilAfiliadoUpdateStatus="perfil-afiliado-update-status",
+    
     //RECURSOS DE AFILIADOS
-    afiliadoRegister ="afiliado-register",
-    afiliadoUpdate ="afiliado-update",
-    afiliadoStatus ="afiliado-update-status",
-    afiliadoList ="afiliado-list",
-    afiliadoDetails ="afiliado-details",
+    // afiliadoRegister ="afiliado-register",
+    // afiliadoUpdate ="afiliado-update",
+    // afiliadoStatus ="afiliado-update-status",
+    // afiliadoList ="afiliado-list",
+    // afiliadoDetails ="afiliado-details",
+    //RECURSOS DE GESTION DE LOS USUARIOS
+    // usuarioRegister ="usuario-register",
+    // usuarioUpdate ="usuario-update",
+    // usuarioStatus ="usuario-update-status",
+    // usuarioUpdateProfile ="usuario-update-profile",
+    // usuarioList ="usuario-list",
+    // usuarioDetails ="usuario-details",
     //RECURSOS DE GESTION DE LOS MENUS
     menuRegister ="menu-register",
     menuUpdate ="menu-update",
-    menuStatus ="menu-status",
+    menuUpdateStatus ="menu-update-status",
     menuList ="menu-list",
     menuDetails ="menu-details",
     //RECURSOS DE GESTION DE LOS ITEMS MENU
     itemMenuRegister ="item-menu-register",
     itemMenuUpdate ="item-menu-update",
-    itemMenuStatus ="item-menu-status",
+    itemMenuUpdateStatus ="item-menu-update-status",
     itemMenuList ="item-menu-list",
     itemMenuDetails ="item-menu-details",
     //RECURSOS DE GESTION DE ROLES D
-    roleRegister="role-register",
-    roleUpdate="role-update",
-    roleUpdateStatus="role-update-status",
-    roleList="role-list",
-    roleDetails='role-details',
-    //RECURSOS DE GESTION DE LOS USUARIOS
-    usuarioRegister ="usuario-register",
-    usuarioUpdate ="usuario-update",
-    usuarioStatus ="usuario-update-status",
-    usuarioUpdateProfile ="usuario-update-profile",
-    usuarioList ="usuario-list",
-    usuarioDetails ="usuario-details",
+    rolRegister="rol-register",
+    rolUpdate="rol-update",
+    rolUpdateStatus="rol-update-status",
+    rolList="rol-list",
+    rolDetails='rol-details',
+    
 
     //RECURSOS DE GESTION DE MEDIDORES
     medidorRegister="medidor-register",

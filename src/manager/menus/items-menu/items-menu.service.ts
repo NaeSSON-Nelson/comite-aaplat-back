@@ -7,6 +7,7 @@ import { CommonService } from '../../../common/common.service';
 import { UpdateItemMenuDto } from './dto/update-item-menu.dto';
 import { ItemMenu } from './entities/item-menu.entity';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 @Injectable()
 export class ItemsMenuService {
@@ -99,11 +100,11 @@ export class ItemsMenuService {
     const itemMenuPreload = await this.itemsMenuRepository.preload({
       id,
       estado,
+      isActive:estado===Estado.INACTIVO?false:true,
     });
     if (!itemMenuPreload)
     throw new NotFoundException(`Menu width id: ${id} not found`);
-    if(estado==='INACTIVO')
-    itemMenuPreload.isActive=false;else itemMenuPreload.isActive=true;
+
     try {
       await this.itemsMenuRepository.save(itemMenuPreload);
       return {

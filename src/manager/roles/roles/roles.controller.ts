@@ -5,12 +5,13 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
-import {Authentication,Authorization,AuthorizationResource} from '../../../auth/decorators'
+import {Authentication,Authorization,AuthorizationResource, GetUser} from '../../../auth/decorators'
 import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
 import { ItemMenuProtected, MenusProtected } from 'src/auth/decorators/valid-protected.decorator';
+import { Usuario } from 'src/auth/modules/usuarios/entities';
 @Controller('roles')
 
-// @Authentication()
+@Authentication()
 // @Authorization()
 // @AuthorizationResource()
 export class RolesController {
@@ -26,8 +27,8 @@ export class RolesController {
   @Get()
   // @MenusProtected(ValidMenu.roles)
   // @ItemMenuProtected(ValidItemMenu.roleList)
-  findAll(@Query() paginationDto:PaginationDto) {
-    return this.rolesService.findAll(paginationDto);
+  findAll(@Query() paginationDto:PaginationDto,@GetUser() user:Usuario) {
+    return this.rolesService.findAll(paginationDto,user);
   }
   //TODO: SIN FUNCIONAMIENTO
   // @Get('usuario-roles/:id')
@@ -36,7 +37,6 @@ export class RolesController {
   // findOneRoleWithMenus(@Param('id',ParseIntPipe) id: number) {
   //   return this.rolesService.findOneRoleWithMenus(id);
   // }
-
   @Get('name/:term')
   // @MenusProtected(ValidMenu.roles)
   // @ItemMenuProtected(ValidItemMenu.roleRegister)

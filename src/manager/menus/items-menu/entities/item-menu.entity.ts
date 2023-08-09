@@ -23,7 +23,11 @@ export class ItemMenu extends ColumnsAlways{
     })
     linkMenu:string;
 
-
+    @Column({
+        type:'bool',
+        default:true,
+    })
+    visible:boolean;
     @OneToMany(()=>ItemToMenu,(itemToMenu)=>itemToMenu.itemMenu)
     itemToMenu?:ItemToMenu[];
 

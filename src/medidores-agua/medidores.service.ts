@@ -16,6 +16,7 @@ import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { UsuariosService } from 'src/auth/modules/usuarios/usuarios.service';
 import { Perfil } from 'src/auth/modules/usuarios/entities';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 @Injectable()
 export class MedidoresService {
@@ -214,6 +215,7 @@ export class MedidoresService {
     const medidor = await this.medidorRepository.preload({
       id,
       estado,
+      isActive:estado===Estado.INACTIVO?false:true,
     });
     if (!medidor)
       throw new NotFoundException(`Medidor with id ${id} not found`);

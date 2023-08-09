@@ -12,6 +12,7 @@ import { DataSource, Like, Repository } from 'typeorm';
 import { CommonService } from '../../../common/common.service';
 import { ItemToMenu } from '../items-to-menu/entities/item-to-menu.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 @Injectable()
 export class MenusService {
@@ -154,12 +155,10 @@ export class MenusService {
 
   async updateStatusMenu(id: number, updateMenuDto: UpdateMenuDto) {
     const { estado, ...dataNotPermit } = updateMenuDto;
-    const menuPreload = await this.menuRepository.preload({ id, estado });
+    const menuPreload = await this.menuRepository.preload({ id, estado,isActive:estado===Estado.INACTIVO?false:true, });
 
     if (!menuPreload)
       throw new NotFoundException(`Menu width id: ${id} not found`);
-    if(estado==='INACTIVO')
-    menuPreload.isActive=false;else menuPreload.isActive=true;
     try {
       await this.menuRepository.save(menuPreload);
       return {

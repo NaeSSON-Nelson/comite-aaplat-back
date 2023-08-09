@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Header, Headers } from '@nestjs/common';
+import {ParseIntPipe} from '@nestjs/common/pipes'
 import { AuthService } from './auth.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { GetUser } from './decorators/get-user.decorator';
@@ -32,14 +33,14 @@ export class AuthController {
   @Get('refresh')
   @Authentication()
   validToken(@GetUser() user:Usuario){
-
+    
     return this.authService.tokenRefresh(user);
   }
-
-  // @Get('access-valid')
-  // @Authentication()
-  // accessResourse(@GetUser() user:Usuario,@Headers() headers:IncomingHttpHeaders ){
-  //   console.log(headers);
-  //   return this.authService.accessResource(user);
-  // }
+  @Get('roles/:id')
+  @Authentication()
+  findOneAuth(@Param('id',ParseIntPipe) id: number,
+  @GetUser() user:Usuario,
+  ) {
+    return this.authService.findOneUserRolesMenus(id,user);
+  }
 }

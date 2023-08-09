@@ -8,7 +8,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { Estado } from 'src/interfaces/enum/enum-entityes';
+import { Estado, Nivel } from 'src/interfaces/enum/enum-entityes';
 
 export class CreateRoleDto {
   @IsString()
@@ -19,9 +19,13 @@ export class CreateRoleDto {
   @IsEnum(Estado)
   @IsOptional()
   estado?: Estado;
-
+  
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
   menus?: number[];
+  
+  @IsEnum(Nivel)
+  @IsOptional()
+  nivel:Nivel;
 }
