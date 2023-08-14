@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, IsEnum, IsNotEmptyObject } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsEnum, IsNotEmptyObject, IsNumberString, IsNumber } from 'class-validator';
 import { Barrio, Estado } from 'src/interfaces/enum/enum-entityes';
 import { Type } from 'class-transformer';
 
@@ -12,13 +12,13 @@ export class CreateAfiliadoDto {
   @IsOptional()
   numeroVivienda?: string;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  longitud?: string;
+  longitud?: number;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  latitud?: string;
+  latitud?: number;
   @IsEnum(Estado)
   @IsOptional()
   estado?:Estado;

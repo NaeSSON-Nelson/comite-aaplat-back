@@ -248,16 +248,7 @@ export class UsuariosService {
         { apellidoPrimero: Like(`%${q}%`) },
         { apellidoSegundo: Like(`%${q}%`) },
         { CI: Like(`%${q}%`) },
-        { usuario: [{ username: Like(`%${q}%`) }] },
-        {
-          // tipoPerfil: tipoPerfil ? tipoPerfil : TipoPerfil.afiliado,
-          accessAcount: accessAccount,
-        },
       ],
-      relations: {
-        afiliado: true,
-        usuario: true,
-      },
       take: limit,
       skip: offset,
       order: { id: order },
@@ -322,22 +313,30 @@ export class UsuariosService {
     if (!perfil)
       throw new BadRequestException(`No hay perfil con ID${idPerfil}`);
     const { usuario, ...dataPerfil } = perfil;
-    const { roleToUsuario, ...dataUsuario } = usuario;
-    return {
-      OK: true,
-      msg: 'perfil con usuario',
-      data: {
-        ...dataPerfil,
-        usuario: {
-          ...dataUsuario,
-          roles: roleToUsuario.map((toUsuario) => {
-            // console.log(toUsuario);
-            return toUsuario.role;
-          }),
+    if(usuario){
+      const { roleToUsuario, ...dataUsuario } = usuario;
+      return {
+        OK: true,
+        msg: 'perfil con usuario',
+        data: {
+          ...dataPerfil,
+          usuario: {
+            ...dataUsuario,
+            roles: roleToUsuario.map((toUsuario) => {
+              // console.log(toUsuario);
+              return toUsuario.role;
+            }),
+          },
         },
-      },
-      // data:perfil
-    };
+        // data:perfil
+      };
+    }else{
+      return {
+        OK:true,
+        msg:'perfil con usuario',
+        data:perfil
+      }
+    }
   }
   async findMenuByRole(menus: string[], roles: Role[]) {
     const menuToRole = await this.dataSource.getRepository(MenuToRole).find({

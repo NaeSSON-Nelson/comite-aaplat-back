@@ -12,9 +12,9 @@ export class Ubicacion {
   @Column({ type: 'varchar', length: 50, nullable: true })
   numeroVivienda?: string;
 
-  @Column({ type: 'text', nullable: true })
-  longitud?: string;
+  @Column({ type: 'numeric', nullable: true,scale:20,precision:100 })
+  longitud?: number;
   
-  @Column({ type: 'text', nullable: true })
-  latitud?: string;
+  @Column({ type: 'numeric', nullable: true,scale:20,precision:100 })
+  latitud?: number;
 }

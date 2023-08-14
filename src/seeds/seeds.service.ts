@@ -229,21 +229,19 @@ export class SeedsService {
       //INSERT INTO RELATIONS TABLES
       // const datita = new Date();
       //INSERT INTO RELATIONS ITEMS TO MENU 
-      const itemToMenuRelationsAfiliado = await this.insertRelationsItemMenuToMenu('afiliado','afiliado')
-      await queryRunner.manager.save(itemToMenuRelationsAfiliado);
+      const itemToMenuRelationsPerfil = await this.insertRelationsItemMenuToMenu('perfil','perfiles')
+      await queryRunner.manager.save(itemToMenuRelationsPerfil);
       const itemToMenuRelationsItemsMenu = await this.insertRelationsItemMenuToMenu('item-menu','items-menu')
       await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
       const itemToMenuRelationsMenu = await this.insertRelationsItemMenuToMenu('menu','menus')
       await queryRunner.manager.save(itemToMenuRelationsMenu);
-      const itemToMenuRelationsRoles = await this.insertRelationsItemMenuToMenu('role','roles')
+      const itemToMenuRelationsRoles = await this.insertRelationsItemMenuToMenu('rol','roles')
       await queryRunner.manager.save(itemToMenuRelationsRoles);
-      const itemToMenuRelationsUsuarios = await this.insertRelationsItemMenuToMenu('usuario','usuarios')
-      await queryRunner.manager.save(itemToMenuRelationsUsuarios);
       const itemToMenuRelationsMedidores = await this.insertRelationsItemMenuToMenu('medidor','medidores')
       await queryRunner.manager.save(itemToMenuRelationsMedidores);
       //INSERT INTO RELATIONS MENU TO ROLE
       
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['afiliados','menus','items-menu','roles','usuarios','medidores'],'root');
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua'],'root');
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
       const roleToUsuarioAdmin = await this.insertRolesToUsuario(['root','admin'],'admin');

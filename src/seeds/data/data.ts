@@ -38,6 +38,7 @@ class MenuItemSeed {
   nombre: string;
   linkMenu?: string;
   estado?: Estado;
+  visible?:boolean;
 }
 class RoleSeed {
   nombre: string;
@@ -382,74 +383,58 @@ export const initialData: SeedData = {
   ],
   itemsMenu: [
     {
-      nombre: 'registrar afiliado',
-      linkMenu: 'afiliado-register',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'detalles de afiliado',
-      linkMenu: 'afiliado-details',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'modificar afiliado',
-      linkMenu: 'afiliado-update',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'bajar afiliado',
-      linkMenu: 'afiliado-update-status',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'listar afiliados',
-      linkMenu: 'afiliado-list',
-      estado: Estado.ACTIVO,
-    },
-    {
       nombre: 'registrar itemMenu',
       linkMenu: 'item-menu-register',
       estado: Estado.ACTIVO,
+      visible:true,
     },
     {
       nombre: 'detalles de item menu',
       linkMenu: 'item-menu-details',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'modificar itemMenu',
       linkMenu: 'item-menu-update',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'bajar itemMenu',
       linkMenu: 'item-menu-update-status',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'listar items de menus',
       linkMenu: 'item-menu-list',
       estado: Estado.ACTIVO,
+      visible:true
     },
     {
       nombre: 'registrar menu',
       linkMenu: 'menu-register',
       estado: Estado.ACTIVO,
+      visible:true
     },
     {
       nombre: 'detalles de menu',
       linkMenu: 'menu-details',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'modificar menu',
       linkMenu: 'menu-update',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'bajar menu',
       linkMenu: 'menu-update-status',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'listar menus',
@@ -458,57 +443,30 @@ export const initialData: SeedData = {
     },
     {
       nombre: 'registrar rol',
-      linkMenu: 'role-register',
+      linkMenu: 'rol-register',
       estado: Estado.ACTIVO,
     },
     {
       nombre: 'detalles de rol',
-      linkMenu: 'role-details',
+      linkMenu: 'rol-details',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'modificar rol',
-      linkMenu: 'role-update',
+      linkMenu: 'rol-update',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'bajar rol',
-      linkMenu: 'role-update-status',
+      linkMenu: 'rol-update-status',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'listar roles',
-      linkMenu: 'role-list',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'registrar usuario',
-      linkMenu: 'usuario-register',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'perfil de usuario',
-      linkMenu: 'usuario-details',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'modificar usuario',
-      linkMenu: 'usuario-update',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'bajar usuario',
-      linkMenu: 'usuario-update-status',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'listar usuarios',
-      linkMenu: 'usuario-list',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'modificar perfil usuario',
-      linkMenu: 'usuario-update-profile',
+      linkMenu: 'rol-list',
       estado: Estado.ACTIVO,
     },
     {
@@ -520,29 +478,91 @@ export const initialData: SeedData = {
       nombre: 'detalles de afiliado con medidores',
       linkMenu: 'medidor-details',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'modificar medidor',
       linkMenu: 'medidor-update',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'bajar medidor',
       linkMenu: 'medidor-update-status',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'listar afiliados con medidores',
       linkMenu: 'medidor-list',
       estado: Estado.ACTIVO,
     },
+    {
+      nombre:'registrar nuevo perfil',
+      linkMenu:'perfil-register',
+      estado:Estado.ACTIVO,
+    },
+    {
+      nombre:'listar perfiles',
+      linkMenu:'perfil-list',
+      estado:Estado.ACTIVO,
+    },
+    {
+      nombre:'actualizar perfil',
+      linkMenu:'perfil-update',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'bajar perfil',
+      linkMenu:'perfil-update-status',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'detalles de perfil',
+      linkMenu:'perfil-details',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'asignar usuario a perfil',
+      linkMenu:'perfil-user-register',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'asignar afiliacion a perfil',
+      linkMenu:'perfil-afiliado-register',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'actualizar usuario de perfil',
+      linkMenu:'perfil-user-update',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'bajar usuario de perfil',
+      linkMenu:'perfil-user-update-status',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'actualizar afiliado de perfil',
+      linkMenu:'perfil-afiliado-update',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
+    {
+      nombre:'bajar afiliado de perfil',
+      linkMenu:'perfil-afiliado-update-status',
+      estado:Estado.ACTIVO,
+      visible:false,
+    },
   ],
   menus: [
-    {
-      nombre: 'afiliados',
-      linkMenu: 'afiliados',
-      estado: Estado.ACTIVO,
-    },
     {
       nombre: 'menus',
       linkMenu: 'menus',
@@ -559,15 +579,14 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
     },
     {
-      nombre: 'usuarios',
-      linkMenu: 'usuarios',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'medidores',
+      nombre: 'medidores-agua',
       linkMenu: 'medidores',
       estado: Estado.ACTIVO,
-    },
+    },{
+      nombre:'perfiles',
+      linkMenu:'perfiles',
+      estado:Estado.ACTIVO,
+    }
   ],
   roles: [
     {

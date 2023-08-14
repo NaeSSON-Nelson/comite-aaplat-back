@@ -42,6 +42,11 @@ export class CreatePerfilDto {
     @MinLength(2)
     @IsNotEmpty()
     profesion: string;
+    
+    @IsString()
+    @MinLength(2)
+    @IsOptional()
+    direccion?: string;
 
     @IsEnum(TipoPerfil,{each:true})
     @IsArray()
