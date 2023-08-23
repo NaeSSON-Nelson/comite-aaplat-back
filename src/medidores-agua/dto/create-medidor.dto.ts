@@ -12,18 +12,24 @@ import {
   Matches,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { patternDateFormat } from 'src/interfaces/validators';
 import { Afiliado } from '../../auth/modules/usuarios/entities/afiliado.entity';
 import { Barrio, Estado } from 'src/interfaces/enum/enum-entityes';
-
+export class AfiliadoForm{
+  @IsNumber()
+  @Min(1)
+  id:number;
+}
 export class CreateMedidorDto {
   @IsString()
   @MinLength(4)
   nroMedidor: string;
 
-  @IsDate()
   @IsNotEmpty()
+  @IsDate()
+  @Type(()=>Date)
   fechaInstalacion: Date;
 
   @IsString()
@@ -42,8 +48,7 @@ export class CreateMedidorDto {
   @MinLength(1)
   marca: string;
 
-  @IsObject()
-  @IsNotEmptyObject({})
-  @Type(() => Afiliado)
-  afiliado: Afiliado;
+  @ValidateNested()
+  @Type(() => AfiliadoForm)
+  afiliado: AfiliadoForm;
 }

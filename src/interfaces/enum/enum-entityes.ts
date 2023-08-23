@@ -22,4 +22,18 @@ export enum Nivel{
   administrativo=50,
   root=100,
 }
+export enum Mes{
+  enero="ENERO",
+  febrero="FEBRERO",
+  marzo="MARZO",
+  abril="ABRIL",
+  mayo="MAYO",
+  junio="JUNIO",
+  julio="JULIO",
+  agosto="AGOSTO",
+  septiembre="SEPTIEMBRE",
+  octubre="OCTUBRE",
+  noviembre="NOVIEMBRE",
+  diciembre="DICIEMBRE",
+}
 

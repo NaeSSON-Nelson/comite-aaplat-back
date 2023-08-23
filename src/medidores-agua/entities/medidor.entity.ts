@@ -9,10 +9,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { LecturaMedidor } from './lectura-medidor.entity';
 import { Afiliado } from '../../auth/modules/usuarios/entities/afiliado.entity';
 import { Barrio } from 'src/interfaces/enum/enum-entityes';
 import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
+import { PlanillaLecturas } from './planilla-lecturas.entity';
 
 @Entity('medidores')
 export class Medidor extends ColumnsAlways{
@@ -59,26 +59,13 @@ export class Medidor extends ColumnsAlways{
   })
   marca: string;
 
-  @OneToMany(() => LecturaMedidor, (lecturaMedidor) => lecturaMedidor.medidor)
-  lecturas: LecturaMedidor[];
+  @OneToMany(() => PlanillaLecturas, (planillaLecturas) => planillaLecturas.medidor)
+  planillas: PlanillaLecturas[];
 
   @ManyToOne(() => Afiliado, (afiliado) => afiliado.medidores)
   afiliado: Afiliado;
 
-  @CreateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP(6)',
-    select:false
-  })
-  created_at: Date;
-
-  @UpdateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP(6)',
-    onUpdate: 'CURRENT_TIMESTAMP(6)',
-    select:false
-  })
-  updated_at: Date;
+  
   
   @BeforeInsert()
   registrarNuevoMedidor() {

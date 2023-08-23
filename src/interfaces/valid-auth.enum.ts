@@ -70,9 +70,9 @@ export enum ValidItemMenu{
     
 
     //RECURSOS DE GESTION DE MEDIDORES
-    medidorRegister="medidor-register",
-    medidorUpdate="medidor-update",
-    medidorUpdateStatus="medidor-update-status",
-    medidorList="medidor-list",
-    medidorDetails='medidor-details',
+    medidorRegister="medidor-agua-register",
+    medidorUpdate="medidor-agua-update",
+    medidorUpdateStatus="medidor-agua-update-status",
+    medidorList="medidor-agua-list",
+    medidorDetails='medidor-agua-details',
 }

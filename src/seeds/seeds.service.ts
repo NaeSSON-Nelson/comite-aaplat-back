@@ -12,6 +12,9 @@ import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { ItemToMenu } from 'src/manager/menus/items-to-menu/entities/item-to-menu.entity';
 import { MenuToRole } from 'src/manager/roles/menu-to-role/entities/menuToRole.entity';
 import { RoleToUsuario } from 'src/auth/modules/usuarios/roles-to-usuario/entities/role-to-usuario.entity';
+import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
+import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
+import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 
 @Injectable()
 export class SeedsService {
@@ -36,6 +39,13 @@ export class SeedsService {
     private readonly menuToRoleRepository: Repository<MenuToRole>,
     @InjectRepository(RoleToUsuario)
     private readonly roleToUsuarioRepository: Repository<RoleToUsuario>,
+    @InjectRepository(AnioSeguimientoLectura)
+    private readonly anioSeguimientoLecturaRepository: Repository<AnioSeguimientoLectura>,
+    @InjectRepository(MesSeguimientoRegistroLectura)
+    private readonly mesSeguimientoRegistroLecturaRepository: Repository<MesSeguimientoRegistroLectura>,
+    @InjectRepository(PlanillaLecturas)
+    private readonly planillaLecturasRepository: Repository<PlanillaLecturas>,
+    
     private readonly dataSource: DataSource,
     private readonly commonService: CommonService,
   ) {}
@@ -62,10 +72,14 @@ export class SeedsService {
       const usuariosSave = await this.insertUsuarios(perfilesSave);
       await queryRunner.manager.save(usuariosSave);
       
-      
-      
       const medidoresSave = await this.insertMedidores(afiliadosSave);
       await queryRunner.manager.save(medidoresSave);
+      const planillasSave = await this.insertPlanillas(medidoresSave);
+      await queryRunner.manager.save(planillasSave)
+      const anioSeguimientoSave = await this.insertAnioSeguimientos();
+      await queryRunner.manager.save(anioSeguimientoSave);
+      const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
+      await queryRunner.manager.save(mesesSeguimientoSave);
       // console.log('hola:3');
       await queryRunner.commitTransaction();
       return { OK: true, msg: 'SEED EXECUTE' };
@@ -162,6 +176,33 @@ export class SeedsService {
     });
     return usuarios;
   }
+  private async insertAnioSeguimientos(){
+    const seedAnioSeguimiento=initialData.aniosSeguimiento;
+    const seguimientos:AnioSeguimientoLectura[]=[];
+    seedAnioSeguimiento.forEach((val)=>{
+      seguimientos.push(this.anioSeguimientoLecturaRepository.create({...val}));
+    })
+    return seguimientos;
+  }
+  private async insertMesSeguimiento(anios:AnioSeguimientoLectura[]){
+    const seedMesSeguimiento = initialData.mesesSeguimiento;
+    const meses:MesSeguimientoRegistroLectura[]=[];
+    seedMesSeguimiento.forEach(val=>{
+      meses.push(this.mesSeguimientoRegistroLecturaRepository.create({...val,anioSeguimiento:anios[0]}))
+    })
+    return meses;
+  }
+  private async insertPlanillas(medidores:Medidor[]){
+    const seedPlanillas = initialData.planillas;
+    const planillas:PlanillaLecturas[]=[];
+    // seedPlanillas.forEach((seed,index)=>{
+    //   planillas.push(this.planillaLecturasRepository.create({...seed,medidor:medidores[index]}));
+    // })
+    medidores.forEach(medidor=>{
+      planillas.push(this.planillaLecturasRepository.create({...seedPlanillas[0],medidor}))
+    })
+    return planillas;
+  }
   private async insertMedidores(afiliados: Afiliado[]) {
     const seedMedidores = initialData.medidores;
     const medidores: Medidor[] = [];
@@ -221,6 +262,7 @@ export class SeedsService {
     })
     return roleToUsuario
   }
+  
   async executeSeedPartTwo() {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();

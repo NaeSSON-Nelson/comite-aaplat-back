@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Ubicacion } from 'src/common/inherints-db';
-import { Barrio, Estado, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, Mes, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 
 class PerfilSeed {
   nombrePrimero: string;
@@ -55,6 +55,24 @@ class MedidorSeed {
   marca: string;
   afiliado?: AfiliadoSeed;
 }
+class PlanillaLecturasSeed{
+  gestion:number;
+}
+class MesLecturaSeed{
+  lectura:number
+  estadoMedidor?:string;
+  consumoTotal:number;
+  mesLecturado:Mes;
+  planilla:PlanillaLecturasSeed;
+}
+class AnioSeguimientoLecturaSeed{
+  anio:number;
+}
+class MesSeguimientoRegistroLectura{
+  mes:Mes;
+  fechaRegistroLecturas:Date;
+  fechaFinRegistroLecturas:Date;
+}
 class SeedData {
   perfiles: PerfilSeed[];
   afiliados: AfiliadoSeed[];
@@ -62,7 +80,10 @@ class SeedData {
   itemsMenu: MenuItemSeed[];
   roles: RoleSeed[];
   usuarios: UsuarioSeed[];
+  planillas:PlanillaLecturasSeed[]
   medidores: MedidorSeed[];
+  aniosSeguimiento: AnioSeguimientoLecturaSeed[];
+  mesesSeguimiento: MesSeguimientoRegistroLectura[];
 }
 const formatDate = (date) =>
   [
@@ -693,4 +714,51 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
     },
   ],
+  aniosSeguimiento:[
+    {
+      anio:2023,
+    }
+  ],
+  mesesSeguimiento:[
+    {
+      mes:Mes.enero,
+      fechaRegistroLecturas: new Date(2023, 2, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 2, 28,12,59,59,0),
+    },
+    {
+      mes:Mes.febrero,
+      fechaRegistroLecturas: new Date(2023, 3, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 3, 28,12,59,59,0),
+    },
+    {
+      mes:Mes.marzo,
+      fechaRegistroLecturas: new Date(2023, 4, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 4, 28,12,59,59,0),
+    },
+    {
+      mes:Mes.abril,
+      fechaRegistroLecturas: new Date(2023, 5, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 5, 28,12,59,59,0),
+    },
+    {
+      mes:Mes.mayo,
+      fechaRegistroLecturas: new Date(2023, 6, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 6, 28,12,59,59,0),
+    },
+    {
+      mes:Mes.junio,
+      fechaRegistroLecturas: new Date(2023, 7, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 7, 28,12,59,59,0),
+    },
+    {
+      mes:Mes.julio,
+      fechaRegistroLecturas: new Date(2023, 8, 2,8,0,0,0),
+      fechaFinRegistroLecturas: new Date(2023, 8, 28,12,59,59,0),
+    },
+  ],
+  planillas:[
+    {
+      gestion:2023
+    }
+  ]
 };
