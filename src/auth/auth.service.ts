@@ -121,36 +121,19 @@ export class AuthService {
   }
   async findOneUserRolesMenus(idRole:number,usuario: Usuario) {
     // const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
-    const role = await this.usuarioRepository.exist({where:{roleToUsuario:{roleId:idRole},id:usuario.id}});
+    // const role = await this.usuarioRepository.exist({where:{roleToUsuario:{roleId:idRole},id:usuario.id}});
     // console.log(role);
-    if(!role) throw new BadRequestException(`El usuario no contiene ese rol`);
-    const query = await this.dataSource.getRepository(Role).findOne({
-      relations: {
-        menuToRole:{
-          menu:{
-            itemMenu:{
-              itemMenu:true
-            }
-          }
-        }
-      },
-      where:{
-      id:idRole,
-      isActive:true,
-      menuToRole:{
-        isActive:true,
-        menu:{
-          isActive:true,
-          itemMenu:{
-            isActive:true,
-            itemMenu:{
-              isActive:true
-            }
-          }
-        }
-      }
-      }
-    });
+    const roleRepository =  this.dataSource.getRepository(Role);
+    const rol = await roleRepository.findOne({where:{id:idRole}});
+    if(!rol) throw new BadRequestException(`No existe ese role`);
+    const qb = roleRepository.createQueryBuilder('role');
+
+    const query = await qb
+                  .innerJoinAndSelect('role.menuToRole','toRole','toRole.roleId = :roleId',{roleId:idRole})
+                  .innerJoinAndSelect('toRole.menu','menu','menu.id = toRole.menuId')
+                  .innerJoinAndSelect('menu.itemMenu','toMenu','toMenu.menuId = menu.id')
+                  .innerJoinAndSelect('toMenu.itemMenu','item','item.id = toMenu.itemMenuId')
+                  .getOne();
     if (!query) throw new BadRequestException(`Rol no encontrado`);
     const { menuToRole, ...roleData } = query;
 

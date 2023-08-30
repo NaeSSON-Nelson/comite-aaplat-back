@@ -10,33 +10,29 @@ class PerfilSeed {
   CI: string;
   genero: string;
   direccion?: string;
-  accessAcount?: boolean;
   profesion?: string;
   fechaNacimiento: Date;
   tipoPerfil: TipoPerfil[];
-  estado: Estado;
+  estado?: Estado;
 }
 class AfiliadoSeed {
   estado: Estado;
   ubicacion: Ubicacion;
-  perfil?:PerfilSeed
 }
 class UsuarioSeed {
   username: string;
   password: string;
   correo?: string;
   estado?: Estado;
-  perfil?: PerfilSeed;
 }
 class MenuSeed {
   nombre: string;
-  linkMenu?: string;
+  linkMenu: string;
   estado?: Estado;
-  itemsMenu?: MenuItemSeed[];
 }
 class MenuItemSeed {
   nombre: string;
-  linkMenu?: string;
+  linkMenu: string;
   estado?: Estado;
   visible?:boolean;
 }
@@ -44,7 +40,6 @@ class RoleSeed {
   nombre: string;
   nivel:  Nivel;
   estado?: Estado;
-  menus?: MenuSeed[];
 }
 
 class MedidorSeed {
@@ -53,7 +48,7 @@ class MedidorSeed {
   lecturaInicial: number;
   estado?: Estado;
   marca: string;
-  afiliado?: AfiliadoSeed;
+  ubicacion:Ubicacion;
 }
 class PlanillaLecturasSeed{
   gestion:number;
@@ -63,7 +58,6 @@ class MesLecturaSeed{
   estadoMedidor?:string;
   consumoTotal:number;
   mesLecturado:Mes;
-  planilla:PlanillaLecturasSeed;
 }
 class AnioSeguimientoLecturaSeed{
   anio:number;
@@ -649,6 +643,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2012, 4, 23),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
+      }
     },
     {
       nroMedidor: '98CSX477744QW',
@@ -656,6 +653,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2012, 8, 16),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
+      }
     },
     {
       nroMedidor: '26HJT5645DF4D4W',
@@ -663,6 +663,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2015, 9, 9),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      }
     },
     {
       nroMedidor: '5R4ET45V4B4BVFGH5555',
@@ -670,6 +673,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2019, 5, 18),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.sanAntonio
+      }
     },
     {
       nroMedidor: '138R78944165465E',
@@ -677,6 +683,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2018, 8, 8),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.primavera
+      }
     },
     {
       nroMedidor: '5995DASD4WQ4',
@@ -684,6 +693,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2014, 2, 24),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.verdeOlivo
+      }
     },
     {
       nroMedidor: '6QW8E7645ASD6W',
@@ -691,6 +703,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2019, 11, 11),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.primavera
+      }
     },
     {
       nroMedidor: '9QWE5QWE4ASD4W',
@@ -698,6 +713,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2021, 2, 18),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      }
     },
     {
       nroMedidor: '4E48R7WW44',
@@ -705,6 +723,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2020, 11, 11),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.verdeOlivo
+      }
     },
     {
       nroMedidor: '59QWE89Q8WE98QWE4',
@@ -712,6 +733,9 @@ export const initialData: SeedData = {
       fechaInstalacion: new Date(2022, 8, 9),
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.sanAntonio
+      }
     },
   ],
   aniosSeguimiento:[

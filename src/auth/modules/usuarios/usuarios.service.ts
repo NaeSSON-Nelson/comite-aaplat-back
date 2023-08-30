@@ -24,7 +24,7 @@ import { SearchPerfil } from './querys/search-perfil';
 import { Ubicacion } from 'src/common/inherints-db';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { MenuToRole } from 'src/manager/roles/menu-to-role/entities/menuToRole.entity';
-import { Estado } from 'src/interfaces/enum/enum-entityes';
+import { Estado, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 
 @Injectable()
 export class UsuariosService {
@@ -50,6 +50,7 @@ export class UsuariosService {
     const perfil = this.perfilRepository.create({ ...dataPerfil });
     let messagePassword = null;
     let passwordImplict = null;
+    const tipoPerfil: TipoPerfil[]=[];
     if (usuarioForm) {
       const { roles, ...dataUsuario } = usuarioForm;
       //CREATE USUARIO
@@ -81,6 +82,7 @@ export class UsuariosService {
       perfil.usuario = usuario;
       perfil.accessAcount = true;
       passwordImplict = password;
+      tipoPerfil.push(TipoPerfil.usuario);
       messagePassword =
         'No muestre la contraseña a cualquier individuo si no es el usuario';
     }
@@ -99,12 +101,14 @@ export class UsuariosService {
         ubicacion,
       });
       await queryRunner.manager.save(afiliado);
+      tipoPerfil.push(TipoPerfil.afiliado);
       perfil.afiliado = afiliado;
     }
 
     //TODO: MEJORAR LA CREACION DE USERNAME RANDOM
     //TODO: MEJORAR ASIGNAR ROLES A USUARIO
     try {
+      perfil.tipoPerfil=tipoPerfil;
       await queryRunner.manager.save(perfil);
       await queryRunner.commitTransaction();
       return {
@@ -453,6 +457,7 @@ export class UsuariosService {
     }
   }
   async updateAfiliado(idPerfil: number, updateAfiliadoDto: UpdateAfiliadoDto) {
+    console.log(updateAfiliadoDto);
     const perfil = await this.perfilRepository.findOne({
       where: { id: idPerfil },
       relations: { afiliado: true },

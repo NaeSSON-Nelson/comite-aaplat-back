@@ -71,11 +71,17 @@ export class MedidoresController {
   findAllPLanillas(){
     return this.medidoresService.findAllPlanillasWidthMedidores();
   }
-  @Get(':id')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorDetails)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.medidoresService.findOne(id);
+  @Get('gestion/anios-seguimientos')
+  aniosSeguimientos(){
+    return this.medidoresService.getAniosSeguimientos();
+  }
+  @Get('planillas/:id')
+  getPlanillas(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.getPlanillasMedidor(id);
+  }
+  @Get('lecturas/:id')
+  getLecturas(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.lecturasPlanilla(id);
   }
 
   @Get('afiliado/:id')
@@ -137,5 +143,11 @@ export class MedidoresController {
   @Get('lecturas/perfiles')
   getAllLecturas(@Query() query: QueryLecturasDto){
     return this.medidoresService.AllLecturasPerfilesMedidores(query)
+  }
+  @Get(':id')
+  // @MenusProtected(ValidMenu.medidores)
+  // @ItemMenuProtected(ValidItemMenu.medidorDetails)
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.medidoresService.findOne(id);
   }
 }

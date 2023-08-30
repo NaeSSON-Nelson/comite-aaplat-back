@@ -1,30 +1,33 @@
-import { IsArray, IsDate, IsEnum, IsIn, IsNotEmpty, IsNotEmptyObject, IsOptional, IsString, Matches, MinLength } from "class-validator";
+import { IsArray, IsDate, IsEnum, IsIn, IsNotEmpty, IsNotEmptyObject, IsOptional, IsString, Matches, MinLength, ValidateNested } from "class-validator";
 import { Barrio, Estado, TipoPerfil } from '../../../../interfaces/enum/enum-entityes';
 import { Type } from "class-transformer";
 import { Usuario } from "../entities";
 import { CreateAfiliadoDto } from "./create-afiliado.dto";
 import { CreateUsuarioDto } from "./create-usuario.dto";
+import { patternTextLine } from "src/interfaces/validators";
 
 export class CreatePerfilDto {
 
 
     @IsString()
     @MinLength(2)
+    @Matches(patternTextLine)
     @IsNotEmpty()
     nombrePrimero: string;
     
     @IsString()
-    @MinLength(2)
+    @Matches(patternTextLine)
     @IsOptional()
     nombreSegundo?: string;
     
     @IsString()
+    @Matches(patternTextLine)
     @MinLength(2)
     @IsNotEmpty()
     apellidoPrimero: string;
     
     @IsString()
-    @MinLength(2)
+    @Matches(patternTextLine)
     @IsOptional()
     apellidoSegundo?: string;
     
@@ -44,14 +47,13 @@ export class CreatePerfilDto {
     profesion: string;
     
     @IsString()
-    @MinLength(2)
     @IsOptional()
     direccion?: string;
 
-    @IsEnum(TipoPerfil,{each:true})
-    @IsArray()
-    @IsNotEmpty({each:true})
-    tipoPerfil: TipoPerfil[];
+    // @IsArray()
+    // @IsEnum(TipoPerfil,{each:true})
+    // @IsNotEmpty({each:true})
+    // tipoPerfil: TipoPerfil[];
 
     @IsNotEmpty()
     @IsDate()
@@ -70,13 +72,14 @@ export class CreatePerfilDto {
     @IsOptional()
     estado?: Estado;
 
+    // @IsNotEmptyObject({})
+    @ValidateNested()
     @Type(()=>CreateUsuarioDto)
-    @IsNotEmptyObject({})
     @IsOptional()
     usuarioForm?:CreateUsuarioDto;
-
+    
+    @ValidateNested()
     @Type(()=>CreateAfiliadoDto)
-    @IsNotEmptyObject({})
     @IsOptional()
     afiliadoForm?:CreateAfiliadoDto;
   

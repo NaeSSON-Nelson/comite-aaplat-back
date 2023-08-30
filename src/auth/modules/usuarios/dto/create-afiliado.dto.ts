@@ -19,6 +19,7 @@ export class CreateAfiliadoDto {
   @IsNumber()
   @IsOptional()
   latitud?: number;
+  
   @IsEnum(Estado)
   @IsOptional()
   estado?:Estado;

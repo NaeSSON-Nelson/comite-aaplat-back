@@ -14,7 +14,8 @@ export enum Estado{
 
 export enum TipoPerfil{
   administrativo='ADMINISTRATIVO',
-  afiliado='AFILIADO'
+  afiliado='AFILIADO',
+  usuario='USUARIO',
 }
 export enum Nivel{
   afiliado=10,

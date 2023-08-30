@@ -14,7 +14,7 @@ export enum ValidMenu{
     itemsMenu="items-menu",
     roles="roles",
     perfiles="perfiles",
-    medidores="medidores"
+    medidores="medidores-agua"
     // afiliados="afiliados",
     //  usuarios="usuarios",
 }
