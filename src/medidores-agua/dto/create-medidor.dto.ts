@@ -36,6 +36,18 @@ export class CreateMedidorDto {
   @IsEnum(Barrio)
   barrio: Barrio;
 
+  @IsString()
+  @IsOptional()
+  numeroVivienda?: string;
+
+  @IsNumber()
+  @IsOptional()
+  longitud?: number;
+
+  @IsNumber()
+  @IsOptional()
+  latitud?: number;
+  
   @IsInt()
   @Min(0)
   lecturaInicial: number;

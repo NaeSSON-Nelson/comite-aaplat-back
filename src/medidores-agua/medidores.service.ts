@@ -44,17 +44,17 @@ export class MedidoresService {
     private readonly dataSource: DataSource,
   ) {}
   async create(createMedidoreDto: CreateMedidorDto) {
-    const { barrio, afiliado, ...medidorForm } = createMedidoreDto;
+    const { barrio,latitud,longitud,numeroVivienda, afiliado, ...medidorForm } = createMedidoreDto;
     const afiliadoDb = await this.dataSource
       .getRepository(Afiliado)
       .findOne({ where: { id: afiliado.id } });
-    if (afiliadoDb)
+    if (!afiliadoDb)
       throw new BadRequestException(
         `El afiliado con Id ${afiliado.id} no existe`,
       );
     const medidor = this.medidorRepository.create({
       ...medidorForm,
-      ubicacion: { barrio },
+      ubicacion: { barrio,latitud,longitud,numeroVivienda },
       afiliado: afiliadoDb,
     });
     try {
@@ -206,12 +206,15 @@ export class MedidoresService {
   }
 
   async update(id: number, updateMedidoreDto: UpdateMedidorDto) {
-    const { estado, afiliado, barrio, ...dataMedidor } = updateMedidoreDto;
+    const { estado, afiliado, barrio,latitud,longitud,numeroVivienda, ...dataMedidor } = updateMedidoreDto;
     const medidor = await this.medidorRepository.preload({
       id,
       ...dataMedidor,
       ubicacion: {
         barrio,
+        latitud,
+        longitud,
+        numeroVivienda
       },
     });
     if (!medidor)
@@ -483,13 +486,17 @@ export class MedidoresService {
           `Ya se ha registrado en el mes ${mes} de la planilla-gestion: ${planillaDb.gestion}`,
         );
       const { planilla, ...dataLectura } = lectura;
+      const {medidor} = planillaDb;
+      const consumoTotal=(lectura.lectura-medidor.ultimaLectura);
       const lecturaRegister = this.mesLecturasRepository.create({
         ...dataLectura,
         mesLecturado: mes,
-        consumoTotal: 0,
+        consumoTotal,
         planilla: planillaDb,
       });
       lecturas.push(lecturaRegister);
+      medidor.ultimaLectura=(medidor.ultimaLectura+consumoTotal);
+      await queryRunner.manager.save(medidor)
     }
     try {
       await queryRunner.manager.save(lecturas);
@@ -564,23 +571,42 @@ export class MedidoresService {
     };
   }
   async getPlanillasMedidor(idMedidor:number){
-    const medidor = await this.medidorRepository.findOne({where:{id:idMedidor,planillas:{isActive:true}},relations:{planillas:true}});
+    // const medidor = await this.medidorRepository.findOne({where:{id:idMedidor,planillas:{isActive:true}},relations:{planillas:true},select:{nroMedidor:true,planillas:{gestion:true,id:true}}});
+    const qb = this.medidorRepository.createQueryBuilder('medidor');
+    const medidor = await qb
+                          .select(['medidor.isActive','medidor.nroMedidor'])
+                          .leftJoinAndSelect('medidor.planillas','planillas','planillas.medidorId = medidor.id')
+                          .where('medidor.id = :idMedidor',{idMedidor})
+                          // .select(['planillas.id','planillas.gestion'])
+                          .getOne();
+    //console.log(medidor);
     if(!medidor) throw new BadRequestException(`Medidor de agua width id ${idMedidor} not found`);
     if(!medidor.isActive) throw new BadRequestException(`El medidor no se encuentra disponible`);
     return {
       OK:true,
-      message:'Medidor encontrado',
+      message:'planillas encontrado',
       data:medidor,
     }
   }
   async lecturasPlanilla(idPlanilla:number){
-    const planilla = await this.planillasMedidoresRepository.findOne({where:{id:idPlanilla,lecturas:{isActive:true}}});
+    const planilla = await this.planillasMedidoresRepository.findOne({where:{id:idPlanilla},relations:{lecturas:true}});
     if(!planilla) throw new BadRequestException(`Planilla de lecturas no encontrada`);
     if(!planilla.isActive) throw new BadRequestException(`La planilla no se encuentra disponible`);
     return{
       OK:true,
       message:'planilla encontrada',
       data:planilla
+    }
+  }
+
+  //METHODS USER AFILIADO
+
+  async listarMedidores(idUsuario:number){
+    const qb =  await this.dataSource.getRepository(Medidor).find({where:{afiliado:{perfil:{usuario:{id:idUsuario}}}}});
+    return {
+      OK:true,
+      message:'medidores',
+      data:qb
     }
   }
 }

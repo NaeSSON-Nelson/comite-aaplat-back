@@ -17,6 +17,7 @@ import {
   Authentication,
   Authorization,
   AuthorizationResource,
+  GetUser,
 } from '../auth/decorators';
 import {
   ItemMenuProtected,
@@ -27,6 +28,7 @@ import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
 import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
 import { registerAllLecturasDto } from './dto/register-all-lecturas.dto';
 import { QueryLecturasDto } from './query/queryLecturas';
+import { Usuario } from 'src/auth/modules/usuarios/entities';
 
 @Controller('medidores-agua')
 @Authentication()
@@ -34,7 +36,7 @@ import { QueryLecturasDto } from './query/queryLecturas';
 // @AuthorizationResource()
 export class MedidoresController {
   constructor(private readonly medidoresService: MedidoresService) {}
-  
+  //TODO: POST
   @Post()
   // @MenusProtected(ValidMenu.medidores)
   // @ItemMenuProtected(ValidItemMenu.medidorRegister)
@@ -42,58 +44,59 @@ export class MedidoresController {
     return this.medidoresService.create(createMedidoreDto);
   }
   
-  @Get()
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorList)
-  findAll() {
-    return this.medidoresService.findAll();
+  @Post('planilla')
+  createPanilla(@Body() createPlanillaMedidorDto:CreatePlanillaMedidorDto){
+    return this.medidoresService.createPlanillaMedidor(createPlanillaMedidorDto);
   }
-
+  @Post('lecturas')
+  registerAll(@Body() registerLecturas:registerAllLecturasDto){
+    return this.medidoresService.registrarAllLecturas(registerLecturas);
+  }
+  
+  //TODO: GETS
+  
+  @Get('afiliado')
+  medidoresAfiliado(@GetUser() user:Usuario){
+    return this.medidoresService.listarMedidores(user.id);
+  }
+  
+  @Get('afiliado/:id')
+  findAllMedidoresOfAfiliado(@Param('id', ParseIntPipe) id: number) {
+    return this.medidoresService.findAllMedidorOneAfiliado(id);
+  }
   @Get('afiliados')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorList)
   findAllMedidoresWidthAfiliados(@Query() paginationDto: PaginationDto) {
     return this.medidoresService.findAllMedidoresWithAfiliados(paginationDto);
-  }
-  // @Get('barrio')
-  // findAllMedidoresbyBarrio(@Query() paginationDto: PaginationDto) {
-  //   return this.medidoresService.findMedidoresWithAfiliadoByBarrio(
-  //     paginationDto,
-  //   );
-  // }
-  @Get('nro-medidor/:nro')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorRegister)
-  findMedidorByNro(@Param('nro') nro: string) {
-    return this.medidoresService.findMedidorByNro(nro);
   }
   @Get('planillas')
   findAllPLanillas(){
     return this.medidoresService.findAllPlanillasWidthMedidores();
   }
+  @Get('planillas/:id')
+  getPlanillas(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.getPlanillasMedidor(id);
+  }
   @Get('gestion/anios-seguimientos')
   aniosSeguimientos(){
     return this.medidoresService.getAniosSeguimientos();
   }
-  @Get('planillas/:id')
-  getPlanillas(@Param('id', ParseIntPipe) id: number){
-    return this.medidoresService.getPlanillasMedidor(id);
+  
+  @Get('nro-medidor/:nro')
+  findMedidorByNro(@Param('nro') nro: string) {
+    return this.medidoresService.findMedidorByNro(nro);
+  }
+  
+  @Get('lecturas/perfiles')
+  getAllLecturas(@Query() query: QueryLecturasDto){
+    return this.medidoresService.AllLecturasPerfilesMedidores(query)
   }
   @Get('lecturas/:id')
   getLecturas(@Param('id', ParseIntPipe) id: number){
     return this.medidoresService.lecturasPlanilla(id);
   }
-
-  @Get('afiliado/:id')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorDetails)
-  findAllMedidoresOfAfiliado(@Param('id', ParseIntPipe) id: number) {
-    return this.medidoresService.findAllMedidorOneAfiliado(id);
-  }
-
+  
+  //TODO: PATCH - UPDATES
   @Patch(':id')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorUpdate)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMedidoreDto: UpdateMedidorDto,
@@ -102,8 +105,6 @@ export class MedidoresController {
   }
 
   @Patch('status/:id')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorUpdateStatus)
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMedidoreDto: UpdateMedidorDto,
@@ -111,20 +112,6 @@ export class MedidoresController {
     return this.medidoresService.updateStatus(id, updateMedidoreDto);
   }
 
-  //TODO: SERVIRA ESTE CONTROLADOR?
-  // @Get('find/afiliado/:id')
-  // findAfiliadoByMedidores(@Param('id', ParseIntPipe) id: number){
-  //   return this.medidoresService.findAfiliadoByMedidores(id);
-
-  // }
-
-
-  //TODO: CRUD DE PLANILLAS DE LECTURA
-  
-  @Post('planilla')
-  createPanilla(@Body() createPlanillaMedidorDto:CreatePlanillaMedidorDto){
-    return this.medidoresService.createPlanillaMedidor(createPlanillaMedidorDto);
-  }
   @Patch('planilla/:id')
   updatePanilla(@Param('id', ParseIntPipe) id: number,@Body() updatePlanillaMedidorDto:UpdatePlanillaMedidorDto){
     return this.medidoresService.updatePlanillaMedidor(id,updatePlanillaMedidorDto);
@@ -132,22 +119,5 @@ export class MedidoresController {
   @Patch('planilla/:id')
   updateStatusPanilla(@Param('id', ParseIntPipe) id: number,@Body() updatePlanillaMedidorDto:UpdatePlanillaMedidorDto){
     return this.medidoresService.updateStatusPlanillaMedidor(id,updatePlanillaMedidorDto);
-  }
-
-  //TODO: LECTURAS DE MEDIDORES
-
-  @Post('lecturas')
-  registerAll(@Body() registerLecturas:registerAllLecturasDto){
-    return this.medidoresService.registrarAllLecturas(registerLecturas);
-  }
-  @Get('lecturas/perfiles')
-  getAllLecturas(@Query() query: QueryLecturasDto){
-    return this.medidoresService.AllLecturasPerfilesMedidores(query)
-  }
-  @Get(':id')
-  // @MenusProtected(ValidMenu.medidores)
-  // @ItemMenuProtected(ValidItemMenu.medidorDetails)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.medidoresService.findOne(id);
   }
 }
