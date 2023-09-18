@@ -254,100 +254,6 @@ export class MedidoresService {
     }
   }
 
-  //TODO: LECTURAS DE MEDIDORES, INDIVIDUAL
-
-  // async registerLectura(createLecturaMedidorDto: CreateLecturaMedidorDto) {
-  //   const { medidor, ...dataLectura } = createLecturaMedidorDto;
-  //   const medidorActual = await this.medidorRepository.preload({
-  //     id: medidor.id,
-  //   });
-  //   if (!medidorActual)
-  //     throw new NotFoundException(`Medidor con id ${medidor.id} no encontrado`);
-
-  //   if (dataLectura.lectura < medidorActual.ultimaLectura)
-  //     throw new BadRequestException('La Lectura es inferior a la ultima lectura registrada ');
-  //   // console.log((dataLectura.lectura - medidorActual.ultimaLectura));
-  //   const newLectura = this.lecturasRepository.create({
-  //     medidor,
-  //     ...dataLectura,
-  //     total: dataLectura.lectura - medidorActual.ultimaLectura,
-  //   });
-  //   try {
-  //     medidorActual.ultimaLectura = dataLectura.lectura;
-  //     await this.lecturasRepository.save(newLectura);
-  //     await this.medidorRepository.save(medidorActual);
-  //     return {
-  //       OK: true,
-  //       message: 'lectura registrada',
-  //       data: newLectura,
-  //     };
-  //   } catch (error) {
-  //     this.commonService.handbleDbErrors(error);
-  //   }
-  // }
-
-  // async registrarLecturas(registrarLecturas: RegistrarLecturasDto) {
-  //   const { lecturas: lecturasRegister } = registrarLecturas;
-  //   if (lecturasRegister.length === 0)
-  //     throw new BadRequestException('No hay registros de lecturas');
-  //   const queryRunner = this.dataSource.createQueryRunner();
-  //   await queryRunner.connect();
-  //   await queryRunner.startTransaction();
-  //   const lecturasNew: LecturaMedidor[] = [];
-
-  //   for (const { lectura, medidor, ...dataMedidor } of lecturasRegister) {
-  //     const medidorActual = await this.medidorRepository.preload({
-  //       id: medidor.id,
-  //     });
-  //     if (!medidorActual)
-  //       throw new NotFoundException(
-  //         `El medidor con id ${medidor.id} no existe`,
-  //       );
-  //     if (lectura < medidorActual.ultimaLectura)
-  //       throw new BadRequestException('La Lectura es inferior a la ultima lectura registrada');
-  //     const newLectura = this.lecturasRepository.create({
-  //       medidor,
-  //       lectura,
-  //       ...dataMedidor,
-  //       total: lectura - medidorActual.ultimaLectura,
-  //     });
-  //     lecturasNew.push(newLectura);
-  //     medidorActual.ultimaLectura = lectura;
-  //     await queryRunner.manager.save(medidorActual);
-  //   }
-
-  //   try {
-  //     await queryRunner.manager.save(lecturasNew);
-  //     await queryRunner.commitTransaction();
-  //     return {
-  //       OK: true,
-  //       message: 'Lecturas registradas con exito',
-  //       data: lecturasNew,
-  //     };
-  //   } catch (error) {
-  //     await queryRunner.rollbackTransaction();
-  //     this.commonService.handbleDbErrors(error);
-  //   } finally {
-  //     await queryRunner.release();
-  //   }
-  // }
-
-  // async findAllLecturasWithMedidorId(idMedidor: number) {
-  //   const medidor = await this.medidorRepository.findOne({
-  //     where: { id: idMedidor },
-  //     relations: { lecturas: true },
-  //   });
-  //   if (!medidor)
-  //     throw new NotFoundException(
-  //       `Medidor width id:${idMedidor} no encontrado`,
-  //     );
-  //   return {
-  //     OK: true,
-  //     message: 'listado de lecturas del medidor',
-  //     data: medidor,
-  //   };
-  // }
-
   async findMedidorByNro(nroMedidor: string) {
     const data = await this.medidorRepository.findOneBy({ nroMedidor });
     return {
@@ -546,7 +452,6 @@ export class MedidoresService {
       .where('planilla.gestion =:gestion', { gestion })
       // .andWhere('lecturas.mesLecturado = :mes',{mes})
       .getManyAndCount();
-
     return {
       OK: true,
       message: 'listado de perfiles con lecturas mensuales',
@@ -587,6 +492,59 @@ export class MedidoresService {
       message:'planillas encontrado',
       data:medidor,
     }
+  }
+  async getMesesSeguimientos(query: QueryLecturasDto){
+    const {gestion=new Date().getFullYear(),} = query;
+    const seg = await this.anioSeguimientoLecturaRepository.findOne({where:{anio:gestion},relations:{meses:true},select:{anio:true,id:true,isActive:true,meses:{mes:true,id:true,fechaFinRegistroLecturas:true,fechaRegistroLecturas:true}},order:{meses:{id:{direction:'ASC'}}}});
+    if(!seg) throw new BadRequestException(`Año ${gestion} no registrado`);
+    if(!seg.isActive) throw new BadRequestException(`Año ${gestion} no disponible`);
+    return {
+      OK:false,
+      message:`Lista de meses registrados del año ${gestion}`,
+      data:seg
+    }
+  }
+  async getPlanillasRegisters(query: QueryLecturasDto){
+    const {gestion=new Date().getFullYear(),mes = Mes.enero,barrio = Barrio._20DeMarzo,} = query;
+    // console.log(gestion, barrio, mes);
+    const qb = this.perfilRepository.createQueryBuilder('perfiles');
+    const { '0': data, '1': size } = await qb
+
+      .innerJoinAndSelect(
+        'perfiles.afiliado',
+        'afiliado',
+        'afiliado."perfilId" = perfiles.id',
+      )
+      .innerJoinAndSelect(
+        'afiliado.medidores',
+        'medidor',
+        'medidor."afiliadoId" = afiliado.id AND medidor."ubicacionBarrio" = :barrio',
+        {barrio}
+      )
+      .innerJoinAndSelect(
+        'medidor.planillas',
+        'planilla',
+        'planilla."medidorId" = medidor.id',
+      )
+      .leftJoinAndSelect(
+        'planilla.lecturas',
+        'lecturas',
+        'lecturas.mesLecturado = :mes',
+        { mes },
+      )
+      //.select([''])
+      .where('planilla.gestion =:gestion', { gestion })
+      //.andWhere('perfiles.isActive = true',{})
+      // .andWhere('lecturas.mesLecturado = :mes',{mes})
+      .getManyAndCount();
+      return {
+        OK: true,
+        message: 'listado de perfiles con lecturas mensuales',
+        data: {
+          data,
+          size,
+        },
+      };
   }
   async lecturasPlanilla(idPlanilla:number){
     const planilla = await this.planillasMedidoresRepository.findOne({where:{id:idPlanilla},relations:{lecturas:true}});

@@ -90,6 +90,14 @@ export class MedidoresController {
   getAllLecturas(@Query() query: QueryLecturasDto){
     return this.medidoresService.AllLecturasPerfilesMedidores(query)
   }
+  @Get('lecturas/reportes/meses')
+  getMesesReportes(@Query() query: QueryLecturasDto){
+    return this.medidoresService.getMesesSeguimientos(query);
+  }
+  @Get('lecturas/reportes/planillas')
+  getPlanillasReportes(@Query() query: QueryLecturasDto){
+    return this.medidoresService.getPlanillasRegisters(query);
+  }
   @Get('lecturas/:id')
   getLecturas(@Param('id', ParseIntPipe) id: number){
     return this.medidoresService.lecturasPlanilla(id);
