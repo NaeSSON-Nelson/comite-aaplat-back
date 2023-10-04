@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { CreateMedidorDto } from './dto/create-medidor.dto';
 import { UpdateMedidorDto } from './dto/update-medidor.dto';
@@ -22,6 +23,7 @@ import { registerAllLecturasDto } from './dto/register-all-lecturas.dto';
 import { AnioSeguimientoLectura } from './entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-registro-lectura.entity';
 import { QueryLecturasDto } from './query/queryLecturas';
+import { Cron,CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class MedidoresService {
@@ -374,6 +376,10 @@ export class MedidoresService {
       throw new BadRequestException(
         `No es un un mes registrado del año ${anio}`,
       );
+    const fechaActual = new Date();
+    if( fechaActual.getTime()>=mesExiste.fechaRegistroLecturas.getTime() && fechaActual.getTime()<= mesExiste.fechaFinRegistroLecturas.getTime()){
+      throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para registro`)
+    }
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -565,6 +571,99 @@ export class MedidoresService {
       OK:true,
       message:'medidores',
       data:qb
+    }
+  }
+
+
+  //* TASK SCHEDULING
+  private readonly logger = new Logger(MedidoresService.name);
+  //@Cron('45 * * * * *')
+  @Cron(CronExpression.EVERY_YEAR)
+  private async registrarAnioSeguimiento(){
+    
+    const yearAct = new Date().getFullYear();
+    const dateSeguimiento= await this.anioSeguimientoLecturaRepository.findOneBy({anio:yearAct});
+    if(dateSeguimiento){
+      this.logger.error(`Year ${yearAct} exist!`)
+    }else{
+      const date = this.anioSeguimientoLecturaRepository.create({anio:yearAct});
+      await this.anioSeguimientoLecturaRepository.save(date);
+      this.logger.log(`Year ${yearAct} registered!`)
+    }
+  }
+  //@Cron('15 * * * * *')
+  @Cron(CronExpression.EVERY_YEAR)
+  private async registrarPlanillasDeMedidores(){
+    const yearAct = new Date().getFullYear();
+    const dateSeguimiento= await this.anioSeguimientoLecturaRepository.findOneBy({anio:yearAct});
+    if(dateSeguimiento){
+      const afiliados = await this.dataSource.getRepository(Afiliado).find({where:{isActive:true,medidores:{isActive:true}},relations:{medidores:true}});
+      //this.logger.verbose(afiliados,'papitas :3');
+      for(const afiliado of afiliados){
+        for(const medidor of afiliado.medidores){
+          const planillaExist = await this.planillasMedidoresRepository.findOneBy({gestion:yearAct});
+          if(planillaExist){
+            this.logger.warn(`Planilla ${yearAct} del medidor ${medidor.nroMedidor} ya existe`);
+          }else{
+            const planilla = this.planillasMedidoresRepository.create({gestion:yearAct});
+            try {
+              await this.planillasMedidoresRepository.save(planilla);
+              this.logger.log(`Planilla ${yearAct} del medidor ${medidor.nroMedidor} creada!!`);
+            } catch (error) {
+              this.logger.warn('OCURRIO UN ERROR AL REGISTRAR');
+              this.logger.warn(error);
+            }
+          }
+        }
+      }
+    }else{
+
+      this.logger.error(`Year ${yearAct} no registered!`)
+    }
+  }
+  // @Cron('10 * * * * *')
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
+  private async registrarMesSeguimiento(){
+    
+    const date = new Date(new Date().getFullYear(),new Date().getMonth()-1)
+    const month = date.toLocaleString('default', { month: 'long' }).toUpperCase();
+    
+    this.logger.debug(month);
+    const qr = this.mesSeguimientoRegistroLecturaRepository.createQueryBuilder('mes');
+    const mes = await qr
+    .innerJoin('mes.anioSeguimiento','anio','anio.anio = :year',{year:date.getFullYear()})
+    .where('mes.mes = :mes',{mes:month})
+    .getOne();
+    const index = date.getMonth();
+    if(mes){
+      this.logger.warn(`MES ${month} ya registrado`);
+    }else{
+      const year = await this.anioSeguimientoLecturaRepository.findOneBy({anio:date.getFullYear()});
+      const mesSeg = this.mesSeguimientoRegistroLecturaRepository.create({mes:
+       index===0?Mes.enero
+      :index===1?Mes.febrero
+      :index===2?Mes.marzo
+      :index===3?Mes.abril
+      :index===4?Mes.mayo
+      :index===5?Mes.junio
+      :index===6?Mes.julio
+      :index===7?Mes.agosto
+      :index===8?Mes.septiembre
+      :index===9?Mes.octubre
+      :index===10?Mes.noviembre
+      :index===11?Mes.diciembre
+      :Mes.enero,
+    anioSeguimiento:year,
+  fechaRegistroLecturas:new Date(new Date().getFullYear(),new Date().getMonth(),1,8,0),
+  fechaFinRegistroLecturas:new Date(new Date().getFullYear(),new Date().getMonth(),20,23,59,59)},
+      )
+      try {
+        await this.mesSeguimientoRegistroLecturaRepository.save(mesSeg)
+        this.logger.log(`Mes ${month} de seguimiento creado con exito`)
+      } catch (error) {
+        this.logger.warn('OCURRIO UN ERROR AL REGISTRAR');
+        this.logger.warn(error);
+      }
     }
   }
 }

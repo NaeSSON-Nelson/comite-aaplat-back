@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { SeedsModule } from './seeds/seeds.module';
 import { ManagerModule } from './manager/manager.module';
 import { MedidoresModule } from './medidores-agua/medidores.module';
+import { PagosDeServicioModule } from './pagos-de-servicio/pagos-de-servicio.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,10 +24,12 @@ import { MedidoresModule } from './medidores-agua/medidores.module';
       synchronize:true //PARA PRODUCCION EN false
     }
     ),
+    ScheduleModule.forRoot(),
     ManagerModule,
     AuthModule,
     SeedsModule,
     MedidoresModule,
+    PagosDeServicioModule,
   ],
 })
 export class AppModule {}
