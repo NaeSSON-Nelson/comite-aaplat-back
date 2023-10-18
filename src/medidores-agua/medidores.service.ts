@@ -132,55 +132,9 @@ export class MedidoresService {
       },
     };
   }
-  //TODO: BUSCAR AFILIADOS CON MEDIDORES POR BARRIO
-  // async findMedidoresWithAfiliadoByBarrio(paginationDto: PaginationDto) {
-  //   let {
-  //     q = '',
-  //     order = 'ASC',
-  //     offset = 0,
-  //     limit = 50,
-  //     barrio = 'mendez-fortaleza',
-  //   } = paginationDto;
 
-  //   if (barrio) barrio = barrio.replace('-', ' ');
-
-  //   // const medidores = await this.medidorRepository.find({
-  //   //   relations:{afiliado:true},
-  //   //   where:{
-  //   //     ubicacionBarrio:barrio
-  //   //   },
-  //   //   skip:offset,
-  //   //   take:limit,
-  //   //   order:{
-  //   //     id:order
-  //   //   }
-  //   // });
-  //   const queryBuilder =
-  //     this.AfiliadoRepository.createQueryBuilder('afiliados');
-
-  //   const query = await queryBuilder
-  //     .innerJoinAndSelect(
-  //       'afiliados.medidores',
-  //       'medidor',
-  //       'medidor.ubicacionBarrio = :barrio and medidor.estado = 1',
-  //       { barrio },
-  //     )
-  //     .skip(offset)
-  //     .limit(limit)
-  //     .where('afiliados.estado = 1')
-  //     .getMany();
-  //   return {
-  //     OK: true,
-  //     message: 'listado de medidores por barrio',
-  //     data: query,
-  //   };
-  // }
   async findAllMedidorOneAfiliado(id: number) {
-    // const { data: afiliado } = await this.afiliadoService.findOne(idAfiliado);
-    // const medidoresOfAfiliado = await this.medidorRepository.find({
-    //   relations: { afiliado: true },
-    //   where: { afiliado: { id: afiliado.id } },
-    // });
+   
     const afiliadoWithMedidores = await this.perfilRepository.findOne({
       relations: { afiliado: { medidores: true } },
       select: {},
@@ -377,7 +331,10 @@ export class MedidoresService {
         `No es un un mes registrado del año ${anio}`,
       );
     const fechaActual = new Date();
-    if( fechaActual.getTime()>=mesExiste.fechaRegistroLecturas.getTime() && fechaActual.getTime()<= mesExiste.fechaFinRegistroLecturas.getTime()){
+    console.log('fecha inicial de registro',mesExiste.fechaRegistroLecturas.getTime());
+    console.log('fecha actual que se desea registrar',fechaActual.getTime());
+    console.log('fecha final de registro',mesExiste.fechaFinRegistroLecturas.getTime());
+    if( fechaActual.getTime()<=mesExiste.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesExiste.fechaFinRegistroLecturas.getTime()){
       throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para registro`)
     }
     const queryRunner = this.dataSource.createQueryRunner();

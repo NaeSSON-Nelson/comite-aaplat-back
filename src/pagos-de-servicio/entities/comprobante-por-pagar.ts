@@ -1,9 +1,10 @@
-import { Estado } from "src/interfaces/enum/enum-entityes";
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Estado, Monedas } from "src/interfaces/enum/enum-entityes";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { PlanillaPagos } from "./planillas-pagos";
+import { MesLectura } from "src/medidores-agua/entities/mes-lectura.entity";
 
-@Entity('pago_servicio')
-export class PagoServicio{
+@Entity('comprobante_por_pagar')
+export class ComprobantePorPago{
 
     @PrimaryGeneratedColumn()
     id:number;
@@ -11,6 +12,15 @@ export class PagoServicio{
         nullable:false,
     })
     monto:number;
+    @Column('enum',{
+        enum:Monedas,
+        nullable:false,
+    })
+    moneda:Monedas;
+    @Column('text',{
+        nullable:false,
+    })
+    metodoRegistro:string;
     @Column('text',{
         nullable:false,
     })
@@ -25,12 +35,21 @@ export class PagoServicio{
         default:false,
     })
     pagado:boolean;
+    @Column({
+        type:'text',
+        default: 'SIN PAGAR',
+        name:'estado_comprobate'
+    })
+    estadoComprobate:string;
     @Column('text',{
         nullable:true,
         name:'fecha_pagada'
     })
     fechaPagada:Date;
 
+    @OneToOne(()=>MesLectura,(mesLectura=>mesLectura.LecturaPorPagar),{nullable:false,})
+    @JoinColumn()
+    lectura:MesLectura;
     @ManyToOne(()=>PlanillaPagos,(planilla)=>planilla.pagos,{nullable:false,})
     planilla:PlanillaPagos;
     @CreateDateColumn({

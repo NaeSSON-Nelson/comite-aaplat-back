@@ -9,6 +9,7 @@ import {
 import { Perfil } from '.';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
+import { PlanillaPagos } from 'src/pagos-de-servicio/entities';
 
 @Entity({
   name: 'afiliados',
@@ -25,4 +26,7 @@ export class Afiliado extends ColumnsAlways {
   @OneToOne(() => Perfil)
   @JoinColumn()
   perfil: Perfil;
+  @OneToMany(() => PlanillaPagos, (planillasPagos) => planillasPagos.afiliado)
+  planillasPagos: PlanillaPagos[];
+
 }

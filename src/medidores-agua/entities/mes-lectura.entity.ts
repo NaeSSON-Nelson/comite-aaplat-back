@@ -1,7 +1,8 @@
 import { ColumnsAlways } from "src/common/inherints-db";
 import { Mes } from "src/interfaces/enum/enum-entityes";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { PlanillaLecturas } from "./planilla-lecturas.entity";
+import { ComprobantePorPago } from "src/pagos-de-servicio/entities";
 
 @Entity('mes_lecturas')
 export class MesLectura extends ColumnsAlways{
@@ -34,4 +35,7 @@ export class MesLectura extends ColumnsAlways{
 
     @ManyToOne(()=>PlanillaLecturas,(planillaLecturas)=>planillaLecturas.lecturas)
     planilla:PlanillaLecturas;
+    
+    @OneToOne(()=>ComprobantePorPago)
+    LecturaPorPagar:ComprobantePorPago;
 }

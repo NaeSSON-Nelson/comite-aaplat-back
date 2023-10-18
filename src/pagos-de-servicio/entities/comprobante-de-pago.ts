@@ -1,7 +1,8 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryColumn, UpdateDateColumn } from "typeorm";
-import { PagoServicio } from "./pago-servicio";
+import { ComprobantePorPago } from "./";
 
-@Entity('comprobante_pago')
+
+@Entity('comprobante_de_pago')
 export class ComprobantePago{
 
     @PrimaryColumn()
@@ -17,9 +18,9 @@ export class ComprobantePago{
     @Column('text',{nullable:true,})
     nroRecibo:string;
 
-    @OneToOne(()=>PagoServicio,{nullable:false,})
+    @OneToOne(()=>ComprobantePorPago,{nullable:false,})
     @JoinColumn()
-    pagoServicio:PagoServicio;
+    comprobantePorPagar:ComprobantePorPago;
     @CreateDateColumn({
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP(6)',

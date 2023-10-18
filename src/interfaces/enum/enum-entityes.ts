@@ -37,4 +37,7 @@ export enum Mes{
   noviembre="NOVIEMBRE",
   diciembre="DICIEMBRE",
 }
+export enum Monedas{
+  Bs ="Bs"
+}
 

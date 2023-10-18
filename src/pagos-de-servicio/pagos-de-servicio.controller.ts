@@ -1,34 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete,Query } from '@nestjs/common';
+import {ParseIntPipe} from '@nestjs/common/pipes'
 import { PagosDeServicioService } from './pagos-de-servicio.service';
 import { CreatePagosDeServicioDto } from './dto/create-pagos-de-servicio.dto';
 import { UpdatePagosDeServicioDto } from './dto/update-pagos-de-servicio.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Authentication } from 'src/auth/decorators';
 
 @Controller('pagos-de-servicio')
+@Authentication()
 export class PagosDeServicioController {
   constructor(private readonly pagosDeServicioService: PagosDeServicioService) {}
 
-  @Post()
-  create(@Body() createPagosDeServicioDto: CreatePagosDeServicioDto) {
-    return this.pagosDeServicioService.create(createPagosDeServicioDto);
+  @Get('afiliados')
+  ObtenerAfiliados(@Query() paginationDto: PaginationDto){
+    return this.pagosDeServicioService.findAllAfiliadosWidthPlanillasDePagos(paginationDto);
   }
 
-  @Get()
-  findAll() {
-    return this.pagosDeServicioService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.pagosDeServicioService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePagosDeServicioDto: UpdatePagosDeServicioDto) {
-    return this.pagosDeServicioService.update(+id, updatePagosDeServicioDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.pagosDeServicioService.remove(+id);
+  @Get('afiliados/:id')
+  ObtenerAfiliadoWidthPlanillas(@Param('id', ParseIntPipe) id: number){
+    return this.pagosDeServicioService.afiliadoWidthPlanillasPagos(id);
   }
 }
