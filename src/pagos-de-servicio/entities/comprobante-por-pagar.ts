@@ -1,7 +1,8 @@
 import { Estado, Monedas } from "src/interfaces/enum/enum-entityes";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { PlanillaPagos } from "./planillas-pagos";
+
 import { MesLectura } from "src/medidores-agua/entities/mes-lectura.entity";
+import { ComprobantePago } from "./comprobante-de-pago";
 
 @Entity('comprobante_por_pagar')
 export class ComprobantePorPago{
@@ -47,11 +48,11 @@ export class ComprobantePorPago{
     })
     fechaPagada:Date;
 
-    @OneToOne(()=>MesLectura,(mesLectura=>mesLectura.LecturaPorPagar),{nullable:false,})
+    @OneToOne(()=>MesLectura,(mesLectura=>mesLectura.lecturaPorPagar),{nullable:false,})
     @JoinColumn()
     lectura:MesLectura;
-    @ManyToOne(()=>PlanillaPagos,(planilla)=>planilla.pagos,{nullable:false,})
-    planilla:PlanillaPagos;
+    @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagar)
+    comprobante:ComprobantePago;
     @CreateDateColumn({
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP(6)',

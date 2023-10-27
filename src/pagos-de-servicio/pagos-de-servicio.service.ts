@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {BadRequestException} from '@nestjs/common/exceptions'
+import { BadRequestException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ComprobantePago, ComprobantePorPago, PlanillaPagos } from './entities';
-import { DataSource, Repository } from 'typeorm';
+import { ComprobantePago, ComprobantePorPago } from './entities';
+import { DataSource, IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
@@ -11,178 +11,280 @@ import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { Afiliado, Perfil } from 'src/auth/modules/usuarios/entities';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
 
 @Injectable()
 export class PagosDeServicioService {
-    constructor(
-    @InjectRepository(PlanillaPagos)
-    private readonly planillasPagosService: Repository<PlanillaPagos>,
+  constructor(
+    // @InjectRepository(PlanillaPagos)
+    // private readonly planillasPagosService: Repository<PlanillaPagos>,
     @InjectRepository(ComprobantePorPago)
     private readonly comprobantePorPagarService: Repository<ComprobantePorPago>,
     @InjectRepository(ComprobantePago)
     private readonly comprobantePagoService: Repository<ComprobantePago>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
-    ){}
+  ) {}
+
   
-    async findAllAfiliadosWidthPlanillasDePagos(paginationDto: PaginationDto) {
-      const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
-      // console.log(paginationDto);
-      const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
-      const { '0': data, '1': size } = await qb
+  //* TASK SCHEDULING
+  private readonly logger = new Logger(PagosDeServicioService.name);
+  private readonly TARIFA_MINIMA = 10;
+  private readonly LECTURA_MINIMA = 10;
+  private readonly COSTO_ADICIONAL = 2;
+  // //@Cron('15 * * * * *')
+  // @Cron(CronExpression.EVERY_YEAR)
+  // private async registrarPlanillasDeMedidores() {
+  //   const yearAct = new Date().getFullYear();
+  //   const afiliados = await this.dataSource
+  //     .getRepository(Afiliado)
+  //     .find({ where: { isActive: true } });
+  //   //this.logger.verbose(afiliados,'papitas :3');
+  //   for (const afiliado of afiliados) {
+  //     const planillaExist = await this.planillasPagosService.findOneBy({
+  //       gestion: yearAct,
+  //       afiliado: { id: afiliado.id },
+  //     });
+  //     if (planillaExist) {
+  //       this.logger.warn(
+  //         `Planilla de pago ${yearAct} del afiliado ${afiliado.id} ya existe`,
+  //       );
+  //     } else {
+  //       const planilla = this.planillasPagosService.create({
+  //         gestion: yearAct,
+  //         afiliado,
+  //       });
+  //       try {
+  //         await this.planillasPagosService.save(planilla);
+  //         this.logger.log(`Planilla de pago ${yearAct} afiliad creada!!`);
+  //       } catch (error) {
+  //         this.logger.warn('OCURRIO UN ERROR AL REGISTRAR');
+  //         this.logger.warn(error);
+  //       }
+  //     }
+  //   }
+
+  //   //this.logger.error(`Year ${yearAct} no registered!`)
+  // }
+
+  // @Cron('15 * * * * *')
+  // At 00:00 on day-of-month 7.
+  @Cron('0 0 7 * *')
+  private async ComprobantesPorPagarAutomatizado() {
+    const fechaActual = new Date()
+    let gestion = fechaActual.getFullYear();
+    let index=fechaActual.getMonth()-1;
+    if(fechaActual.getMonth()===0){
+      gestion = fechaActual.getFullYear()-1;
+      index=11;
+    }
+    const seguimientoAnioActual = await this.dataSource
+      .getRepository(AnioSeguimientoLectura)
+      .findOne({
+        where: { anio: gestion,meses:{} },
+        relations: { meses: true },
+      });
+    if (!seguimientoAnioActual) {
+      this.logger.error(
+        `this date ${fechaActual.getFullYear()} not registered`,
+      );
+      return;
+    }
+    const month = new Date(gestion,index)
+      .toLocaleString('default', { month: 'long' })
+      .toUpperCase();
+    // const seguimientoMesAnterior = seguimientoAnioActual.meses.find(
+    //   (mes) =>
+    //     mes.mes ===
+    //     (month.includes('ENERO')
+    //       ? Mes.enero
+    //       : month.includes('FEBRERO')
+    //       ? Mes.febrero
+    //       : month.includes('MARZO')
+    //       ? Mes.marzo
+    //       : month.includes('ABRIL')
+    //       ? Mes.abril
+    //       : month.includes('MAYO')
+    //       ? Mes.mayo
+    //       : month.includes('JUNIO')
+    //       ? Mes.junio
+    //       : month.includes('JULIO')
+    //       ? Mes.julio
+    //       : month.includes('AGOSTO')
+    //       ? Mes.agosto
+    //       : month.includes('SEPTIEMBRE')
+    //       ? Mes.septiembre
+    //       : month.includes('OCTUBRE')
+    //       ? Mes.octubre
+    //       : month.includes('NOVIEMBRE')
+    //       ? Mes.noviembre
+    //       : month.includes('DICIEMBRE')
+    //       ? Mes.diciembre
+    //       : Mes.enero),
+    // );
+    // if (!seguimientoMesAnterior) {
+    //   this.logger.warn(
+    //     `month ${seguimientoMesAnterior} not exist for ${fechaActual.getFullYear()}`,
+    //   );
+    //   return;
+    // }
+    const planQr = this.dataSource
+      .getRepository(Afiliado)
+      .createQueryBuilder('afiliados');
+    try {
+      const afiliados = await planQr
         .innerJoinAndSelect(
-          'perfil.afiliado',
-          'afiliado',
-          'afiliado."perfilId" = perfil.id',
+          'afiliados.medidores',
+          'medidor',
+          'medidor."afiliadoId" = afiliados.id AND medidor.isActive = true',
         )
-        .innerJoin(
-          'afiliado.planillasPagos',
+        .innerJoinAndSelect(
+          'medidor.planillas',
           'planillas',
-          'planillas."afiliadoId" = afiliado.id',
+          'planillas.gestion = :year AND planillas.isActive = true',
+          { year: gestion },
         )
-        .where('perfil.nombre_primero LIKE :query', { query: `${q}%` })
-        .orWhere('perfil.nombre_segundo LIKE :query', { query: `${q}%` })
-        .orWhere('perfil.apellido_primero LIKE :query', { query: `${q}%` })
-        .orWhere('perfil.apellido_segundo LIKE :query', { query: `${q}%` })
-        .orWhere('perfil.cedula_identidad LIKE :query', { query: `${q}%` })
-        .offset(offset)
-        .limit(limit)
-        .orderBy('perfil.id', 'ASC')
-        .getManyAndCount();
-      // console.log(data,size);
-      return {
-        OK: true,
-        message: 'listado de afiliados con planillas de pagos',
-        data: {
-          data,
-          size,
-          offset,
-          limit,
-          order,
-        },
-      };
-    }
-    async afiliadoWidthPlanillasPagos(idPerfil:number){
-
-      const perfil = await this.dataSource.getRepository(Perfil).createQueryBuilder('perfil')
-                              .innerJoinAndSelect(
-                                'perfil.afiliado',
-                                'afiliado',
-                                'afiliado."perfilId" = perfil.id',
-                              )
-                              .where('perfil.id = :idPerfil',{idPerfil})
-                              .getOne();
-      if(!perfil) throw new BadRequestException(`perfil no encontrado!`);
-      if(!perfil.isActive) throw new BadRequestException(`el perfil se encuentra deshabilitado!`);
-      else if(!perfil.afiliado.isActive) throw new BadRequestException(`La afiliacion se encuentra deshabilidad del perfil ${perfil.nombrePrimero} ${perfil.apellidoPrimero} width id: ${perfil.id}`);
-      return{
-        OK:true,
-        message:`perfil encontrado`,
-        data:perfil,
-      } 
-    }
-//* TASK SCHEDULING
-private readonly logger = new Logger(PagosDeServicioService.name);
-private readonly TARIFA_MINIMA = 10;
-private readonly LECTURA_MINIMA = 10;
-private readonly COSTO_ADICIONAL = 2;
-//@Cron('15 * * * * *')
-@Cron(CronExpression.EVERY_YEAR)
-private async registrarPlanillasDeMedidores(){
-    const yearAct = new Date().getFullYear();
-      const afiliados = await this.dataSource.getRepository(Afiliado).find({where:{isActive:true}});
-      //this.logger.verbose(afiliados,'papitas :3');
-      for(const afiliado of afiliados){
-          const planillaExist = await this.planillasPagosService.findOneBy({gestion:yearAct,afiliado:{id:afiliado.id}});
-          if(planillaExist){
-            this.logger.warn(`Planilla de pago ${yearAct} del afiliado ${afiliado.id} ya existe`);
-          }else{
-            const planilla = this.planillasPagosService.create({gestion:yearAct,afiliado});
+        .innerJoinAndSelect(
+          'planillas.lecturas',
+          'lecturas',
+          'lecturas.mesLecturado = :month AND lecturas.isActive = true',
+          { month },
+        )
+        .where('planillas.isActive = true')
+        .getMany();
+      // console.log(afiliados);
+      for (const afiliado of afiliados) {
+        for (const medidor of afiliado.medidores) {
+          const comprobante = await this.comprobantePorPagarService.findOneBy({
+            lectura: { id: medidor.planillas[0].lecturas[0].id },
+          });
+          if (comprobante) {
+            this.logger.warn(
+              `el mes lectura ${medidor.planillas[0].lecturas[0].mesLecturado} del medidor de agua con NRO:${medidor.nroMedidor} ya tiene un comprobante por pagar registrado`,
+            );
+          } else {
+            const comprobantePorPagar = this.comprobantePorPagarService.create({
+              lectura: medidor.planillas[0].lecturas[0],
+              //TODO: MONTO A PAGAR MINIMO ES DE 10 BS SI EL REGISTRO DE LECTURA ES INFERIOR A 10 M3, SE COBRA 2 BS POR CADA M3
+              monto:
+                medidor.planillas[0].lecturas[0].consumoTotal >
+                this.LECTURA_MINIMA
+                  ? this.TARIFA_MINIMA +
+                    (medidor.planillas[0].lecturas[0].consumoTotal -
+                      this.LECTURA_MINIMA) *
+                      this.COSTO_ADICIONAL
+                  : this.TARIFA_MINIMA,
+              motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
+              metodoRegistro: 'REGISTRO AUTOMATIZADO',
+              moneda: Monedas.Bs,
+            });
             try {
-              await this.planillasPagosService.save(planilla);
-              this.logger.log(`Planilla de pago ${yearAct} afiliad creada!!`);
+              await this.comprobantePorPagarService.save(comprobantePorPagar);
+              this.logger.log(`COMPROBANTE DE PAGO REGISTRADO!`);
             } catch (error) {
-              this.logger.warn('OCURRIO UN ERROR AL REGISTRAR');
-              this.logger.warn(error);
+              this.logger.error(error);
             }
           }
-        
+        }
       }
-
-      //this.logger.error(`Year ${yearAct} no registered!`)
-    
+    } catch (error) {
+      console.log(error);
+    }
   }
-  
-    // @Cron('15 * * * * *')
-    // At 00:00 on day-of-month 7.
-    @Cron('0 0 7 * *')
-    private async ComprobantesPorPagarAutomatizado(){
-        const fechaActual = new Date(new Date().getFullYear(),new Date().getMonth()-1);
-        const seguimientoAnioActual = await this.dataSource.getRepository(AnioSeguimientoLectura).findOne({where:{anio:fechaActual.getFullYear()},relations:{meses:true}});
-        if(!seguimientoAnioActual){
-          this.logger.error(`this date ${fechaActual.getFullYear()} not registered`); 
-          return;
-        }
-        const month = fechaActual.toLocaleString('default', { month: 'long' }).toUpperCase();
-        const seguimientoMesAnterior = seguimientoAnioActual.meses.find(
-          mes=>mes.mes === (month.includes('ENERO')?Mes.enero:
-                month.includes('FEBRERO')?Mes.febrero:
-                month.includes('MARZO')?Mes.marzo:
-                month.includes('ABRIL')?Mes.abril:
-                month.includes('MAYO')?Mes.mayo:
-                month.includes('JUNIO')?Mes.junio:
-                month.includes('JULIO')?Mes.julio:
-                month.includes('AGOSTO')?Mes.agosto:
-                month.includes('SEPTIEMBRE')?Mes.septiembre:
-                month.includes('OCTUBRE')?Mes.octubre:
-                month.includes('NOVIEMBRE')?Mes.noviembre:
-                month.includes('DICIEMBRE')?Mes.diciembre:
-                Mes.enero))
-        if(!seguimientoMesAnterior) {
-          this.logger.warn(`month ${seguimientoMesAnterior} not exist for ${fechaActual.getFullYear()}`);
-          return;
-        }
-        const planQr = this.dataSource.getRepository(Afiliado).createQueryBuilder('afiliados');
-        try {
-          
-          const afiliados = await planQr
-          .innerJoinAndSelect('afiliados.medidores','medidor','medidor."afiliadoId" = afiliados.id')
-          .innerJoinAndSelect('afiliados.planillasPagos','planillasPagos','planillasPagos.gestion = :year',{year:fechaActual.getFullYear()})
-          .innerJoinAndSelect('medidor.planillas','planillas','planillas.gestion = :year',{year:fechaActual.getFullYear()})
-          .innerJoinAndSelect('planillas.lecturas','lecturas','lecturas.mesLecturado = :month',{month})                                        
-          .where('planillas.gestion = :year',{year:fechaActual.getFullYear()})                                               
-          .andWhere('planillas.isActive = true')
-          .getMany();
-          // console.log(afiliados);  
-          for(const afiliado of afiliados){
-            
-            for(const medidor of afiliado.medidores){
-              const comprobante = await this.comprobantePorPagarService.findOneBy({lectura:{id:medidor.planillas[0].lecturas[0].id}});
-              if(comprobante){
-                this.logger.warn(`el mes lectura ${medidor.planillas[0].lecturas[0].mesLecturado} del medidor de agua con NRO:${medidor.nroMedidor} ya tiene un comprobante por pagar registrado`);
-              }else{
-                const comprobantePorPagar = this.comprobantePorPagarService.create(
-                  { lectura:medidor.planillas[0].lecturas[0],
-                    planilla:afiliado.planillasPagos[0],
-                    //TODO: MONTO A PAGAR MINIMO ES DE 10 BS SI EL REGISTRO DE LECTURA ES INFERIOR A 10 M3, SE COBRA 2 BS POR CADA M3
-                    monto:medidor.planillas[0].lecturas[0].consumoTotal>this.LECTURA_MINIMA?
-                    this.TARIFA_MINIMA+(medidor.planillas[0].lecturas[0].consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL:
-                    this.TARIFA_MINIMA,
-                    motivo:`PAGO DE SERVICIO, GESTION:${medidor.planillas[0].gestion}, MES: ${medidor.planillas[0].lecturas[0].mesLecturado}`,
-                    metodoRegistro:'REGISTRO AUTOMATIZADO',
-                    moneda:Monedas.Bs,
-                  });
-                  try {
-                    await this.comprobantePorPagarService.save(comprobantePorPagar)
-                    this.logger.log(`COMPROBANTE DE PAGO REGISTRADO!`)
-                  } catch (error) {
-                    this.logger.error(error);
-                  }
-              }
-            }
+
+  async ComprobanteDetalles(idLectura: number) {
+    const lecturaPorPagar = await this.dataSource.getRepository(MesLectura).findOne({
+      where: { id:idLectura},
+      relations: { lecturaPorPagar:{comprobante:true} },
+      select:{
+        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,mesLecturado:true,
+        lecturaPorPagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
+          comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
+        },
+      }
+    });
+    if (!lecturaPorPagar)
+      throw new BadRequestException(
+        `la lectura: ${idLectura} no fue encontrada`,
+      );
+    return {
+      OK: true,
+      message: 'lectura con comprobante de pago ',
+      data: lecturaPorPagar,
+    };
+  }
+  async generarComprobantes(){
+    const fechaActual = new Date()
+    let gestion = fechaActual.getFullYear();
+    let index=fechaActual.getMonth()-1;
+    if(fechaActual.getMonth()===0){
+      gestion = fechaActual.getFullYear()-1;
+      index=11;
+    }
+    const mes=index===0?Mes.enero
+    :index===1?Mes.febrero
+    :index===2?Mes.marzo
+    :index===3?Mes.abril
+    :index===4?Mes.mayo
+    :index===5?Mes.junio
+    :index===6?Mes.julio
+    :index===7?Mes.agosto
+    :index===8?Mes.septiembre
+    :index===9?Mes.octubre
+    :index===10?Mes.noviembre
+    :index===11?Mes.diciembre
+    :Mes.enero;
+    const month = new Date(gestion,index).toLocaleString('default', { month: 'long' }).toUpperCase();
+    const mesRegistrar = await this.dataSource.getRepository(MesSeguimientoRegistroLectura).findOne({
+      where:[
+        {
+          mes,
+          anioSeguimiento:{
+            anio:gestion,
           }
-        } catch (error) {
-          console.log(error);
-        }
-        }
+        },
+      ],relations:{anioSeguimiento:true}
+    })
+    if(!mesRegistrar) throw new BadRequestException(`Mes no registrado ${month} año ${gestion}`);
+    if(fechaActual.getTime()<=mesRegistrar.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesRegistrar.fechaFinRegistroLecturas.getTime())
+    throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para generar los comprobantes`)
+  
+    const planillasLecturas = await this.dataSource.getRepository(PlanillaLecturas)
+            .find({where:
+              {gestion:mesRegistrar.anioSeguimiento.anio,
+                lecturas:{mesLecturado:mesRegistrar.mes,isActive:true},
+                isActive:true},
+            relations:{lecturas:{lecturaPorPagar:true}}});
+    const lecturas:MesLectura[]=[];
+    planillasLecturas.forEach(plan=>{
+      plan.lecturas.forEach(lect=>{
+        
+        if(lect.lecturaPorPagar===null)
+        lecturas.push(lect);
+      })
+    })
+    const comprobantesGenerados:ComprobantePorPago[]=[];
+    for(const lectu of lecturas){
+      const comp = this.comprobantePorPagarService.create({
+        lectura:lectu,
+        metodoRegistro:'GENERADO POR LA CAJA',
+        monto:lectu.consumoTotal >this.LECTURA_MINIMA
+                ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
+                : this.TARIFA_MINIMA,
+        motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
+        moneda: Monedas.Bs,
+      })
+      try {
+        await this.comprobantePorPagarService.save(comp);
+        comprobantesGenerados.push(comp);
+      } catch (error) {
+        this.logger.error('error al registrar un comprobante',error);
+      }
+    }
+    return {
+      OK:true,
+      message:'Comprobantes creados con exito',
+      data:comprobantesGenerados.length,
+    };
+  }
 }

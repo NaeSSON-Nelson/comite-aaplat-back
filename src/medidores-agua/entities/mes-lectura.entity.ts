@@ -36,6 +36,6 @@ export class MesLectura extends ColumnsAlways{
     @ManyToOne(()=>PlanillaLecturas,(planillaLecturas)=>planillaLecturas.lecturas)
     planilla:PlanillaLecturas;
     
-    @OneToOne(()=>ComprobantePorPago)
-    LecturaPorPagar:ComprobantePorPago;
+    @OneToOne(()=>ComprobantePorPago,(comprobante)=>comprobante.lectura)
+    lecturaPorPagar:ComprobantePorPago;
 }

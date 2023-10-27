@@ -11,13 +11,14 @@ import { Authentication } from 'src/auth/decorators';
 export class PagosDeServicioController {
   constructor(private readonly pagosDeServicioService: PagosDeServicioService) {}
 
-  @Get('afiliados')
-  ObtenerAfiliados(@Query() paginationDto: PaginationDto){
-    return this.pagosDeServicioService.findAllAfiliadosWidthPlanillasDePagos(paginationDto);
+  
+  @Get('comprobantes/generar')
+  GenerarComprobantes()
+  {
+    return this.pagosDeServicioService.generarComprobantes(); 
   }
-
-  @Get('afiliados/:id')
-  ObtenerAfiliadoWidthPlanillas(@Param('id', ParseIntPipe) id: number){
-    return this.pagosDeServicioService.afiliadoWidthPlanillasPagos(id);
+  @Get('comprobantes/:id')
+  ObtenerComprobante(@Param('id', ParseIntPipe) id: number){
+    return this.pagosDeServicioService.ComprobanteDetalles(id);
   }
 }

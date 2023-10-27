@@ -15,6 +15,9 @@ import { RoleToUsuario } from 'src/auth/modules/usuarios/roles-to-usuario/entiti
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
+import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
+import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
+import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 
 @Injectable()
 export class SeedsService {
@@ -45,6 +48,10 @@ export class SeedsService {
     private readonly mesSeguimientoRegistroLecturaRepository: Repository<MesSeguimientoRegistroLectura>,
     @InjectRepository(PlanillaLecturas)
     private readonly planillaLecturasRepository: Repository<PlanillaLecturas>,
+    @InjectRepository(MesLectura)
+    private readonly mesLecturaRepository: Repository<MesLectura>,
+    @InjectRepository(ComprobantePorPago)
+    private readonly comprobantesPorPagarRepository: Repository<ComprobantePorPago>,
     
     private readonly dataSource: DataSource,
     private readonly commonService: CommonService,
@@ -76,9 +83,13 @@ export class SeedsService {
       await queryRunner.manager.save(medidoresSave);
       const planillasSave = await this.insertPlanillas(medidoresSave);
       await queryRunner.manager.save(planillasSave)
+      const lecturasSave = await this.insertLecturas(planillasSave);
+      await queryRunner.manager.save(lecturasSave);
+      const comprobantesPorPagar = await this.insertComprobantesPorPagarAnteriores(lecturasSave);
+      await queryRunner.manager.save(comprobantesPorPagar);
       const anioSeguimientoSave = await this.insertAnioSeguimientos();
       await queryRunner.manager.save(anioSeguimientoSave);
-      const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
+      const mesesSeguimientoSave = await this.insertMesSeguimiento();
       await queryRunner.manager.save(mesesSeguimientoSave);
       // console.log('hola:3');
       await queryRunner.commitTransaction();
@@ -177,31 +188,95 @@ export class SeedsService {
     return usuarios;
   }
   private async insertAnioSeguimientos(){
-    const seedAnioSeguimiento=initialData.aniosSeguimiento;
-    const seguimientos:AnioSeguimientoLectura[]=[];
-    seedAnioSeguimiento.forEach((val)=>{
-      seguimientos.push(this.anioSeguimientoLecturaRepository.create({...val}));
-    })
-    return seguimientos;
+    const yearSeg = this.anioSeguimientoLecturaRepository.create({anio:new Date().getFullYear()});
+    return yearSeg;
   }
-  private async insertMesSeguimiento(anios:AnioSeguimientoLectura[]){
-    const seedMesSeguimiento = initialData.mesesSeguimiento;
+  private async insertMesSeguimiento(){
+    const fechaActual = new Date();
+    const anioSeguimiento = await this.anioSeguimientoLecturaRepository.findOneBy({anio:fechaActual.getFullYear()});
     const meses:MesSeguimientoRegistroLectura[]=[];
-    seedMesSeguimiento.forEach(val=>{
-      meses.push(this.mesSeguimientoRegistroLecturaRepository.create({...val,anioSeguimiento:anios[0]}))
-    })
+    for(let index=0;index<fechaActual.getMonth();index++){
+      const mes = this.mesSeguimientoRegistroLecturaRepository.create(
+        {
+          mes: index===0?Mes.enero
+          :index===1?Mes.febrero
+          :index===2?Mes.marzo
+          :index===3?Mes.abril
+          :index===4?Mes.mayo
+          :index===5?Mes.junio
+          :index===6?Mes.julio
+          :index===7?Mes.agosto
+          :index===8?Mes.septiembre
+          :index===9?Mes.octubre
+          :index===10?Mes.noviembre
+          :index===11?Mes.diciembre
+          :Mes.enero,
+          anioSeguimiento,
+          fechaRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,2,8,0,0,0),
+          fechaFinRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,28,12,59,59,0),
+        }
+      ) 
+      meses.push(mes);
+    }
     return meses;
   }
   private async insertPlanillas(medidores:Medidor[]){
     const seedPlanillas = initialData.planillas;
     const planillas:PlanillaLecturas[]=[];
-    // seedPlanillas.forEach((seed,index)=>{
-    //   planillas.push(this.planillaLecturasRepository.create({...seed,medidor:medidores[index]}));
-    // })
     medidores.forEach(medidor=>{
       planillas.push(this.planillaLecturasRepository.create({...seedPlanillas[0],medidor}))
     })
     return planillas;
+  }
+  private async insertLecturas(planillas:PlanillaLecturas[]){
+    const fechaActual = new Date();
+    const lecturas:MesLectura[]=[];
+    for(const planilla of planillas){
+      for(let index=0;index<fechaActual.getMonth();index++){
+        const lecturaAl = Math.round((Math.random()*100)+10);
+        const lectura = this.mesLecturaRepository.create({
+          lectura:lecturaAl,
+          consumoTotal:(lecturaAl-planilla.medidor.ultimaLectura),
+          mesLecturado:index===0?Mes.enero
+          :index===1?Mes.febrero
+          :index===2?Mes.marzo
+          :index===3?Mes.abril
+          :index===4?Mes.mayo
+          :index===5?Mes.junio
+          :index===6?Mes.julio
+          :index===7?Mes.agosto
+          :index===8?Mes.septiembre
+          :index===9?Mes.octubre
+          :index===10?Mes.noviembre
+          :index===11?Mes.diciembre
+          :Mes.enero,
+          planilla,
+        })
+        planilla.medidor.ultimaLectura=lecturaAl;
+        lecturas.push(lectura);
+      }
+      //await this.medidorRepository.save(planilla.medidor);
+    }
+    return lecturas;
+  }
+  private readonly TARIFA_MINIMA = 10;
+  private readonly LECTURA_MINIMA = 10;
+  private readonly COSTO_ADICIONAL = 2;
+  private async insertComprobantesPorPagarAnteriores(lecturas:MesLectura[]){
+    const comprobantesPorPagar:ComprobantePorPago[]=[];
+    for(const lectu of lecturas){
+      const comp = this.comprobantesPorPagarRepository.create({
+        lectura:lectu,
+        metodoRegistro:'GENERADO POR GENERACION DE RAIZ',
+        monto:lectu.consumoTotal >this.LECTURA_MINIMA
+                ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
+                : this.TARIFA_MINIMA,
+        motivo: `PAGO DE SERVICIO, GESTION:${lectu.planilla.gestion}, MES: ${lectu.mesLecturado}`,
+        moneda: Monedas.Bs,
+      })
+      comprobantesPorPagar.push(comp);
+    }
+    return comprobantesPorPagar;
   }
   private async insertMedidores(afiliados: Afiliado[]) {
     const seedMedidores = initialData.medidores;
@@ -301,6 +376,19 @@ export class SeedsService {
 
       await queryRunner.commitTransaction();
       return { OK: true, msg: 'SEED PART TWO EXECUTE' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+  async registrarSeeds3(){
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.commonService.handbleDbErrors(error);

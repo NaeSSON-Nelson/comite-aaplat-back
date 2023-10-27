@@ -102,6 +102,10 @@ export class MedidoresController {
   getLecturas(@Param('id', ParseIntPipe) id: number){
     return this.medidoresService.lecturasPlanilla(id);
   }
+  @Get('lecturas/comprobantes/:id')
+  getLecturasWidthComprobante(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.lecturaDetails(id);
+  }
   
   //TODO: PATCH - UPDATES
   @Patch(':id')

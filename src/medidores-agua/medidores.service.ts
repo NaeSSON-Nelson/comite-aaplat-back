@@ -328,12 +328,9 @@ export class MedidoresService {
     const mesExiste = anioExiste.meses.find((mesT) => mesT.mes === mes);
     if (!mesExiste)
       throw new BadRequestException(
-        `No es un un mes registrado del año ${anio}`,
+        `${mes} no es un un mes registrado del año ${anio}`,
       );
     const fechaActual = new Date();
-    console.log('fecha inicial de registro',mesExiste.fechaRegistroLecturas.getTime());
-    console.log('fecha actual que se desea registrar',fechaActual.getTime());
-    console.log('fecha final de registro',mesExiste.fechaFinRegistroLecturas.getTime());
     if( fechaActual.getTime()<=mesExiste.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesExiste.fechaFinRegistroLecturas.getTime()){
       throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para registro`)
     }
@@ -519,6 +516,22 @@ export class MedidoresService {
       data:planilla
     }
   }
+  async lecturaDetails(idLectura:number){
+    const lectura = await this.mesLecturasRepository.findOne(
+      {where:{id:idLectura},
+      select:{
+        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,lectura:true,mesLecturado:true,
+       // LecturaPorPagar:{created_at:true,estadoComprobate:true,fechaPagada:true,estado:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
+        //comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,}}},
+      //relations:{LecturaPorPagar:{comprobante:true}}})
+      }})
+      if(!lectura) throw new BadRequestException(`Lectura no encontrada`);
+    return{
+      OK:true,
+      message:'Lectura encontrada',
+      data:lectura,
+    }
+  }
 
   //METHODS USER AFILIADO
 
@@ -582,20 +595,25 @@ export class MedidoresService {
   @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
   private async registrarMesSeguimiento(){
     
-    const date = new Date(new Date().getFullYear(),new Date().getMonth()-1)
-    const month = date.toLocaleString('default', { month: 'long' }).toUpperCase();
+    const fechaActual = new Date()
+    let gestion = fechaActual.getFullYear();
+    let index=fechaActual.getMonth()-1;
+    if(fechaActual.getMonth()===0){
+      gestion = fechaActual.getFullYear()-1;
+      index=11;
+    }
+    const month = new Date(gestion,index).toLocaleString('default', { month: 'long' }).toUpperCase();
     
     this.logger.debug(month);
     const qr = this.mesSeguimientoRegistroLecturaRepository.createQueryBuilder('mes');
     const mes = await qr
-    .innerJoin('mes.anioSeguimiento','anio','anio.anio = :year',{year:date.getFullYear()})
+    .innerJoin('mes.anioSeguimiento','anio','anio.anio = :year',{year:gestion})
     .where('mes.mes = :mes',{mes:month})
     .getOne();
-    const index = date.getMonth();
     if(mes){
-      this.logger.warn(`MES ${month} ya registrado`);
+      this.logger.warn(`MES ${month} del año ${gestion} ya registrado`);
     }else{
-      const year = await this.anioSeguimientoLecturaRepository.findOneBy({anio:date.getFullYear()});
+      const year = await this.anioSeguimientoLecturaRepository.findOneBy({anio:gestion});
       const mesSeg = this.mesSeguimientoRegistroLecturaRepository.create({mes:
        index===0?Mes.enero
       :index===1?Mes.febrero
@@ -611,8 +629,8 @@ export class MedidoresService {
       :index===11?Mes.diciembre
       :Mes.enero,
     anioSeguimiento:year,
-  fechaRegistroLecturas:new Date(new Date().getFullYear(),new Date().getMonth(),1,8,0),
-  fechaFinRegistroLecturas:new Date(new Date().getFullYear(),new Date().getMonth(),20,23,59,59)},
+  fechaRegistroLecturas:new Date(fechaActual.getFullYear(),fechaActual.getMonth(),1,8,0),
+  fechaFinRegistroLecturas:new Date(fechaActual.getFullYear(),fechaActual.getMonth(),20,23,59,59)},
       )
       try {
         await this.mesSeguimientoRegistroLecturaRepository.save(mesSeg)

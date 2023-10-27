@@ -49,15 +49,16 @@ class MedidorSeed {
   estado?: Estado;
   marca: string;
   ubicacion:Ubicacion;
+  ultimaLectura: number;
 }
 class PlanillaLecturasSeed{
   gestion:number;
 }
 class MesLecturaSeed{
-  lectura:number
+  lectura:number;
   estadoMedidor?:string;
-  consumoTotal:number;
   mesLecturado:Mes;
+  planilla:PlanillaLecturasSeed;
 }
 class AnioSeguimientoLecturaSeed{
   anio:number;
@@ -76,8 +77,8 @@ class SeedData {
   usuarios: UsuarioSeed[];
   planillas:PlanillaLecturasSeed[]
   medidores: MedidorSeed[];
-  aniosSeguimiento: AnioSeguimientoLecturaSeed[];
-  mesesSeguimiento: MesSeguimientoRegistroLectura[];
+  // aniosSeguimiento: AnioSeguimientoLecturaSeed[];
+  // mesesSeguimiento: MesSeguimientoRegistroLectura[];
 }
 const formatDate = (date) =>
   [
@@ -645,7 +646,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio._20DeMarzo
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '98CSX477744QW',
@@ -655,7 +656,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio._20DeMarzo
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '26HJT5645DF4D4W',
@@ -665,7 +666,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.mendezFortaleza
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '5R4ET45V4B4BVFGH5555',
@@ -675,7 +676,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.sanAntonio
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '138R78944165465E',
@@ -685,7 +686,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.primavera
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '5995DASD4WQ4',
@@ -695,7 +696,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.verdeOlivo
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '6QW8E7645ASD6W',
@@ -705,7 +706,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.primavera
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '9QWE5QWE4ASD4W',
@@ -715,7 +716,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.mendezFortaleza
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '4E48R7WW44',
@@ -725,7 +726,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.verdeOlivo
-      }
+      },ultimaLectura:0,
     },
     {
       nroMedidor: '59QWE89Q8WE98QWE4',
@@ -735,49 +736,7 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       ubicacion:{
         barrio:Barrio.sanAntonio
-      }
-    },
-  ],
-  aniosSeguimiento:[
-    {
-      anio:2023,
-    }
-  ],
-  mesesSeguimiento:[
-    {
-      mes:Mes.enero,
-      fechaRegistroLecturas: new Date(2023, 2, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 2, 28,12,59,59,0),
-    },
-    {
-      mes:Mes.febrero,
-      fechaRegistroLecturas: new Date(2023, 3, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 3, 28,12,59,59,0),
-    },
-    {
-      mes:Mes.marzo,
-      fechaRegistroLecturas: new Date(2023, 4, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 4, 28,12,59,59,0),
-    },
-    {
-      mes:Mes.abril,
-      fechaRegistroLecturas: new Date(2023, 5, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 5, 28,12,59,59,0),
-    },
-    {
-      mes:Mes.mayo,
-      fechaRegistroLecturas: new Date(2023, 6, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 6, 28,12,59,59,0),
-    },
-    {
-      mes:Mes.junio,
-      fechaRegistroLecturas: new Date(2023, 7, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 7, 28,12,59,59,0),
-    },
-    {
-      mes:Mes.julio,
-      fechaRegistroLecturas: new Date(2023, 8, 2,8,0,0,0),
-      fechaFinRegistroLecturas: new Date(2023, 8, 28,12,59,59,0),
+      },ultimaLectura:0,
     },
   ],
   planillas:[
