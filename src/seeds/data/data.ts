@@ -487,30 +487,30 @@ export const initialData: SeedData = {
     },
     {
       nombre: 'registrar medidor',
-      linkMenu: 'medidor-register',
+      linkMenu: 'medidor-agua-register',
       estado: Estado.ACTIVO,
     },
     {
       nombre: 'detalles de afiliado con medidores',
-      linkMenu: 'medidor-details',
+      linkMenu: 'medidor-agua-details',
       estado: Estado.ACTIVO,
       visible:false,
     },
     {
       nombre: 'modificar medidor',
-      linkMenu: 'medidor-update',
+      linkMenu: 'medidor-agua-update',
       estado: Estado.ACTIVO,
       visible:false,
     },
     {
       nombre: 'bajar medidor',
-      linkMenu: 'medidor-update-status',
+      linkMenu: 'medidor-agua-update-status',
       estado: Estado.ACTIVO,
       visible:false,
     },
     {
       nombre: 'listar afiliados con medidores',
-      linkMenu: 'medidor-list',
+      linkMenu: 'medidor-agua-list',
       estado: Estado.ACTIVO,
     },
     {
@@ -596,7 +596,7 @@ export const initialData: SeedData = {
     },
     {
       nombre: 'medidores-agua',
-      linkMenu: 'medidores',
+      linkMenu: 'medidores-agua',
       estado: Estado.ACTIVO,
     },{
       nombre:'perfiles',

@@ -381,27 +381,30 @@ export class MedidoresService {
   async AllLecturasPerfilesMedidores(query: QueryLecturasDto) {
     const {
       gestion = new Date().getFullYear(),
-      barrio = Barrio._20DeMarzo,
+      barrio,
       mes = Mes.enero,
     } = query;
     // console.log(gestion, barrio, mes);
     const qb = this.perfilRepository.createQueryBuilder('perfiles');
-    const { '0': data, '1': size } = await qb
+    let data:Perfil[]=[];
+    let size =0;
+    if(barrio){
+      const plan = await qb
       .innerJoinAndSelect(
         'perfiles.afiliado',
         'afiliado',
-        'afiliado."perfilId" = perfiles.id',
+        'afiliado."perfilId" = perfiles.id AND afiliado.isActive = true',
       )
       .innerJoinAndSelect(
         'afiliado.medidores',
         'medidor',
-        'medidor."afiliadoId" = afiliado.id AND medidor."ubicacionBarrio" = :barrio',
+        'medidor."afiliadoId" = afiliado.id AND medidor."ubicacionBarrio" = :barrio AND medidor.isActive = true',
         {barrio}
       )
       .innerJoinAndSelect(
         'medidor.planillas',
         'planilla',
-        'planilla."medidorId" = medidor.id',
+        'planilla."medidorId" = medidor.id AND planilla.isActive = true',
       )
       .leftJoinAndSelect(
         'planilla.lecturas',
@@ -410,18 +413,132 @@ export class MedidoresService {
         { mes },
       )
       .where('planilla.gestion =:gestion', { gestion })
-      // .andWhere('lecturas.mesLecturado = :mes',{mes})
       .getManyAndCount();
+     
+      data = plan[0];
+      size = plan[1];
+    }else{
+      const plan= await qb
+      .innerJoinAndSelect(
+        'perfiles.afiliado',
+        'afiliado',
+        'afiliado."perfilId" = perfiles.id AND afiliado.isActive = true',
+      )
+      .innerJoinAndSelect(
+        'afiliado.medidores',
+        'medidor',
+        'medidor."afiliadoId" = afiliado.id AND medidor.isActive = true',
+      )
+      .innerJoinAndSelect(
+        'medidor.planillas',
+        'planilla',
+        'planilla."medidorId" = medidor.id AND planilla.isActive = true',
+      )
+      .leftJoinAndSelect(
+        'planilla.lecturas',
+        'lecturas',
+        'lecturas.mesLecturado = :mes',
+        { mes },
+      )
+      .where('planilla.gestion =:gestion', { gestion })
+      .getManyAndCount();
+      
+      data = plan[0];
+      size = plan[1];
+    }
+    const perfilesSinLectura:Perfil[]=[];
+    console.log(data);
+    for(const per of data){
+      const medInd:number[]=[];
+      // const {medidores} = per.afiliado;
+      const dataPerfil = Object.assign({},per);
+       dataPerfil.afiliado = Object.assign({},per.afiliado);
+       dataPerfil.afiliado.medidores=per.afiliado.medidores.map(med=> Object.assign({},med))
+       dataPerfil.afiliado.medidores=[];
+      
+      for(let i =0;i< per.afiliado.medidores.length;i++){
+        if(per.afiliado.medidores[i].planillas[0].lecturas.length===0){
+          medInd.push(i);
+          // perfilesSinLectura.push(per);
+          console.log('aloja ',i);
+          console.log(per.afiliado.medidores[i]);
+          dataPerfil.afiliado.medidores.push(Object.assign({},per.afiliado.medidores[i]))
+        }
+      }
+      if(medInd.length>0)
+      perfilesSinLectura.push(dataPerfil);
+    }
     return {
       OK: true,
-      message: 'listado de perfiles con lecturas mensuales',
+      message: `LISTADO DE LOS MEDIDORES DE AFILIADOS SIN LECTURA DEL MES: ${mes} ${gestion}`,
       data: {
-        data,
-        size,
+        // datita:data,
+        data:perfilesSinLectura,
+        size:perfilesSinLectura.length,
+        // data,size
       },
     };
+    
   }
-
+  async afiliadosPorGenerarComprobantes(query: QueryLecturasDto){
+    const {
+      gestion = new Date().getFullYear(),
+      mes = Mes.enero,
+    } = query;
+    // console.log(gestion, barrio, mes);
+    const qb = this.perfilRepository.createQueryBuilder('perfiles');
+    const {"0":data,"1":size}= await qb
+      .innerJoinAndSelect(
+        'perfiles.afiliado',
+        'afiliado',
+        'afiliado."perfilId" = perfiles.id AND afiliado.isActive = true',
+      )
+      .innerJoinAndSelect(
+        'afiliado.medidores',
+        'medidor',
+        'medidor."afiliadoId" = afiliado.id AND medidor.isActive = true',
+      )
+      .innerJoinAndSelect(
+        'medidor.planillas',
+        'planilla',
+        'planilla."medidorId" = medidor.id AND planilla.isActive = true',
+      )
+      .innerJoinAndSelect(
+        'planilla.lecturas',
+        'lecturas',
+        'lecturas.mesLecturado = :mes',
+        { mes },
+      )
+      .leftJoinAndSelect(
+        'lecturas.pagar',
+        'pagar',
+        'pagar."lecturaId" = lecturas.id'
+      )
+      .where('planilla.gestion =:gestion', { gestion })
+      .getManyAndCount();
+      const perfilesSinLectura:Perfil[]=[];
+      for(const per of data){
+        const medInd:number[]=[];
+        // const {medidores} = per.afiliado;
+        const dataPerfil = Object.assign({},per);
+         dataPerfil.afiliado = Object.assign({},per.afiliado);
+         dataPerfil.afiliado.medidores=per.afiliado.medidores.map(med=> Object.assign({},med))
+         dataPerfil.afiliado.medidores=[];
+        for(let i =0;i< per.afiliado.medidores.length;i++){
+          if(per.afiliado.medidores[i].planillas[0].lecturas[0].pagar === null){
+            medInd.push(i);
+            dataPerfil.afiliado.medidores.push(Object.assign({},per.afiliado.medidores[i]))
+          }
+        }
+        if(medInd.length>0)
+        perfilesSinLectura.push(dataPerfil);
+      }
+      return {
+        OK: true,
+        message: `LISTADO DE LOS MEDIDORES DE AFILIADOS SIN GENERACION DE PAGOS DEL MES: ${mes} ${gestion}`,
+        data:perfilesSinLectura,
+      };
+  }
   async getAniosSeguimientos() {
     const data = await this.anioSeguimientoLecturaRepository.find({
       order: { anio: 'DESC', meses: { mes: 'ASC' } },

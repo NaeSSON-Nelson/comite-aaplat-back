@@ -16,6 +16,9 @@ import { CommonModule } from 'src/common/common.module';
     AuthModule,
     CommonModule,
   ],
-  providers: [PagosDeServicioService]
+  providers: [PagosDeServicioService],
+  exports:[
+    TypeOrmModule,PagosDeServicioService,
+  ]
 })
 export class PagosDeServicioModule {}

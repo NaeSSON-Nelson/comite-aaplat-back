@@ -11,6 +11,7 @@ import { MenuToRoleModule } from '../manager/roles/menu-to-role/menu-to-role.mod
 import { RolesModule } from '../manager/roles/roles/roles.module';
 import { RolesToUsuarioModule } from '../auth/modules/usuarios/roles-to-usuario/roles-to-usuario.module';
 import { MedidoresModule } from 'src/medidores-agua/medidores.module';
+import { PagosDeServicioModule } from '../pagos-de-servicio/pagos-de-servicio.module';
 
 @Module({
   controllers: [SeedsController],
@@ -25,6 +26,7 @@ import { MedidoresModule } from 'src/medidores-agua/medidores.module';
     RolesToUsuarioModule,
     CommonModule,
     MedidoresModule,
+    PagosDeServicioModule,
   ]
 })
 export class SeedsModule {}

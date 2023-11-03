@@ -69,7 +69,7 @@ export class PagosDeServicioService {
 
   // @Cron('15 * * * * *')
   // At 00:00 on day-of-month 7.
-  @Cron('0 0 7 * *')
+  @Cron('0 0 10 * *')
   private async ComprobantesPorPagarAutomatizado() {
     const fechaActual = new Date()
     let gestion = fechaActual.getFullYear();
@@ -195,10 +195,10 @@ export class PagosDeServicioService {
   async ComprobanteDetalles(idLectura: number) {
     const lecturaPorPagar = await this.dataSource.getRepository(MesLectura).findOne({
       where: { id:idLectura},
-      relations: { lecturaPorPagar:{comprobante:true} },
+      relations: { pagar:{comprobante:true} },
       select:{
         consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,mesLecturado:true,
-        lecturaPorPagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
+        pagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
           comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
         },
       }
@@ -254,12 +254,12 @@ export class PagosDeServicioService {
               {gestion:mesRegistrar.anioSeguimiento.anio,
                 lecturas:{mesLecturado:mesRegistrar.mes,isActive:true},
                 isActive:true},
-            relations:{lecturas:{lecturaPorPagar:true}}});
+            relations:{lecturas:{pagar:true}}});
     const lecturas:MesLectura[]=[];
     planillasLecturas.forEach(plan=>{
       plan.lecturas.forEach(lect=>{
         
-        if(lect.lecturaPorPagar===null)
+        if(lect.pagar===null)
         lecturas.push(lect);
       })
     })

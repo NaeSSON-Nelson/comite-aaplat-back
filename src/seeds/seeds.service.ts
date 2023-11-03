@@ -232,11 +232,13 @@ export class SeedsService {
     const fechaActual = new Date();
     const lecturas:MesLectura[]=[];
     for(const planilla of planillas){
+      let lecturaSeguimiento =0;
       for(let index=0;index<fechaActual.getMonth();index++){
-        const lecturaAl = Math.round((Math.random()*100)+10);
+        let lecturaGen = Math.round((Math.random()*100)+10);
+        lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
         const lectura = this.mesLecturaRepository.create({
-          lectura:lecturaAl,
-          consumoTotal:(lecturaAl-planilla.medidor.ultimaLectura),
+          lectura:lecturaSeguimiento,
+          consumoTotal:(lecturaSeguimiento-planilla.medidor.ultimaLectura),
           mesLecturado:index===0?Mes.enero
           :index===1?Mes.febrero
           :index===2?Mes.marzo
@@ -252,8 +254,8 @@ export class SeedsService {
           :Mes.enero,
           planilla,
         })
-        planilla.medidor.ultimaLectura=lecturaAl;
         lecturas.push(lectura);
+        planilla.medidor.ultimaLectura=lecturaSeguimiento;
       }
       //await this.medidorRepository.save(planilla.medidor);
     }

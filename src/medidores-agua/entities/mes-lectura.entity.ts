@@ -37,5 +37,5 @@ export class MesLectura extends ColumnsAlways{
     planilla:PlanillaLecturas;
     
     @OneToOne(()=>ComprobantePorPago,(comprobante)=>comprobante.lectura)
-    lecturaPorPagar:ComprobantePorPago;
+    pagar:ComprobantePorPago;
 }

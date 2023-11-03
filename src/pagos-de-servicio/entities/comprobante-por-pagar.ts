@@ -48,7 +48,7 @@ export class ComprobantePorPago{
     })
     fechaPagada:Date;
 
-    @OneToOne(()=>MesLectura,(mesLectura=>mesLectura.lecturaPorPagar),{nullable:false,})
+    @OneToOne(()=>MesLectura,{nullable:false,})
     @JoinColumn()
     lectura:MesLectura;
     @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagar)
