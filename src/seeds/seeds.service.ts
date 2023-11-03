@@ -89,7 +89,7 @@ export class SeedsService {
       await queryRunner.manager.save(comprobantesPorPagar);
       const anioSeguimientoSave = await this.insertAnioSeguimientos();
       await queryRunner.manager.save(anioSeguimientoSave);
-      const mesesSeguimientoSave = await this.insertMesSeguimiento();
+      const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
       await queryRunner.manager.save(mesesSeguimientoSave);
       // console.log('hola:3');
       await queryRunner.commitTransaction();
@@ -191,9 +191,9 @@ export class SeedsService {
     const yearSeg = this.anioSeguimientoLecturaRepository.create({anio:new Date().getFullYear()});
     return yearSeg;
   }
-  private async insertMesSeguimiento(){
+  private async insertMesSeguimiento(anioSeguimientoSave:AnioSeguimientoLectura){
     const fechaActual = new Date();
-    const anioSeguimiento = await this.anioSeguimientoLecturaRepository.findOneBy({anio:fechaActual.getFullYear()});
+    //const anioSeguimiento = await this.anioSeguimientoLecturaRepository.findOneBy({anio:fechaActual.getFullYear()});
     const meses:MesSeguimientoRegistroLectura[]=[];
     for(let index=0;index<fechaActual.getMonth();index++){
       const mes = this.mesSeguimientoRegistroLecturaRepository.create(
@@ -211,7 +211,7 @@ export class SeedsService {
           :index===10?Mes.noviembre
           :index===11?Mes.diciembre
           :Mes.enero,
-          anioSeguimiento,
+          anioSeguimiento:anioSeguimientoSave,
           fechaRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,2,8,0,0,0),
           fechaFinRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,28,12,59,59,0),
         }
