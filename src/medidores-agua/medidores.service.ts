@@ -12,7 +12,6 @@ import { Medidor } from './entities/medidor.entity';
 import { CommonService } from '../common/common.service';
 import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { UsuariosService } from 'src/auth/modules/usuarios/usuarios.service';
 import { Perfil } from 'src/auth/modules/usuarios/entities';
 import { Barrio, Estado, Mes } from 'src/interfaces/enum/enum-entityes';
 import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
@@ -447,7 +446,7 @@ export class MedidoresService {
       size = plan[1];
     }
     const perfilesSinLectura:Perfil[]=[];
-    console.log(data);
+    // console.log(data);
     for(const per of data){
       const medInd:number[]=[];
       // const {medidores} = per.afiliado;
@@ -460,8 +459,8 @@ export class MedidoresService {
         if(per.afiliado.medidores[i].planillas[0].lecturas.length===0){
           medInd.push(i);
           // perfilesSinLectura.push(per);
-          console.log('aloja ',i);
-          console.log(per.afiliado.medidores[i]);
+          // console.log('aloja ',i);
+          // console.log(per.afiliado.medidores[i]);
           dataPerfil.afiliado.medidores.push(Object.assign({},per.afiliado.medidores[i]))
         }
       }

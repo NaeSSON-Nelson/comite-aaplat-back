@@ -735,7 +735,77 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       estado: Estado.ACTIVO,
       ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: 'EWRWE8W87W00',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2020, 8, 9),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.primavera
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: 'UX488448EWQ77LL',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2019, 5, 5),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: '98798ER7987E8',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2020, 2, 9),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: '3A1SD5DQ53W4EW',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2020, 7, 2),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.verdeOlivo
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: '6Q5W4645AS6D54',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2019, 1, 2),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
         barrio:Barrio.sanAntonio
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: 'Q5W66XCC1C15',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2020, 6, 6),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio.primavera
+      },ultimaLectura:0,
+    },
+    {
+      nroMedidor: '645SD4546VVDDD',
+      marca: 'LAO TAO',
+      fechaInstalacion: new Date(2020, 4, 7),
+      lecturaInicial: 0,
+      estado: Estado.ACTIVO,
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
       },ultimaLectura:0,
     },
   ],

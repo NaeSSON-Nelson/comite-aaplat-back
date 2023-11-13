@@ -25,9 +25,10 @@ import { Ubicacion } from 'src/common/inherints-db';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { MenuToRole } from 'src/manager/roles/menu-to-role/entities/menuToRole.entity';
 import { Estado, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 
 @Injectable()
-export class UsuariosService {
+export class PerfilesService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
@@ -633,5 +634,72 @@ export class UsuariosService {
       message: 'Perfil con email',
       data: perfil,
     };
+  }
+
+
+  //USER AFILIADO
+
+  async medidoresAfiliadoInSelect(user:Usuario){
+    // console.log(user);
+    const perfil = await this.dataSource.getRepository(Perfil).findOne(
+      {where:{ usuario:{id:user.id,isActive:true},isActive:true,afiliado:{isActive:true,medidores:{isActive:true}}},
+      select:{usuario:{id:true,isActive:true},isActive:true,id:true,afiliado:{isActive:true,id:true,medidores:{id:true,nroMedidor:true,isActive:true,}}},
+      relations:{usuario:true,afiliado:{medidores:true},}
+    })
+    return perfil.afiliado.medidores
+  }
+  async medidorAfiliadoDetails(user:Usuario,idMedidor:number){
+    const medidor = await this.dataSource.getRepository(Medidor).findOne(
+      {
+        where:{
+          afiliado:{
+            perfil:{
+              usuario:{id:user.id,isActive:true},
+              isActive:true},
+            isActive:true},
+          id:idMedidor,},
+        select:{
+          estado:true,id:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,marca:true,nroMedidor:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},ultimaLectura:true,
+          afiliado:{id:true,isActive:true,
+            perfil:{id:true,isActive:true,
+              usuario:{id:true,isActive:true}}
+            }
+          },
+        relations:{afiliado:{perfil:{usuario:true}}}
+      })
+      if(!medidor) throw new BadRequestException(`No se encontro ningun medidor con el id ${idMedidor} relacionado al usuario`)
+      const {afiliado,planillas,...resto} = medidor;
+      return {
+        OK:true,
+        message:'Medidor relacionado encontrado',
+        data:resto
+      }
+  }
+  async profileUser(user:Usuario){
+    const perfil = await this.perfilRepository.findOne({
+      where:{
+        usuario:{id:user.id,isActive:true},
+        isActive:true,
+      },
+      select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contactos:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
+        usuario:{id:true,correo:true,username:true,roleToUsuario:{id:true,role:{nombre:true,id:true}}},
+        afiliado:{id:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true},}
+      },
+      relations:{usuario:{roleToUsuario:{role:true}},afiliado:true}
+    });
+    // const {usuario,...dataPerfil} = perfil;
+    const usuario = perfil.usuario;
+    const {roleToUsuario,...dataUsuario}=usuario;
+    return{
+      OK:true,
+      message:'perfil de usuario',
+      data:{
+        ...perfil,
+        usuario:{
+          roles:roleToUsuario.map(toUsuario=>toUsuario.role.nombre),
+          ...dataUsuario,
+        }
+      }
+    }
   }
 }

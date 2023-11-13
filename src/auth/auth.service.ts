@@ -14,7 +14,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { ConfigService } from '@nestjs/config';
 import { Usuario } from './modules/usuarios/entities';
-import { UsuariosService } from './modules/usuarios/usuarios.service';
+import { PerfilesService } from './modules/usuarios/perfiles.service';
 import { Role } from 'src/manager/roles/roles/entities/role.entity';
 @Injectable()
 export class AuthService {
@@ -23,7 +23,7 @@ export class AuthService {
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly commonService: CommonService,
-    private readonly usuarioService: UsuariosService,
+    private readonly perfilesService: PerfilesService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly dataSource:DataSource,

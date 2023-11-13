@@ -9,7 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { META_MENUS } from '../decorators/valid-protected.decorator';
 import { RolesService } from '../../manager/roles/roles/roles.service';
-import { UsuariosService } from '../modules/usuarios/usuarios.service';
+import { PerfilesService } from '../modules/usuarios/perfiles.service';
 import { Usuario } from '../modules/usuarios/entities';
 import { Menu } from '../../manager/menus/menus/entities/menu.entity';
 import { Request } from 'express';
@@ -19,7 +19,6 @@ import { Request } from 'express';
 export class MenuValidGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly usuarioService: UsuariosService,
     // private readonly rolesService: RolesService,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {

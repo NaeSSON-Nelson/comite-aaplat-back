@@ -11,19 +11,21 @@ import { AuthController } from './auth.controller';
 import { CommonModule } from '../common/common.module';
 import { JwtStrategy } from './strategies/jwt.strategies';
 import { Afiliado } from './modules/usuarios/entities/afiliado.entity';
-import { UsuariosController } from './modules/usuarios/usuarios.controller';
-import { UsuariosService } from './modules/usuarios/usuarios.service';
 import { RolesToUsuarioModule } from './modules/usuarios/roles-to-usuario/roles-to-usuario.module';
 import { Perfil, Usuario } from './modules/usuarios/entities';
+import { PerfilController } from './modules/usuarios/perfiles.controller';
+import { PerfilesService } from './modules/usuarios/perfiles.service';
+import { UsuarioController } from './modules/usuarios/usuario.controller';
 
 @Module({
   controllers: [
     AuthController,
-    UsuariosController,
+    PerfilController,
+    UsuarioController,
   ],
   providers: [
     AuthService,
-    UsuariosService,
+    PerfilesService,
     JwtStrategy,
   ],
   imports: [
@@ -57,7 +59,7 @@ import { Perfil, Usuario } from './modules/usuarios/entities';
     PassportModule, 
     JwtModule,
     AuthService,
-    UsuariosService,
+    PerfilesService,
   ],
 })
 export class AuthModule {}

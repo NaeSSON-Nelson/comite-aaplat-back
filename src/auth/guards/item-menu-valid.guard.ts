@@ -3,14 +3,14 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { META_ITEMSMENU } from '../decorators/valid-protected.decorator';
 import { Usuario } from '../modules/usuarios/entities';
-import { UsuariosService } from '../modules/usuarios/usuarios.service';
+import { PerfilesService } from '../modules/usuarios/perfiles.service';
 import { ItemMenu } from '../../manager/menus/items-menu/entities/item-menu.entity';
 
 @Injectable()
 export class ItemMenuValidGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly usuarioService: UsuariosService,
+    private readonly perfilService: PerfilesService,
   ){}
   async canActivate(
     context: ExecutionContext,
@@ -24,10 +24,10 @@ export class ItemMenuValidGuard implements CanActivate {
     // console.log(req);
     const usuario = req.user as Usuario;
     if (!usuario) throw new BadRequestException(`Usuario not found`);
-    const { roles } = await this.usuarioService.findOnePlaneUsuario(usuario.id);
+    const { roles } = await this.perfilService.findOnePlaneUsuario(usuario.id);
     let item:ItemMenu;
     for(const rol of roles){
-      item=await this.usuarioService.findItemMenuByRole(itemsValid,rol.id,usuario);
+      item=await this.perfilService.findItemMenuByRole(itemsValid,rol.id,usuario);
       if(item) continue;
     }
     if(!item) throw new ForbiddenException(

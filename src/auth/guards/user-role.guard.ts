@@ -2,7 +2,7 @@ import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException,
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { META_ROLES } from '../decorators/valid-protected.decorator';
-import { UsuariosService } from '../modules/usuarios/usuarios.service';
+import { PerfilesService } from '../modules/usuarios/perfiles.service';
 import { Usuario } from '../modules/usuarios/entities';
 import { ValidRole } from 'src/interfaces/valid-auth.enum';
 
@@ -11,7 +11,7 @@ export class UserRoleGuard implements CanActivate {
   
   constructor(
     private readonly reflector:Reflector,
-    private readonly usuarioService:UsuariosService
+    private readonly perfilService:PerfilesService
   ){}
    async canActivate(
     context: ExecutionContext,
