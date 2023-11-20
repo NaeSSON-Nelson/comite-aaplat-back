@@ -8,6 +8,7 @@ import {
   Matches,
   Min,
   MinLength,
+
 } from 'class-validator';
 import { Barrio } from 'src/interfaces/enum/enum-entityes';
 import { patternTextLine } from 'src/interfaces/validators';
@@ -30,7 +31,7 @@ export  abstract class PaginationDto {
   order?: 'ASC' | 'DESC'; //EL ORDEN QUE VENDRAN
 
   @IsOptional()
-  @IsString()
+  @IsString({})
   @MinLength(1)
   @Matches(patternTextLine, {
     message: 'El query contiene caracteres no validos',

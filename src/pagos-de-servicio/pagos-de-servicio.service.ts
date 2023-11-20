@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ComprobantePago, ComprobantePorPago } from './entities';
-import { DataSource, IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { DataSource, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
@@ -12,6 +12,8 @@ import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.
 import { Afiliado, Perfil } from 'src/auth/modules/usuarios/entities';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
+import { PagosServicesDto } from './dto/pagos-services.dto';
+import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
 
 @Injectable()
 export class PagosDeServicioService {
@@ -32,41 +34,7 @@ export class PagosDeServicioService {
   private readonly TARIFA_MINIMA = 10;
   private readonly LECTURA_MINIMA = 10;
   private readonly COSTO_ADICIONAL = 2;
-  // //@Cron('15 * * * * *')
-  // @Cron(CronExpression.EVERY_YEAR)
-  // private async registrarPlanillasDeMedidores() {
-  //   const yearAct = new Date().getFullYear();
-  //   const afiliados = await this.dataSource
-  //     .getRepository(Afiliado)
-  //     .find({ where: { isActive: true } });
-  //   //this.logger.verbose(afiliados,'papitas :3');
-  //   for (const afiliado of afiliados) {
-  //     const planillaExist = await this.planillasPagosService.findOneBy({
-  //       gestion: yearAct,
-  //       afiliado: { id: afiliado.id },
-  //     });
-  //     if (planillaExist) {
-  //       this.logger.warn(
-  //         `Planilla de pago ${yearAct} del afiliado ${afiliado.id} ya existe`,
-  //       );
-  //     } else {
-  //       const planilla = this.planillasPagosService.create({
-  //         gestion: yearAct,
-  //         afiliado,
-  //       });
-  //       try {
-  //         await this.planillasPagosService.save(planilla);
-  //         this.logger.log(`Planilla de pago ${yearAct} afiliad creada!!`);
-  //       } catch (error) {
-  //         this.logger.warn('OCURRIO UN ERROR AL REGISTRAR');
-  //         this.logger.warn(error);
-  //       }
-  //     }
-  //   }
-
-  //   //this.logger.error(`Year ${yearAct} no registered!`)
-  // }
-
+  
   // @Cron('15 * * * * *')
   // At 00:00 on day-of-month 7.
   @Cron('0 0 10 * *')
@@ -93,41 +61,7 @@ export class PagosDeServicioService {
     const month = new Date(gestion,index)
       .toLocaleString('default', { month: 'long' })
       .toUpperCase();
-    // const seguimientoMesAnterior = seguimientoAnioActual.meses.find(
-    //   (mes) =>
-    //     mes.mes ===
-    //     (month.includes('ENERO')
-    //       ? Mes.enero
-    //       : month.includes('FEBRERO')
-    //       ? Mes.febrero
-    //       : month.includes('MARZO')
-    //       ? Mes.marzo
-    //       : month.includes('ABRIL')
-    //       ? Mes.abril
-    //       : month.includes('MAYO')
-    //       ? Mes.mayo
-    //       : month.includes('JUNIO')
-    //       ? Mes.junio
-    //       : month.includes('JULIO')
-    //       ? Mes.julio
-    //       : month.includes('AGOSTO')
-    //       ? Mes.agosto
-    //       : month.includes('SEPTIEMBRE')
-    //       ? Mes.septiembre
-    //       : month.includes('OCTUBRE')
-    //       ? Mes.octubre
-    //       : month.includes('NOVIEMBRE')
-    //       ? Mes.noviembre
-    //       : month.includes('DICIEMBRE')
-    //       ? Mes.diciembre
-    //       : Mes.enero),
-    // );
-    // if (!seguimientoMesAnterior) {
-    //   this.logger.warn(
-    //     `month ${seguimientoMesAnterior} not exist for ${fechaActual.getFullYear()}`,
-    //   );
-    //   return;
-    // }
+   
     const planQr = this.dataSource
       .getRepository(Afiliado)
       .createQueryBuilder('afiliados');
@@ -192,6 +126,89 @@ export class PagosDeServicioService {
     }
   }
 
+  async comprobantesPorPagarPerfil(idPerfil:number){
+
+    const perfil = await this.dataSource.getRepository(Perfil).findOne({
+      where:{id:idPerfil,isActive:true,afiliado:{isActive:true,medidores:{isActive:true,}}},
+      select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
+              afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
+                medidores:{id:true,nroMedidor:true,ubicacion:{barrio:true,numeroVivienda:true},
+                  planillas:{id:true,gestion:true,isActive:true,
+                    lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
+                      pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
+                        comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
+                        comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
+                          comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
+                }}}},
+      relations:{afiliado:{medidores:{planillas:{lecturas:{pagar:{comprobantesAdd:{comprobante:true},comprobante:true}}}}}}
+    })
+    return{
+      OK:true,
+      message:'Tarifas por pagar de perfil',
+      data:perfil
+    }
+  }
+  async pagarComprobantes(pagosDto:PagosServicesDto){
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    
+    const perfil = await qb
+                          .innerJoinAndSelect('perfil.afiliado','afiliado','afiliado.perfilId = perfil.id AND afiliado.isActive = true')
+                          .innerJoinAndSelect('afiliado.medidores','medidor','medidor.afiliadoId = afiliado.id AND medidor.isActive = true')
+                          .innerJoinAndSelect('medidor.planillas','planilla','planilla.medidorId = medidor.id')
+                          .innerJoinAndSelect('planilla.lecturas','lectura','lectura.planillaId = planilla.id')
+                          .innerJoinAndSelect('lectura.pagar','pagar','pagar.pagado = false')
+                          /*
+                           * AÑADIR COMPROBANTES ADICIONAL A LA CONSULTA 
+                           */
+                          .where('perfil.id = :id',{id:pagosDto.perfilId})
+                          .andWhere('perfil.isActive = true')
+                          .getOne();
+    if(!perfil) throw new BadRequestException(`Perfil ${pagosDto.perfilId} not found`);
+    const pagados: ComprobantePago[]=[];
+    const updateComprobantesPagados :ComprobantePorPago[]=[];
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    for(const medidor of perfil.afiliado.medidores){
+      for(const planilla of medidor.planillas){
+        for(const lectura of planilla.lecturas){
+          if(!(lectura.pagar.pagado) && pagosDto.comprobantes.includes(lectura.pagar.id)){
+            const registroPagado = this.comprobantePagoService.create({
+              comprobantePorPagar:lectura.pagar,
+              entidadPago:'NINGUNO',
+              fechaEmitida: new Date(),
+              metodoPago:'PAGO POR CAJA - PRESENCIAL',
+              montoPagado:lectura.pagar.monto,
+              moneda:lectura.pagar.moneda,
+              ciTitular:pagosDto.ciTitular,
+              titular:pagosDto.titular,
+            })
+            lectura.pagar.pagado=true;
+            lectura.pagar.estadoComprobate='PAGADO';
+            lectura.pagar.fechaPagada = registroPagado.fechaEmitida;
+            // await queryRunner.manager.save(lectura.pagar);
+            updateComprobantesPagados.push(lectura.pagar);
+            pagados.push(registroPagado);
+          }
+        }
+      }
+    }
+    try {
+      await queryRunner.manager.save(pagados)
+      await queryRunner.manager.save(updateComprobantesPagados)
+      await queryRunner.commitTransaction();
+      return {
+        OK:true,
+        message:'result',
+        data:pagados,
+      }
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally{
+      await queryRunner.release();
+    }
+  }
   async ComprobanteDetalles(idLectura: number) {
     const lecturaPorPagar = await this.dataSource.getRepository(MesLectura).findOne({
       where: { id:idLectura},
@@ -286,5 +303,57 @@ export class PagosDeServicioService {
       message:'Comprobantes creados con exito',
       data:comprobantesGenerados.length,
     };
+  }
+  async findAllPefiles(paginationDto: SearchPerfil) {
+    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    const { '0': data, '1': size } = await qb
+      .innerJoinAndSelect(
+        'perfil.afiliado',
+        'afiliado',
+        'afiliado."perfilId" = perfil.id',
+      )
+      .where('perfil.nombre_primero LIKE :query', { query: `${q}%` })
+      .orWhere('perfil.nombre_segundo LIKE :query', { query: `${q}%` })
+      .orWhere('perfil.apellido_primero LIKE :query', { query: `${q}%` })
+      .orWhere('perfil.apellido_segundo LIKE :query', { query: `${q}%` })
+      .orWhere('perfil.cedula_identidad LIKE :query', { query: `${q}%` })
+      .offset(offset)
+      .limit(limit)
+      .orderBy('perfil.id', 'ASC')
+      .getManyAndCount();
+    return {
+      OK: true,
+      message: 'listado de afiliados con medidores asignados',
+      data: {
+        data,
+        size,
+        offset,
+        limit,
+        order,
+      },
+    };
+  }
+  async comprobantesPorPagarAfiliado(idPerfil:number){
+    const perfil = await this.dataSource.getRepository(Perfil).findOne({
+      where:{id:idPerfil,isActive:true,afiliado:{isActive:true,medidores:{isActive:true,planillas:{isActive:true,lecturas:{isActive:true,pagar:{pagado:false,}}}}}},
+      select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
+              afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
+                medidores:{id:true,nroMedidor:true,ubicacion:{barrio:true,numeroVivienda:true},
+                  planillas:{id:true,gestion:true,isActive:true,
+                    lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
+                      pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
+                        comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
+                        comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
+                          comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
+                }}}},
+      relations:{afiliado:{medidores:{planillas:{lecturas:{pagar:{comprobantesAdd:{comprobante:true},comprobante:true}}}}}}
+    })
+    return{
+      OK:true,
+      message:'Tarifas por pagar de perfil',
+      data:perfil
+    }
+
   }
 }

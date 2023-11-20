@@ -26,6 +26,9 @@ import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { MenuToRole } from 'src/manager/roles/menu-to-role/entities/menuToRole.entity';
 import { Estado, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
+import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
+import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
+import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
 
 @Injectable()
 export class PerfilesService {
@@ -646,29 +649,36 @@ export class PerfilesService {
       select:{usuario:{id:true,isActive:true},isActive:true,id:true,afiliado:{isActive:true,id:true,medidores:{id:true,nroMedidor:true,isActive:true,}}},
       relations:{usuario:true,afiliado:{medidores:true},}
     })
-    return perfil.afiliado.medidores
+    return {
+      OK:true,
+      message:'medidores seleccionados',
+      data:perfil.afiliado.medidores}
   }
-  async medidorAfiliadoDetails(user:Usuario,idMedidor:number){
+  async medidorAfiliadoDetails(user:Usuario,nro:string){
     const medidor = await this.dataSource.getRepository(Medidor).findOne(
       {
         where:{
           afiliado:{
             perfil:{
               usuario:{id:user.id,isActive:true},
-              isActive:true},
-            isActive:true},
-          id:idMedidor,},
+              isActive:true
+            },
+            isActive:true
+          },
+          nroMedidor:nro,
+        },
         select:{
           estado:true,id:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,marca:true,nroMedidor:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},ultimaLectura:true,
+          planillas:{id:true,gestion:true},
           afiliado:{id:true,isActive:true,
             perfil:{id:true,isActive:true,
               usuario:{id:true,isActive:true}}
-            }
+            },
           },
-        relations:{afiliado:{perfil:{usuario:true}}}
+        relations:{afiliado:{perfil:{usuario:true}},planillas:true}
       })
-      if(!medidor) throw new BadRequestException(`No se encontro ningun medidor con el id ${idMedidor} relacionado al usuario`)
-      const {afiliado,planillas,...resto} = medidor;
+      if(!medidor) throw new BadRequestException(`No se encontro ningun medidor con el Nro. ${nro} relacionado al usuario`)
+      const {afiliado,...resto} = medidor;
       return {
         OK:true,
         message:'Medidor relacionado encontrado',
@@ -682,7 +692,7 @@ export class PerfilesService {
         isActive:true,
       },
       select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contactos:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
-        usuario:{id:true,correo:true,username:true,roleToUsuario:{id:true,role:{nombre:true,id:true}}},
+        usuario:{id:true,correo:true,username:true,roleToUsuario:{id:true,role:{nombre:true,id:true}},correoVerify:true,},
         afiliado:{id:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true},}
       },
       relations:{usuario:{roleToUsuario:{role:true}},afiliado:true}
@@ -700,6 +710,94 @@ export class PerfilesService {
           ...dataUsuario,
         }
       }
+    }
+  }
+  async obtenerComprobantesPorPagar(user:Usuario,nroMedidor:string){
+    const perfil = await this.dataSource.getRepository(Perfil).findOne({
+      where:{usuario:{id:user.id},afiliado:{medidores:{nroMedidor}}},
+      select:{id:true,isActive:true,
+        usuario:{id:true,isActive:true},
+        afiliado:{id:true,isActive:true,
+          medidores:{id:true,isActive:true,nroMedidor:true,
+            planillas:{id:true,isActive:true,gestion:true,
+              lecturas:{id:true,isActive:true,lectura:true,mesLecturado:true,consumoTotal:true,created_at:true,
+                pagar:{id:true,created_at:true,pagado:true,moneda:true,monto:true,motivo:true,estado:true,estadoComprobate:true,
+                  comprobantesAdd:{metodoRegistro:true,created_at:true,id:true,moneda:true,monto:true,motivo:true,pagado:true,estadoComprobate:true,}}}}}}},
+      relations:{usuario:true,afiliado:{medidores:{planillas:{lecturas:{pagar:{comprobantesAdd:true}}}}}}
+    })
+    if(!perfil) throw new BadRequestException(`No se encontro datos de medidor con Numero: ${nroMedidor}`)
+    const medidorRes = Object.assign({},perfil.afiliado.medidores[0]);
+    medidorRes.planillas=Object.assign({},perfil.afiliado.medidores[0].planillas);
+    medidorRes.planillas=[];
+    for(const planilla of perfil.afiliado.medidores[0].planillas){
+      for(const lectura of planilla.lecturas){
+        if(lectura.pagar){
+          if(!lectura.pagar.pagado){
+            const planillita = medidorRes.planillas.find(pl=>pl.gestion===planilla.gestion);
+            if(!planillita) {
+              const {lecturas,...resPlanilla}=planilla;
+              medidorRes.planillas.push({...resPlanilla,lecturas:[]})
+            }
+            if(lectura.pagar.comprobantesAdd){
+              if(!lectura.pagar.comprobantesAdd.pagado){
+                medidorRes.planillas.find(plan=>plan.gestion === planilla.gestion).lecturas.push(lectura)
+              }
+            }else{
+              medidorRes.planillas.find(plan=>plan.gestion === planilla.gestion).lecturas.push(lectura)
+            }
+          }
+        }
+      }
+    }
+    return {
+      OK:true,
+      message:'resultado de dudas',
+      data:medidorRes
+    };
+  }
+  async lecturasPlanilla(id:number){
+    const planilla = await this.dataSource.getRepository(PlanillaLecturas).findOne({
+    where:{
+      id,
+      isActive:true,
+    },
+    select:{id:true,isActive:true,gestion:true,lecturas:{
+      consumoTotal:true,lectura:true,mesLecturado:true,id:true,pagar:{monto:true,moneda:true,pagado:true,}
+    }},
+    relations:{lecturas:{pagar:true}}
+    })
+    if(!planilla) throw new BadRequestException(`Planilla ${id} not found`)    
+    return {
+      OK:true,
+      message:'lecturas de la planilla',
+      data:planilla,
+    }
+  }
+  async lecturaDetails(id:number){
+    const lectura = await this.dataSource.getRepository(MesLectura).findOne({
+      where:{
+        id,isActive:true,
+      },
+      select:{consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,mesLecturado:true,
+        pagar:{created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,moneda:true,motivo:true,monto:true,pagado:true,
+          comprobantesAdd:{created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,moneda:true,motivo:true,monto:true,pagado:true,metodoRegistro:true,
+            comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,}},
+          comprobante:{
+            created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,
+          }}},
+      relations:{
+        pagar:{
+          comprobantesAdd:{
+            comprobante:true
+          },
+          comprobante:true,
+        }
+      }
+    })
+    return {
+      OK:true,
+      message:'Lectura',
+      data:lectura
     }
   }
 }

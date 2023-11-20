@@ -1,14 +1,12 @@
 import { Estado, Monedas } from "src/interfaces/enum/enum-entityes";
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-
-import { MesLectura } from "src/medidores-agua/entities/mes-lectura.entity";
+import { ComprobantePorPago } from "./comprobante-por-pagar";
 import { ComprobantePago } from "./comprobante-de-pago";
-import { ComprobantePorPagoAdicional } from "./comprobante-por-pagar-add";
 import { PorPagarToPagado } from "./por-pagar-to-pagado";
 
-@Entity('comprobante_por_pagar')
-export class ComprobantePorPago{
-
+@Entity('comprobante_por_pagar_adicional')
+export class ComprobantePorPagoAdicional{
+    
     @PrimaryGeneratedColumn()
     id:number;
     @Column('integer',{
@@ -50,23 +48,18 @@ export class ComprobantePorPago{
     })
     fechaPagada:Date;
 
-    @OneToOne(()=>MesLectura,{nullable:false,})
+    @OneToOne(()=>ComprobantePorPago,(comprobante)=>comprobante.comprobantesAdd,{nullable:false,})
     @JoinColumn()
-    lectura:MesLectura;
+    primerComprobante:ComprobantePorPago;
 
-    @OneToOne(()=>ComprobantePorPagoAdicional,(pagoAdd)=>pagoAdd.primerComprobante)
-    comprobantesAdd:ComprobantePorPagoAdicional;
-
-    @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagar)
+    @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagarAdd)
     comprobante:ComprobantePago;
 
-    // @OneToMany(()=>PorPagarToPagado,(toPagado)=>toPagado.comprobantePorPagar)
-    // comprobantePorPagarToComprobantePagar:PorPagarToPagado;
     @CreateDateColumn({
-      type: 'timestamp',
-      default: () => 'CURRENT_TIMESTAMP(6)',
-      select:false
-    })
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP(6)',
+        select:false
+      })
     created_at: Date;
     
     @UpdateDateColumn({
@@ -76,5 +69,4 @@ export class ComprobantePorPago{
       select:false
     })
     updated_at: Date;
-
 }

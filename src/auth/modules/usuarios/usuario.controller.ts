@@ -12,13 +12,21 @@ export class UsuarioController {
     ObtenerSelectMedidores(@GetUser() user:Usuario){
         return this.perfilService.medidoresAfiliadoInSelect(user);
     }
-    @Get('deudas')
-    ObtenerDeudas(@GetUser() user:Usuario){
-        return {message:'building'}
+    @Get('medidores/deudas/:nro')
+    ObtenerDeudas(@GetUser() user:Usuario,@Param('nro') nro: string){
+        return this.perfilService.obtenerComprobantesPorPagar(user,nro);
     }
-    @Get('medidores/:id')
-    ObtenerLecturasMedidor(@GetUser() user:Usuario,@Param('id', ParseIntPipe) id: number){
-        return this.perfilService.medidorAfiliadoDetails(user,id);
+    @Get('medidores/planillas/:id')
+    obtenerLecturasMedidor(@Param('id',ParseIntPipe) id: number){
+        return this.perfilService.lecturasPlanilla(id);
+    }
+    @Get('medidores/lecturas/:id')
+    obtenerLectura(@Param('id',ParseIntPipe) id: number){
+        return this.perfilService.lecturaDetails(id)
+    }
+    @Get('medidores/:nro')
+    ObtenerDetallesMedidor(@GetUser() user:Usuario,@Param('nro') nro: string){
+        return this.perfilService.medidorAfiliadoDetails(user,nro);
     }
     @Get('profile')
     obtenerPerfil(@GetUser() user:Usuario){

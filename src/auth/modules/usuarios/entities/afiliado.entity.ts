@@ -22,7 +22,7 @@ export class Afiliado extends ColumnsAlways {
   @OneToMany(() => Medidor, (medidor) => medidor.afiliado)
   medidores: Medidor[];
 
-  @OneToOne(() => Perfil)
+  @OneToOne(() => Perfil,(perfil)=>perfil.afiliado)
   @JoinColumn()
   perfil: Perfil;
 
