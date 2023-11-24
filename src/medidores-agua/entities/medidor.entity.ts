@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Afiliado } from '../../auth/modules/usuarios/entities/afiliado.entity';
-import { Barrio } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado } from 'src/interfaces/enum/enum-entityes';
 import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
 import { PlanillaLecturas } from './planilla-lecturas.entity';
 
@@ -71,6 +71,11 @@ export class Medidor extends ColumnsAlways{
   registrarNuevoMedidor() {
     this.marca = this.marca.toUpperCase().trim();
     this.nroMedidor = this.nroMedidor.toUpperCase().trim();
+    if(this.estado === Estado.ACTIVO){
+      this.isActive=true;
+    }else{
+      this.isActive=false;
+    } 
   }
   @BeforeUpdate()
   actualizarMedidor() {

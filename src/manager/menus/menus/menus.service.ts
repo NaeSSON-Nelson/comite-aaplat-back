@@ -155,7 +155,7 @@ export class MenusService {
 
   async updateStatusMenu(id: number, updateMenuDto: UpdateMenuDto) {
     const { estado, ...dataNotPermit } = updateMenuDto;
-    const menuPreload = await this.menuRepository.preload({ id, estado,isActive:estado===Estado.INACTIVO?false:true, });
+    const menuPreload = await this.menuRepository.preload({ id, estado });
 
     if (!menuPreload)
       throw new NotFoundException(`Menu width id: ${id} not found`);

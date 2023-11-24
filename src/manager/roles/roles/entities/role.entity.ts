@@ -2,7 +2,7 @@ import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany, OneT
 import { MenuToRole } from "../../menu-to-role/entities/menuToRole.entity";
 import { RoleToUsuario } from "src/auth/modules/usuarios/roles-to-usuario/entities/role-to-usuario.entity";
 import { ColumnsAlways } from "src/common/inherints-db";
-import { Nivel } from "src/interfaces/enum/enum-entityes";
+import { Estado, Nivel } from "src/interfaces/enum/enum-entityes";
 
 @Entity({
     name:'Rol_usuario'
@@ -35,6 +35,11 @@ export class Role extends ColumnsAlways{
     @BeforeInsert()
     CrearNuevoRole(){
         this.nombre=this.nombre.toLocaleLowerCase().trim();
+        if(this.estado === Estado.ACTIVO){
+            this.isActive=true;
+          }else{
+            this.isActive=false;
+          } 
     }
     @BeforeUpdate()
     actualizarRole(){

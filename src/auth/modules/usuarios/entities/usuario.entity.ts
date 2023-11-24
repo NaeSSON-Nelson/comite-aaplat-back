@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
 import { RoleToUsuario } from "../roles-to-usuario/entities/role-to-usuario.entity";
 import { Perfil } from ".";
 import { ColumnsAlways } from "src/common/inherints-db/column-always";
+import { Estado } from "src/interfaces/enum/enum-entityes";
 
 @Entity({
     name:'usuarios'
@@ -47,5 +48,22 @@ export class Usuario  extends ColumnsAlways{
     roleToUsuario:RoleToUsuario[];
 
 
+    @BeforeInsert()
+    estadosUsuario(){
+        if(this.estado === Estado.ACTIVO){
+            this.isActive=true;
+        } else if(this.estado === Estado.DESHABILITADO){
+            this.isActive=false;
+        }
+    }
+    @BeforeUpdate()
+    checkEstados(){
+        if(this.estado === Estado.ACTIVO){
+            this.isActive=true;
+        } else if(this.estado === Estado.DESHABILITADO){
+            this.isActive=false;
+        }
+    }
+    
 
 }

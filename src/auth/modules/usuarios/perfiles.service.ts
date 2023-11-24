@@ -405,6 +405,7 @@ export class PerfilesService {
       updatePerfilDto;
     const perfilUpdate = await this.perfilRepository.preload({
       id,
+      estado,
       ...dataPerfilUpdate,
     });
 
@@ -461,7 +462,6 @@ export class PerfilesService {
     }
   }
   async updateAfiliado(idPerfil: number, updateAfiliadoDto: UpdateAfiliadoDto) {
-    console.log(updateAfiliadoDto);
     const perfil = await this.perfilRepository.findOne({
       where: { id: idPerfil },
       relations: { afiliado: true },
@@ -482,6 +482,7 @@ export class PerfilesService {
     const afiliado = await this.afiliadoRepository.preload({
       id: perfil.afiliado.id,
       ubicacion: { barrio, latitud, longitud, numeroVivienda },
+      estado,
     });
     try {
       await this.afiliadoRepository.save(afiliado);
@@ -510,6 +511,7 @@ export class PerfilesService {
     
     const usuario = await queryRunner.manager.preload(Usuario,{
       id: perfil.usuario.id,
+      estado,
       ...dataUsuario,
     });
     if (dataUsuario.correo) usuario.correoVerify = false;
@@ -545,7 +547,7 @@ export class PerfilesService {
     const perfil = await this.perfilRepository.preload({
       id,
       estado,
-      isActive: estado === Estado.INACTIVO ? false : true,
+      isActive: estado === Estado.DESHABILITADO ? false : true,
     });
     if (!perfil)
       throw new NotFoundException(`perfil con id ${id} no encontrado`);
@@ -577,7 +579,7 @@ export class PerfilesService {
     const usuarioPreload = await this.usuarioRepository.preload({
       id: perfil.usuario.id,
       estado,
-      isActive: estado === Estado.INACTIVO ? false : true,
+      isActive: estado === Estado.DESHABILITADO ? false : true,
     });
     try {
       await this.usuarioRepository.save(usuarioPreload);
@@ -610,7 +612,7 @@ export class PerfilesService {
     const perfilPreload = await this.usuarioRepository.preload({
       id: perfil.afiliado.id,
       estado,
-      isActive: estado === Estado.INACTIVO ? false : true,
+      isActive: estado === Estado.DESHABILITADO ? false : true,
     });
     try {
       await this.afiliadoRepository.save(perfilPreload);
@@ -691,7 +693,7 @@ export class PerfilesService {
         usuario:{id:user.id,isActive:true},
         isActive:true,
       },
-      select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contactos:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
+      select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
         usuario:{id:true,correo:true,username:true,roleToUsuario:{id:true,role:{nombre:true,id:true}},correoVerify:true,},
         afiliado:{id:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true},}
       },

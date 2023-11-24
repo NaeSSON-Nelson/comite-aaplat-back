@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 
 import { ColumnsAlways } from 'src/common/inherints-db/column-always';
-import { TipoPerfil } from '../../../../interfaces/enum/enum-entityes';
+import { Estado, TipoPerfil } from '../../../../interfaces/enum/enum-entityes';
 import { Usuario } from './usuario.entity';
 import { Afiliado } from './afiliado.entity';
 
@@ -99,10 +99,9 @@ export class Perfil extends ColumnsAlways {
 
   @Column({
     type:'text',
-    array:true,
-    default:[],
+    nullable:true
   })
-  contactos:string[];
+  contacto:string;
   @Column({
     type: 'bool',
     default: false,
@@ -125,6 +124,11 @@ export class Perfil extends ColumnsAlways {
       this.apellidoSegundo = this.apellidoSegundo.toLocaleLowerCase().trim();
     if (this.profesion)
       this.profesion = this.profesion.toLocaleLowerCase().trim();
+      if(this.estado === Estado.ACTIVO){
+        this.isActive=true;
+    } else if(this.estado === Estado.DESHABILITADO){
+        this.isActive=false;
+    }
   }
   @BeforeUpdate()
   actualizarAfiliado() {

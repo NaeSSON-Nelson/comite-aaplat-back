@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsNumberString, IsOptional } from 'class-validator';
+import { IsEnum, IsIn, IsNumber, IsNumberString, IsOptional } from 'class-validator';
 import { Barrio, Mes } from 'src/interfaces/enum/enum-entityes';
 
 export class QueryLecturasDto {
@@ -6,7 +6,8 @@ export class QueryLecturasDto {
   @IsOptional()
   gestion: number;
 
-  @IsEnum(Barrio)
+  // @IsEnum(Barrio)
+  @IsIn(['','MENDEZ FORTALEZA','20 DE MARZO','SAN ANTONIO','VERDE OLIVO','PRIMAVERA',])
   @IsOptional()
   barrio: Barrio;
 

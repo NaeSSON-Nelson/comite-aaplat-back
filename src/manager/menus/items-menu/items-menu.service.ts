@@ -100,7 +100,6 @@ export class ItemsMenuService {
     const itemMenuPreload = await this.itemsMenuRepository.preload({
       id,
       estado,
-      isActive:estado===Estado.INACTIVO?false:true,
     });
     if (!itemMenuPreload)
     throw new NotFoundException(`Menu width id: ${id} not found`);

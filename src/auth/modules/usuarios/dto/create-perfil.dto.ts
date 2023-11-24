@@ -60,12 +60,11 @@ export class CreatePerfilDto {
     @Type(()=>Date)
     fechaNacimiento: Date;
     
-    @IsArray()
-    @IsString({each:true})
-    @IsNotEmpty({each:true})
-    @Matches(/^\+[591]{3}\s[0-9]{6,8}$/gs,{each:true,message:'Debe ser un numero telefonico de bolivia valido, example: "+591 {de 6 a 8 digitos}"'})
+    @IsString()
+    @IsNotEmpty()
+    @Matches(/^\+[591]{3}\s[0-9]{6,8}$/gs,{message:'Debe ser un numero telefonico de bolivia valido, example: "+591 {de 6 a 8 digitos}"'})
     @IsOptional()
-    contactos?: string[];
+    contacto?: string;
     
     @IsEnum(Estado)
     @IsNotEmpty()

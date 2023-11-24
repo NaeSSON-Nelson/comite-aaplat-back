@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+
   Logger,
 } from '@nestjs/common';
 import { CreateMedidorDto } from './dto/create-medidor.dto';
@@ -23,6 +24,7 @@ import { AnioSeguimientoLectura } from './entities/anio-seguimiento-lecturas.ent
 import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-registro-lectura.entity';
 import { QueryLecturasDto } from './query/queryLecturas';
 import { Cron,CronExpression } from '@nestjs/schedule';
+import { isNotEmpty } from 'class-validator';
 
 @Injectable()
 export class MedidoresService {
@@ -191,11 +193,9 @@ export class MedidoresService {
     const medidor = await this.medidorRepository.preload({
       id,
       estado,
-      isActive: estado === Estado.INACTIVO ? false : true,
     });
     if (!medidor)
       throw new NotFoundException(`Medidor with id ${id} not found`);
-    if (estado === 'INACTIVO') medidor.isActive = false;
     else medidor.isActive = true;
     try {
       await this.medidorRepository.save(medidor);
@@ -318,16 +318,25 @@ export class MedidoresService {
 
   async registrarAllLecturas(registerAllLecturas: registerAllLecturasDto) {
     // console.log(registerAllLecturas);
-    const { registros, mes, anio } = registerAllLecturas;
+    const fechaLecturas = new Date();
+    let gestion = fechaLecturas.getFullYear();
+    let index = fechaLecturas.getMonth()-1;
+    let mes = new Date(gestion,fechaLecturas.getMonth()-1).toLocaleString('default', { month: 'long' }).toUpperCase();
+    if(fechaLecturas.getMonth() === 0){
+      gestion = fechaLecturas.getFullYear()-1;
+      mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
+      index = 11;
+    }
+    const { registros} = registerAllLecturas;
     const anioExiste = await this.anioSeguimientoLecturaRepository.findOne({
-      where: { anio },
+      where: { anio:gestion },
       relations: { meses: true },
     });
     if (!anioExiste) throw new BadRequestException(`No es un año registrado`);
     const mesExiste = anioExiste.meses.find((mesT) => mesT.mes === mes);
     if (!mesExiste)
       throw new BadRequestException(
-        `${mes} no es un un mes registrado del año ${anio}`,
+        `${mes} no es un un mes registrado del año ${gestion}`,
       );
     const fechaActual = new Date();
     if( fechaActual.getTime()<=mesExiste.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesExiste.fechaFinRegistroLecturas.getTime()){
@@ -355,7 +364,8 @@ export class MedidoresService {
       const consumoTotal=(lectura.lectura-medidor.ultimaLectura);
       const lecturaRegister = this.mesLecturasRepository.create({
         ...dataLectura,
-        mesLecturado: mes,
+        // mesLecturado: mes,
+        mesLecturado:mesExiste.mes,
         consumoTotal,
         planilla: planillaDb,
       });
@@ -378,16 +388,52 @@ export class MedidoresService {
     }
   }
   async AllLecturasPerfilesMedidores(query: QueryLecturasDto) {
+    const fechaLecturas = new Date();
+    let gestion = fechaLecturas.getFullYear();
+    let index = fechaLecturas.getMonth()-1;
+    let mes = new Date(gestion,fechaLecturas.getMonth()-1).toLocaleString('default', { month: 'long' }).toUpperCase();
+    if(fechaLecturas.getMonth() === 0){
+      gestion = fechaLecturas.getFullYear()-1;
+      mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
+      index = 11;
+    }
+    const mesSeguimineto = await this.mesSeguimientoRegistroLecturaRepository.findOne({
+      where:{mes:
+        index===0?Mes.enero
+        :index===1?Mes.febrero
+        :index===2?Mes.marzo
+        :index===3?Mes.abril
+        :index===4?Mes.mayo
+        :index===5?Mes.junio
+        :index===6?Mes.julio
+        :index===7?Mes.agosto
+        :index===8?Mes.septiembre
+        :index===9?Mes.octubre
+        :index===10?Mes.noviembre
+        :index===11?Mes.diciembre
+        :Mes.enero,
+        anioSeguimiento:{anio:gestion}},
+      relations:{anioSeguimiento:true,}
+    })
+    if(!mesSeguimineto)throw new BadRequestException(`Gestion: ${gestion}, mes: ${mes} aun no generados`);
+    if(mesSeguimineto.fechaRegistroLecturas.getTime()<fechaLecturas.getTime()){
+      if(mesSeguimineto.fechaFinRegistroLecturas.getTime()<fechaLecturas.getTime()){
+        throw new BadRequestException(`Fecha de registro de lecturas del mes ${mes}, gestion: ${gestion} finalizadas ${mesSeguimineto.fechaFinRegistroLecturas}`)
+      }
+    }else{
+      throw new BadRequestException(`Los registros de lectura se podran registrar a la fecha ${mesSeguimineto.fechaRegistroLecturas}`)
+    }
     const {
-      gestion = new Date().getFullYear(),
+      // gestion = new Date().getFullYear(),
       barrio,
-      mes = Mes.enero,
+      // mes = Mes.enero,
     } = query;
     // console.log(gestion, barrio, mes);
     const qb = this.perfilRepository.createQueryBuilder('perfiles');
     let data:Perfil[]=[];
     let size =0;
-    if(barrio){
+    if( isNotEmpty( barrio)){
+      // console.log('tiene barrio:', typeof barrio);
       const plan = await qb
       .innerJoinAndSelect(
         'perfiles.afiliado',
@@ -417,6 +463,7 @@ export class MedidoresService {
       data = plan[0];
       size = plan[1];
     }else{
+      // console.log('sin barrio',barrio);
       const plan= await qb
       .innerJoinAndSelect(
         'perfiles.afiliado',
@@ -469,7 +516,7 @@ export class MedidoresService {
     }
     return {
       OK: true,
-      message: `LISTADO DE LOS MEDIDORES DE AFILIADOS SIN LECTURA DEL MES: ${mes} ${gestion}`,
+      message: `REGISTRO DE LECTURAS DE MEDIDORES DEL mes ${mes}, gestion: ${gestion}`,
       data: {
         // datita:data,
         data:perfilesSinLectura,
@@ -479,11 +526,20 @@ export class MedidoresService {
     };
     
   }
-  async afiliadosPorGenerarComprobantes(query: QueryLecturasDto){
-    const {
-      gestion = new Date().getFullYear(),
-      mes = Mes.enero,
-    } = query;
+  async afiliadosPorGenerarComprobantes(){
+    const fechaLecturas = new Date();
+    let gestion = fechaLecturas.getFullYear();
+    let index = fechaLecturas.getMonth()-1;
+    let mes = new Date(gestion,fechaLecturas.getMonth()-1).toLocaleString('default', { month: 'long' }).toUpperCase();
+    if(fechaLecturas.getMonth() === 0){
+      gestion = fechaLecturas.getFullYear()-1;
+      mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
+      index = 11;
+    }
+    // const {
+    //   gestion = new Date().getFullYear(),
+    //   mes = Mes.enero,
+    // } = query;
     // console.log(gestion, barrio, mes);
     const qb = this.perfilRepository.createQueryBuilder('perfiles');
     const {"0":data,"1":size}= await qb

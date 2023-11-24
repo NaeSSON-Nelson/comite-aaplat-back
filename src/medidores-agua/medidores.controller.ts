@@ -103,8 +103,8 @@ export class MedidoresController {
     return this.medidoresService.lecturasPlanilla(id);
   }
   @Get('lecturas/comprobantes/perfiles')
-  getLecturasGenerarComprobantes(@Query() query: QueryLecturasDto){
-    return this.medidoresService.afiliadosPorGenerarComprobantes(query);
+  getLecturasGenerarComprobantes(){
+    return this.medidoresService.afiliadosPorGenerarComprobantes();
   }
   @Get('lecturas/comprobantes/:id')
   getLecturasWidthComprobante(@Param('id', ParseIntPipe) id: number){

@@ -28,11 +28,11 @@ export class registerAllLecturasDto{
     @Type(() => Lectura)
     registros:Lectura[];
 
-    @IsEnum(Mes)
-    @IsNotEmpty()
-    mes:Mes;
+    // @IsEnum(Mes)
+    // @IsNotEmpty()
+    // mes:Mes;
        
-    @IsNumber()
-    @Min(2000)
-    anio:number;
+    // @IsNumber()
+    // @Min(2000)
+    // anio:number;
 }
