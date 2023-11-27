@@ -37,6 +37,15 @@ export class AuthService {
         username: true,
         password: true,
         id: true,
+        roleToUsuario:{
+          id:true,
+          isActive:true,
+          role:{
+            nombre:true,
+            id:true,
+            nivel:true
+          }
+        }
       },
       relations: {
         roleToUsuario: { role: true },
@@ -56,8 +65,8 @@ export class AuthService {
         usuario: {
           ...data,
           roles: roleToUsuario.map((toUsuario) => {
-            const { nombre, id } = toUsuario.role;
-            return { nombre, id };
+            const { nombre, id,nivel } = toUsuario.role;
+            return { nombre, id,nivel };
           }),
         },
         token: this.getJwtToken({ id: usuario.id, username: usuario.username }),
@@ -86,8 +95,8 @@ export class AuthService {
         usuario: {
           ...data,
           roles: roleToUsuario.map((toUsuario) => {
-            const { nombre, id } = toUsuario.role;
-            return { nombre, id };
+            const { nombre, id,nivel } = toUsuario.role;
+            return { nombre, id,nivel };
           }),
         },
         token: this.getJwtToken({ id: usuario.id, username:usuario.username }),

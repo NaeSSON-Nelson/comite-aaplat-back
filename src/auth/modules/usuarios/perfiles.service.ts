@@ -277,13 +277,24 @@ export class PerfilesService {
   async findOne(id: number) {
     const qb = await this.perfilRepository.findOne({
       where: { id },
-      relations: { afiliado: true, usuario: true },
+      relations: { afiliado: true, usuario: {roleToUsuario:{role:true}} },
     });
+
     if (!qb) throw new NotFoundException(`Perfil no encontrado!`);
+    let perfil:any;
+    const { usuario,...dataPerfil} = qb;
+    perfil=dataPerfil;
+    if(usuario){
+      const {roleToUsuario,...dataUser}= usuario;
+      perfil.usuario ={
+        roles:roleToUsuario.map(toUsuario=>toUsuario.role.nombre),
+        ...dataUser
+      }
+    }
     return {
       OK: true,
-      message: 'perfil',
-      data: qb,
+      message: 'perfil encontrado',
+      data:perfil,
     };
   }
 
