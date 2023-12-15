@@ -16,6 +16,7 @@ import { Perfil, Usuario } from './modules/usuarios/entities';
 import { PerfilController } from './modules/usuarios/perfiles.controller';
 import { PerfilesService } from './modules/usuarios/perfiles.service';
 import { UsuarioController } from './modules/usuarios/usuario.controller';
+import { RefreshTokenJwtStrategy } from './strategies';
 
 @Module({
   controllers: [
@@ -27,6 +28,7 @@ import { UsuarioController } from './modules/usuarios/usuario.controller';
     AuthService,
     PerfilesService,
     JwtStrategy,
+    RefreshTokenJwtStrategy,
   ],
   imports: [
     TypeOrmModule.forFeature([
@@ -35,20 +37,23 @@ import { UsuarioController } from './modules/usuarios/usuario.controller';
       Perfil,
     ]),
     ConfigModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        return {
-          secret: configService.get('JWT_TOKEN_KEY'),
-          signOptions: {
-            expiresIn: '2h',
-          },
-        };
-      },
-    }),
-    CommonModule,
+    PassportModule.register({ 
+      // defaultStrategy: ['jwt','jwt-refresh']
+     }),
+    JwtModule.register({})
+    // registerAsync({
+    //   imports: [ConfigModule],
+    //   inject: [ConfigService],
+    //   useFactory: (configService: ConfigService) => {
+    //     return {
+    //       secret: configService.get('JWT_TOKEN_KEY'),
+    //       signOptions: {
+    //         expiresIn: '2h',
+    //       },
+    //     };
+    //   },
+    // })
+    ,CommonModule,
     
     RolesToUsuarioModule,
     
@@ -56,6 +61,7 @@ import { UsuarioController } from './modules/usuarios/usuario.controller';
   exports: [
     TypeOrmModule, 
     JwtStrategy, 
+    RefreshTokenJwtStrategy,
     PassportModule, 
     JwtModule,
     AuthService,

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Header, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Headers,UseGuards, Request } from '@nestjs/common';
 import {ParseIntPipe} from '@nestjs/common/pipes'
 import { AuthService } from './auth.service';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -7,35 +7,51 @@ import { ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 import { IncomingHttpHeaders } from 'http';
 import { Usuario } from './modules/usuarios/entities';
 import { Authentication } from './decorators/authentication.decorator';
+import { AuthGuard } from '@nestjs/passport';
+import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
+// import { LocalAuthGuard } from './guards/jwt-refresh-token.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // @UseGuards(LocalAuthGuard)
   @Post('login')
   loginUser(@Body() loginDto: LoginUserDto) {
     return this.authService.loginUser(loginDto);
   }
 
   //TODO: TESTEAR AUTHENTICATION Y AUTHORIZATION
-  @Get('private1')
-  @Authentication(ValidRole.root)
+  @Get('user')
+  @Authentication()
   // @MenuValid(ValidMenu.itemsMenu)
-  prueba1(@GetUser() usuario:Usuario,@Headers() headers:IncomingHttpHeaders){
+  user(@GetUser() usuario:Usuario){
+    const {username,roleToUsuario} = usuario;
     return {
-      msg:'private 1',
+      message:'user',
       OK:true,
-      usuario,
-      headers
+      data:{
+        username,
+        roles:roleToUsuario.map(toUsuario=>{
+          const {role:{id,nombre,nivel}} = toUsuario;
+          return {
+            id,nombre,nivel
+          }
+        })
+      }
+      // usuario
     }
   }
 
+  @UseGuards(JwtRefreshTokenGuard)
   @Get('refresh')
-  @Authentication()
-  validToken(@GetUser() user:Usuario){
-    
-    return this.authService.tokenRefresh(user);
-  }
+  // @Authentication()
+  refreshTokens(@Req() req: Request, @GetUser() user:Usuario) {
+    console.log(user);
+		const userId = req['user'].sub
+    // console.log(req);
+		return this.authService.refreshTokens(userId);
+	}
   @Get('roles/:id')
   @Authentication()
   findOneAuth(@Param('id',ParseIntPipe) id: number,

@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, BadRequestException,ForbiddenException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, BadRequestException,ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { META_ITEMSMENU } from '../decorators/valid-protected.decorator';
@@ -33,7 +33,7 @@ export class ItemMenuValidGuard implements CanActivate {
     if(!item) throw new ForbiddenException(
       `El usuario ${usuario.username} no tiene acceso a este recurso`,
       );
-    if(item.isActive)throw new ForbiddenException(
+    if(item.isActive)throw new NotFoundException(
       `El recurso no se encuentra actualmente disponible`,
       );
     return true;

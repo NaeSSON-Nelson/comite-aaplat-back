@@ -8,7 +8,7 @@ import { MenuValidGuard } from "../guards/menu-valid.guard";
 export function Authorization(...menus:ValidMenu[]){
     return applyDecorators(
         MenusProtected(...menus),
-        UseGuards(AuthGuard(),MenuValidGuard)
+        UseGuards(AuthGuard('jwt'),MenuValidGuard)
 
     )
 }

@@ -10,6 +10,6 @@ import { ValidRole } from '../../interfaces/valid-auth.enum';
 export function Authentication(...roles:ValidRole[]){
     return applyDecorators(
         RoleProtected(...roles),
-        UseGuards(AuthGuard(),UserRoleGuard)
+        UseGuards(AuthGuard('jwt'),UserRoleGuard)
     )
 }

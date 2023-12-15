@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
@@ -45,7 +46,7 @@ export class MenuValidGuard implements CanActivate {
     if(!menu)throw new ForbiddenException(
       `El usuario ${usuario.username} no tiene acceso a este menu`,
     );
-    if(!menu.isActive) throw new ForbiddenException(
+    if(!menu.isActive) throw new NotFoundException(
       `El menu ${menu.nombre} no se encuentra disponible`,
     );
     return true;

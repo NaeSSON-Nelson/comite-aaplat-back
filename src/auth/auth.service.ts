@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   InternalServerErrorException,
+  ForbiddenException
 } from '@nestjs/common';
 import { LoginUserDto } from './dto/login-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -36,50 +37,65 @@ export class AuthService {
       select: {
         username: true,
         password: true,
+        isActive:true,
         id: true,
-        roleToUsuario:{
-          id:true,
-          isActive:true,
-          role:{
-            nombre:true,
-            id:true,
-            nivel:true
-          }
-        }
-      },
-      relations: {
-        roleToUsuario: { role: true },
-      },
+      }
+      //   roleToUsuario:{
+      //     id:true,
+      //     isActive:true,
+      //     role:{
+      //       nombre:true,
+      //       id:true,
+      //       nivel:true
+      //     }
+      //   }
+      // },
+      // relations: {
+      //   roleToUsuario: { role: true },
+      // },
     });
 
-    if (!usuario) throw new UnauthorizedException(`Credentials are not valid`);
+    if (!usuario) throw new BadRequestException(`Credentials are not valid`);
     if (!bcrypt.compareSync(password, usuario.password))
-      throw new UnauthorizedException(`Credentials are not valid`);
+      throw new BadRequestException(`Credentials are not valid`);
+    if(!usuario.isActive) throw new ForbiddenException(`User blocked`);
     try {
       //TODO: RESPUESTA DE ACUERDO A LO NECESITADO
-      const { password, perfil, estado, roleToUsuario, ...data } = usuario;
-      // console.log(usuario);
+      const { password, perfil, estado, roleToUsuario,isActive,id, ...dataUser } = usuario;
+      
       return {
         OK: true,
         message:'Logueado con exito',
-        usuario: {
-          ...data,
-          roles: roleToUsuario.map((toUsuario) => {
-            const { nombre, id,nivel } = toUsuario.role;
-            return { nombre, id,nivel };
-          }),
-        },
-        token: this.getJwtToken({ id: usuario.id, username: usuario.username }),
+        // usuario: {
+        //   ...data,
+        //   roles: roleToUsuario.map((toUsuario) => {
+        //     const { nombre, id,nivel } = toUsuario.role;
+        //     return { nombre, id,nivel };
+        //   }),
+        // },
+        dataUser:{
+          id,
+          ...await this.getTokens(usuario.id,usuario.username)
+        }
+        // token: this.getJwtToken({ id: usuario.id, username: usuario.username }),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
     }
   }
+  async validateUser(username: string, password: string) {
+    const user = await this.usuarioRepository.findOne({where:{username},select:{username:true,password:true}});
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
   async tokenRefresh(user: Usuario) {
     try {
       const usuario = await this.usuarioRepository.findOne({
-        where: { id: user.id },
-        relations: { roleToUsuario: { role: true } },
+        where: { username:user.username },
+        // relations: { roleToUsuario: { role: true } },
         select: {
           username: true,
           password: true,
@@ -87,19 +103,22 @@ export class AuthService {
         },
       });
       if (!usuario) throw new BadRequestException(`Usuario incorrecto`);
-      const { roleToUsuario, perfil, password, estado, ...data } =
+      const { roleToUsuario, perfil, password, estado,id,isActive, ...dataUser } =
         usuario;
       return {
         OK: true,
         message:'token refrescado',
-        usuario: {
-          ...data,
-          roles: roleToUsuario.map((toUsuario) => {
-            const { nombre, id,nivel } = toUsuario.role;
-            return { nombre, id,nivel };
-          }),
-        },
-        token: this.getJwtToken({ id: usuario.id, username:usuario.username }),
+        // usuario: {
+        //   ...data,
+        //   roles: roleToUsuario.map((toUsuario) => {
+        //     const { nombre, id,nivel } = toUsuario.role;
+        //     return { nombre, id,nivel };
+        //   }),
+        // },
+         dataUser:{
+          id,
+          ...await this.getTokens(usuario.id,usuario.username)
+        }
       };
     } catch (error) {
       console.log(error);
@@ -109,6 +128,12 @@ export class AuthService {
   private getJwtToken(payload: JwtPayload) {
     return this.jwtService.sign(payload);
   }
+  async refreshTokens(userId: number) {
+		const user = await this.usuarioRepository.findOneBy({id:userId});
+		if (!user) throw new ForbiddenException('Access Denied');
+    if(!user.isActive) throw new ForbiddenException('user blocked');
+		return {...await this.getTokens(user.id, user.username)}
+	}
   async accessResource(usuario: Usuario) {
     console.log(usuario);
     const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
@@ -131,7 +156,8 @@ export class AuthService {
   async findOneUserRolesMenus(idRole:number,usuario: Usuario) {
     // const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
     // const role = await this.usuarioRepository.exist({where:{roleToUsuario:{roleId:idRole},id:usuario.id}});
-    // console.log(role);
+    console.log('OBTENIENDO MENUS');
+    console.log(idRole,usuario);
     const roleRepository =  this.dataSource.getRepository(Role);
     const rol = await roleRepository.findOne({where:{id:idRole}});
     if(!rol) throw new BadRequestException(`No existe ese role`);
@@ -162,4 +188,28 @@ export class AuthService {
       // data: queryC,
     };
   }
+  async getTokens(userId:number,username: string) {
+		const [accessToken, refreshToken] = await Promise.all([
+			this.jwtService.signAsync(
+        {
+          sub: userId,
+           username,
+           
+        },
+        { expiresIn: '1h',secret: await this.configService.get('JWT_TOKEN_KEY') }
+      ),
+      this.jwtService.signAsync(
+        {
+          sub: userId,
+          username,
+        },
+        { expiresIn: '7d',secret: await this.configService.get('JWT_TOKEN_REFRESH_KEY') }
+      )
+		]);
+
+		return {
+			accessToken,
+			refreshToken
+		};
+	}
 }

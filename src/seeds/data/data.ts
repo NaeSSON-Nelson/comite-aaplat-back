@@ -489,6 +489,7 @@ export const initialData: SeedData = {
       nombre: 'registrar medidor',
       linkMenu: 'medidor-agua-register',
       estado: Estado.ACTIVO,
+      visible:false,
     },
     {
       nombre: 'detalles de afiliado con medidores',
@@ -577,6 +578,30 @@ export const initialData: SeedData = {
       estado:Estado.ACTIVO,
       visible:false,
     },
+    {
+      nombre:'registrar cobros',
+      linkMenu:'cobros-register',
+      estado:Estado.ACTIVO,
+    },
+    //FUNCIONES DE USUARIO AFILIADO
+    {
+      nombre:'medidores',
+      linkMenu:'medidores',
+      estado:Estado.ACTIVO,
+      visible:true,
+    },
+    {
+      nombre:'dashboard',
+      linkMenu:'dashboard',
+      estado:Estado.ACTIVO,
+      visible:true,
+    },
+    {
+      nombre:'Panel de usuario',
+      linkMenu:'perfil',
+      estado:Estado.ACTIVO,
+      visible:true,
+    }
   ],
   menus: [
     {
@@ -598,9 +623,20 @@ export const initialData: SeedData = {
       nombre: 'medidores-agua',
       linkMenu: 'medidores-agua',
       estado: Estado.ACTIVO,
-    },{
+    },
+    {
       nombre:'perfiles',
       linkMenu:'perfiles',
+      estado:Estado.ACTIVO,
+    },
+    {
+      nombre:'cobros',
+      linkMenu:'cobros',
+      estado:Estado.ACTIVO,
+    },
+    {
+      nombre:'funciones afiliado',
+      linkMenu:'user',
       estado:Estado.ACTIVO,
     }
   ],
