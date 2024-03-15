@@ -19,10 +19,10 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(Strategy,'jwt-refr
         super({
             secretOrKey: configService.get('JWT_TOKEN_REFRESH_KEY'),
             jwtFromRequest: ExtractJwt.fromHeader('refresh'),
-            passReqToCallback: true
+            // passReqToCallback: true
         })
     }
-    async validate(req: Request,payload: any) {
+    async validate(payload: any) {
         // console.log('paso el refresh :V');
         // console.log(req);
         // console.log(payload);

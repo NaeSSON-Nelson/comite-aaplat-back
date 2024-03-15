@@ -14,6 +14,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
 import { PagosServicesDto } from './dto/pagos-services.dto';
 import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
+import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 
 @Injectable()
 export class PagosDeServicioService {
@@ -175,6 +176,7 @@ export class PagosDeServicioService {
           if(!(lectura.pagar.pagado) && pagosDto.comprobantes.includes(lectura.pagar.id)){
             const registroPagado = this.comprobantePagoService.create({
               comprobantePorPagar:lectura.pagar,
+              
               entidadPago:'NINGUNO',
               fechaEmitida: new Date(),
               metodoPago:'PAGO POR CAJA - PRESENCIAL',
@@ -194,13 +196,19 @@ export class PagosDeServicioService {
       }
     }
     try {
+      console.log(pagados);
       await queryRunner.manager.save(pagados)
       await queryRunner.manager.save(updateComprobantesPagados)
       await queryRunner.commitTransaction();
       return {
         OK:true,
-        message:'result',
-        data:pagados,
+        message:'Total pagados',
+        data:await this.comprobantePagoService.find({
+          where:{id:In(pagados.map(val=>val.id))},
+          relations:{
+            comprobantePorPagar:true,
+          }
+        }),
       }
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -312,6 +320,10 @@ export class PagosDeServicioService {
         'perfil.afiliado',
         'afiliado',
         'afiliado."perfilId" = perfil.id',
+      ).innerJoinAndSelect(
+        'afiliado.medidores',
+        'medidores',
+        'medidores."afiliadoId" = afiliado.id'
       )
       .where('perfil.nombre_primero LIKE :query', { query: `${q}%` })
       .orWhere('perfil.nombre_segundo LIKE :query', { query: `${q}%` })
@@ -336,24 +348,164 @@ export class PagosDeServicioService {
   }
   async comprobantesPorPagarAfiliado(idPerfil:number){
     const perfil = await this.dataSource.getRepository(Perfil).findOne({
-      where:{id:idPerfil,isActive:true,afiliado:{isActive:true,medidores:{isActive:true,planillas:{isActive:true,lecturas:{isActive:true,pagar:{pagado:false,}}}}}},
+      where:{id:idPerfil,isActive:true},
       select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
               afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
                 medidores:{id:true,nroMedidor:true,ubicacion:{barrio:true,numeroVivienda:true},
-                  planillas:{id:true,gestion:true,isActive:true,
-                    lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
-                      pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
-                        comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
-                        comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
-                          comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
-                }}}},
-      relations:{afiliado:{medidores:{planillas:{lecturas:{pagar:{comprobantesAdd:{comprobante:true},comprobante:true}}}}}}
+                //   planillas:{id:true,gestion:true,isActive:true,
+                //     lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
+                //       pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
+                //         comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
+                //         comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
+                //           comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
+                // }
+              }}},
+      relations:{afiliado:{medidores:true}}
     })
+    if(!perfil || !perfil.isActive) throw new BadRequestException(`Perfil ${idPerfil} not found`);
+    if(!perfil.afiliado || !perfil.afiliado.isActive) throw new BadRequestException(`The perfil isn't afiliado`);
+    if(perfil.afiliado.medidores.length===0) throw new BadRequestException(`The perfil not have medidores de agua`)
+    const perfilSend = {}
+    for(const medidor of perfil.afiliado.medidores){
+      // for(const planilla of medidor.planillas){
+      //   for(const lectura of planilla.lecturas){
+      //     if(lectura.pagar && !lectura.pagar.pagado){
+
+      //     }
+      //   }
+      // }
+      const deudas = await this.dataSource.getRepository(PlanillaLecturas).find({
+        where:{
+          medidor:{id:medidor.id},
+          lecturas:{pagar:{pagado:false}},
+        },
+        select:{
+          gestion:true,id:true,lecturas:{estadoMedidor:true,id:true,lectura:true,mesLecturado:true,consumoTotal:true,pagar:{id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,created_at:true,estadoComprobate:true}}
+        },
+        relations:{
+          lecturas:{
+            pagar:true
+          }
+        }
+      })
+      // console.log(deudas);
+      medidor.planillas=deudas;
+    }
     return{
       OK:true,
       message:'Tarifas por pagar de perfil',
       data:perfil
     }
 
+  }
+  async findPerfil(id:number){
+    const perfil = await this.dataSource.getRepository(Perfil).findOne(
+      {
+        where:{id},
+        select:{
+          id:true,isActive:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,
+          afiliado:{
+            id:true,
+            isActive:true,
+            ubicacion:{
+              barrio:true,
+              numeroVivienda:true,
+            },
+            medidores:{
+              id:true,
+              isActive:true,
+              nroMedidor:true,
+            }
+          }
+        },
+        relations:{afiliado:{medidores:true}}
+      })
+    if(!perfil.isActive) throw new BadRequestException(`This perfil isn't activated, please select another perfil or contact  the administrator`)
+    if(!perfil.afiliado) throw new BadRequestException(`This perfil is'nt afiliado,`)
+    return {
+      OK:true,
+      message:'perfil con medidores',
+      data:perfil,
+  } 
+  }
+  async findPerfilMedidorHistory(idPerfil:number,nroMedidor:string){
+    const planillas = await this.dataSource.getRepository(PlanillaLecturas).find({
+      where:{
+        medidor:{
+          nroMedidor,
+          afiliado:{
+            perfil:{
+              id:idPerfil
+            }
+          }
+        }
+      },
+      select:{
+          gestion:true,
+          id:true,
+      }
+    })
+    if(!planillas) throw new BadRequestException(`Medidor no encontrado o no pertenece al perfil`)
+    return {
+      OK:true,
+      message:'planillas del medidor',
+      data:planillas
+  };
+  }
+  async historialCobros(nroMedidor:string,idPlanilla:number){
+    const lecturas = await this.dataSource.getRepository(MesLectura).find({
+      where:{
+        planilla:{
+          id:idPlanilla,
+          medidor:{
+            nroMedidor,
+          }
+        },
+        pagar:{
+          pagado:true,
+        }
+      },
+      // select:{
+      //   consumoTotal:true,
+      //   estado:true,
+      //   created_at:true,
+      //   estadoMedidor:true,
+      //   id:true,isActive:true,
+      //   lectura:true,
+      //   mesLecturado:true,
+      //   pagar:{
+      //     estadoComprobate:true,
+      //     estado:true,
+      //     fechaPagada:true,
+      //     id:true,
+      //     metodoRegistro:true,
+      //     moneda:true,
+      //     monto:true,
+      //     motivo:true,
+      //     pagado:true,
+      //     comprobante:{
+      //       ciTitular:true,
+      //       created_at:true,
+      //       entidadPago:true,
+      //       fechaEmitida:true,
+      //       id:true,
+      //       metodoPago:true,
+      //       moneda:true,
+      //       montoPagado:true,
+      //       nroRecibo:true,
+      //       titular:true,
+      //     }
+      //   }
+      // },
+      relations:{
+        pagar:{
+          comprobante:true,
+        }
+      }
+    })
+    return {
+      OK:true,
+      message:'lecturas de planilla',
+      data:lecturas};
   }
 }

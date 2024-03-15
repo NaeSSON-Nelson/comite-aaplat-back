@@ -23,6 +23,19 @@ export class PagosDeServicioController {
   perfiles(@Query() paginationDto:SearchPerfil){
     return this.pagosDeServicioService.findAllPefiles(paginationDto)
   }
+  @Get('perfiles/:id')
+  perfilMedidores(@Param('id', ParseIntPipe) id: number){
+    return this.pagosDeServicioService.findPerfil(id);
+  }
+  @Get('medidores/:idPerfil/:nroMedidor')
+  PlanillasCobrosMedidor(@Param('idPerfil', ParseIntPipe) idPerfil: number,@Param('nroMedidor') nroMedidor: string){
+    return this.pagosDeServicioService.findPerfilMedidorHistory(idPerfil,nroMedidor);
+  }
+  @Get('cobros/historial/:nroMedidor/:idPlanilla')
+  historialCobrosMedidor(@Param('nroMedidor') nroMedidor: string,@Param('idPlanilla',ParseIntPipe) idPlanilla: number){
+    return this.pagosDeServicioService.historialCobros(nroMedidor,idPlanilla);
+  }
+
   @Get('comprobantes/perfiles/:id')
   obtenerComprobantesPerfil(@Param('id', ParseIntPipe) id: number)
   {

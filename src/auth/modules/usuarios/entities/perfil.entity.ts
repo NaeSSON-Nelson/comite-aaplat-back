@@ -5,6 +5,7 @@ import {
   Entity,
   OneToOne,
   PrimaryGeneratedColumn,
+  PrimaryColumnOptions
 } from 'typeorm';
 
 import { ColumnsAlways } from 'src/common/inherints-db/column-always';
