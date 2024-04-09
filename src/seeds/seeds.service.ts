@@ -21,6 +21,7 @@ import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 
 @Injectable()
 export class SeedsService {
+
   constructor(
     @InjectRepository(Perfil)
     private readonly perfilRepository:Repository<Perfil>,
@@ -73,12 +74,16 @@ export class SeedsService {
       await queryRunner.manager.save(menusSave);
       const rolesSave = await this.insertRoles();
       await queryRunner.manager.save(rolesSave);
-      //CON DEPDENDENCIA
+      //DEPENDENCIES
       const afiliadosSave = await this.insertAfiliados(perfilesSave);
       await queryRunner.manager.save(afiliadosSave);
       const usuariosSave = await this.insertUsuarios(perfilesSave);
       await queryRunner.manager.save(usuariosSave);
       
+      const anioSeguimientoSave = await this.insertAnioSeguimientos();
+      await queryRunner.manager.save(anioSeguimientoSave);
+      const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
+      await queryRunner.manager.save(mesesSeguimientoSave);
       const medidoresSave = await this.insertMedidores(afiliadosSave);
       await queryRunner.manager.save(medidoresSave);
       const planillasSave = await this.insertPlanillas(medidoresSave);
@@ -87,13 +92,10 @@ export class SeedsService {
       await queryRunner.manager.save(lecturasSave);
       const comprobantesPorPagar = await this.insertComprobantesPorPagarAnteriores(lecturasSave);
       await queryRunner.manager.save(comprobantesPorPagar);
-      const anioSeguimientoSave = await this.insertAnioSeguimientos();
-      await queryRunner.manager.save(anioSeguimientoSave);
-      const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
-      await queryRunner.manager.save(mesesSeguimientoSave);
+      
       // console.log('hola:3');
       await queryRunner.commitTransaction();
-      return { OK: true, msg: 'SEED EXECUTE' };
+      return { OK: true, msg: 'SEED EXECUTED' };
 
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -188,16 +190,49 @@ export class SeedsService {
     return usuarios;
   }
   private async insertAnioSeguimientos(){
-    const yearSeg = this.anioSeguimientoLecturaRepository.create({anio:new Date().getFullYear()});
+    const planillas = await initialData.planillas;
+
+    const yearSeg = this.anioSeguimientoLecturaRepository.create(planillas.map(plan=>{
+      return {
+        anio:plan.gestion
+      }
+    }))
     return yearSeg;
   }
-  private async insertMesSeguimiento(anioSeguimientoSave:AnioSeguimientoLectura){
+  private async insertMesSeguimiento(anioSeguimientoSave:AnioSeguimientoLectura[]){
     const fechaActual = new Date();
     //const anioSeguimiento = await this.anioSeguimientoLecturaRepository.findOneBy({anio:fechaActual.getFullYear()});
     const meses:MesSeguimientoRegistroLectura[]=[];
-    for(let index=0;index<fechaActual.getMonth();index++){
-      const mes = this.mesSeguimientoRegistroLecturaRepository.create(
-        {
+    for(const year of anioSeguimientoSave){
+
+      if(year.anio<fechaActual.getFullYear()){
+        for (let index = 0; index < 12; index++) {
+          const mes = this.mesSeguimientoRegistroLecturaRepository.create(
+            {
+            mes: index===0?Mes.enero
+            :index===1?Mes.febrero
+            :index===2?Mes.marzo
+            :index===3?Mes.abril
+            :index===4?Mes.mayo
+            :index===5?Mes.junio
+            :index===6?Mes.julio
+            :index===7?Mes.agosto
+            :index===8?Mes.septiembre
+            :index===9?Mes.octubre
+            :index===10?Mes.noviembre
+            :index===11?Mes.diciembre
+            :Mes.enero,
+            anioSeguimiento:year,
+            fechaRegistroLecturas: new Date(year.anio,index+1,2,8,0,0,0),
+            fechaFinRegistroLecturas: new Date(year.anio,index+1,28,12,59,59,0),
+          }
+          ) 
+          meses.push(mes);
+        }
+      }else
+      for(let index=0;index<fechaActual.getMonth();index++){
+        const mes = this.mesSeguimientoRegistroLecturaRepository.create(
+          {
           mes: index===0?Mes.enero
           :index===1?Mes.febrero
           :index===2?Mes.marzo
@@ -211,34 +246,72 @@ export class SeedsService {
           :index===10?Mes.noviembre
           :index===11?Mes.diciembre
           :Mes.enero,
-          anioSeguimiento:anioSeguimientoSave,
+          anioSeguimiento:year,
           fechaRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,2,8,0,0,0),
           fechaFinRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,28,12,59,59,0),
         }
-      ) 
-      meses.push(mes);
+        ) 
+        meses.push(mes);
+      }
     }
     return meses;
   }
   private async insertPlanillas(medidores:Medidor[]){
-    const seedPlanillas = initialData.planillas;
+    const seedPlanillas = await initialData.planillas;
     const planillas:PlanillaLecturas[]=[];
-    medidores.forEach(medidor=>{
-      planillas.push(this.planillaLecturasRepository.create({...seedPlanillas[0],medidor}))
-    })
+    for(const medidor of medidores){
+      for(const {gestion} of seedPlanillas){
+        planillas.push(this.planillaLecturasRepository.create({gestion,medidor}))
+      }
+    }
     return planillas;
   }
+  
+  lecturaSalvada:number=0
+  medidorName:string='';
   private async insertLecturas(planillas:PlanillaLecturas[]){
     const fechaActual = new Date();
     const lecturas:MesLectura[]=[];
+    this.medidorName=planillas[0].medidor.nroMedidor;
     for(const planilla of planillas){
-      let lecturaSeguimiento =0;
+      if(this.medidorName !== planilla.medidor.nroMedidor){
+        this.medidorName= planilla.medidor.nroMedidor;
+        this.lecturaSalvada=0;
+      }
+      let lecturaSeguimiento = this.lecturaSalvada;
+      if(planilla.gestion<fechaActual.getFullYear()){
+        for(let index=0;index<12;index++){
+          let lecturaGen = Math.round((Math.random()*100)+5);
+          lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
+          const lectura = this.mesLecturaRepository.create({
+            lectura:lecturaSeguimiento,
+            consumoTotal:(lecturaSeguimiento-this.lecturaSalvada),
+            mesLecturado:index===0?Mes.enero
+            :index===1?Mes.febrero
+            :index===2?Mes.marzo
+            :index===3?Mes.abril
+            :index===4?Mes.mayo
+            :index===5?Mes.junio
+            :index===6?Mes.julio
+            :index===7?Mes.agosto
+            :index===8?Mes.septiembre
+            :index===9?Mes.octubre
+            :index===10?Mes.noviembre
+            :index===11?Mes.diciembre
+            :Mes.enero,
+            planilla,
+          })
+          lecturas.push(lectura);
+          this.lecturaSalvada=lecturaSeguimiento;
+        }
+      }
+      else 
       for(let index=0;index<fechaActual.getMonth();index++){
         let lecturaGen = Math.round((Math.random()*100)+10);
         lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
         const lectura = this.mesLecturaRepository.create({
           lectura:lecturaSeguimiento,
-          consumoTotal:(lecturaSeguimiento-planilla.medidor.ultimaLectura),
+          consumoTotal:(lecturaSeguimiento-this.lecturaSalvada),
           mesLecturado:index===0?Mes.enero
           :index===1?Mes.febrero
           :index===2?Mes.marzo
@@ -255,7 +328,7 @@ export class SeedsService {
           planilla,
         })
         lecturas.push(lectura);
-        planilla.medidor.ultimaLectura=lecturaSeguimiento;
+        this.lecturaSalvada=lecturaSeguimiento;
       }
       //await this.medidorRepository.save(planilla.medidor);
     }
@@ -356,12 +429,25 @@ export class SeedsService {
       await queryRunner.manager.save(itemToMenuRelationsMenu);
       const itemToMenuRelationsRoles = await this.insertRelationsItemMenuToMenu('rol','roles')
       await queryRunner.manager.save(itemToMenuRelationsRoles);
+      const itemToMenuRelationsCobros = await this.insertRelationsItemMenuToMenu('cobros','cobros')
+      await queryRunner.manager.save(itemToMenuRelationsCobros);
       const itemToMenuRelationsMedidores = await this.insertRelationsItemMenuToMenu('medidor','medidores')
       await queryRunner.manager.save(itemToMenuRelationsMedidores);
+      const itemToMenuRelationsUser = await this.insertRelationsItemMenuToMenu('medidores','user')
+      await queryRunner.manager.save(itemToMenuRelationsUser);
       //INSERT INTO RELATIONS MENU TO ROLE
       
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua'],'root');
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua','cobros'],'root');
       await queryRunner.manager.save(menuToRoleRelationsRoot);
+      
+      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles'],'admin');
+      await queryRunner.manager.save(menuToRoleRelationsAdmin);
+      
+      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole(['perfiles','medidores-agua','cobros'],'contador');
+      await queryRunner.manager.save(menuToRoleRelationsContador);
+      
+      const menuToRoleRelationsUser = await this.insertRelationsMenuToRole(['user'],'user');
+      await queryRunner.manager.save(menuToRoleRelationsUser);
       
       const roleToUsuarioAdmin = await this.insertRolesToUsuario(['root','admin'],'admin');
       await queryRunner.manager.save(roleToUsuarioAdmin);

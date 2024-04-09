@@ -341,21 +341,99 @@ export const initialData: SeedData = {
     {
       ubicacion: { 
         barrio: Barrio.sanAntonio, 
-        numeroVivienda: '270588'
+        numeroVivienda: '5405'
       },
       estado: Estado.ACTIVO,
     },
     {
       ubicacion: { 
         barrio: Barrio.verdeOlivo, 
-        numeroVivienda: '270588'
+        numeroVivienda: '5408'
       },
       estado: Estado.ACTIVO,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '270588'
+        numeroVivienda: '6874'
+      },
+      estado: Estado.ACTIVO,
+    },
+    //
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '7848'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '9857'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '4501'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio._20DeMarzo, 
+        numeroVivienda: '1047'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.mendezFortaleza, 
+        numeroVivienda: '2508'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.verdeOlivo, 
+        numeroVivienda: '2659'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '5684'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio._20DeMarzo, 
+        numeroVivienda: '4700'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.primavera, 
+        numeroVivienda: '8754'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.mendezFortaleza, 
+        numeroVivienda: '2504'
+      },
+      estado: Estado.ACTIVO,
+    },
+    {
+      ubicacion: { 
+        barrio: Barrio.sanAntonio, 
+        numeroVivienda: '6678'
       },
       estado: Estado.ACTIVO,
     },
@@ -590,18 +668,18 @@ export const initialData: SeedData = {
       estado:Estado.ACTIVO,
       visible:true,
     },
-    {
-      nombre:'dashboard',
-      linkMenu:'dashboard',
-      estado:Estado.ACTIVO,
-      visible:true,
-    },
-    {
-      nombre:'Panel de usuario',
-      linkMenu:'perfil',
-      estado:Estado.ACTIVO,
-      visible:true,
-    }
+    // {
+    //   nombre:'dashboard',
+    //   linkMenu:'dashboard',
+    //   estado:Estado.ACTIVO,
+    //   visible:true,
+    // },
+    // {
+    //   nombre:'Panel de usuario',
+    //   linkMenu:'perfil',
+    //   estado:Estado.ACTIVO,
+    //   visible:true,
+    // }
   ],
   menus: [
     {
@@ -847,7 +925,19 @@ export const initialData: SeedData = {
   ],
   planillas:[
     {
+      gestion:2020
+    },
+    {
+      gestion:2021
+    },
+    {
+      gestion:2022
+    },
+    {
       gestion:2023
-    }
+    },
+    {
+      gestion:2024
+    },
   ]
 };
