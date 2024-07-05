@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ComprobantePago, ComprobantePorPago } from './entities';
-import { DataSource, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, ILike, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
@@ -69,7 +69,7 @@ export class PagosDeServicioService {
     try {
       const afiliados = await planQr
         .innerJoinAndSelect(
-          'afiliados.medidores',
+          'afiliados.medidorAsociado',
           'medidor',
           'medidor."afiliadoId" = afiliados.id AND medidor.isActive = true',
         )
@@ -89,13 +89,13 @@ export class PagosDeServicioService {
         .getMany();
       // console.log(afiliados);
       for (const afiliado of afiliados) {
-        for (const medidor of afiliado.medidores) {
+        for (const medidor of afiliado.medidorAsociado) {
           const comprobante = await this.comprobantePorPagarService.findOneBy({
             lectura: { id: medidor.planillas[0].lecturas[0].id },
           });
           if (comprobante) {
             this.logger.warn(
-              `el mes lectura ${medidor.planillas[0].lecturas[0].mesLecturado} del medidor de agua con NRO:${medidor.nroMedidor} ya tiene un comprobante por pagar registrado`,
+              `el mes lectura ${medidor.planillas[0].lecturas[0].mesLecturado} del medidor de agua con NRO:${medidor.medidor.nroMedidor} ya tiene un comprobante por pagar registrado`,
             );
           } else {
             const comprobantePorPagar = this.comprobantePorPagarService.create({
@@ -130,18 +130,23 @@ export class PagosDeServicioService {
   async comprobantesPorPagarPerfil(idPerfil:number){
 
     const perfil = await this.dataSource.getRepository(Perfil).findOne({
-      where:{id:idPerfil,isActive:true,afiliado:{isActive:true,medidores:{isActive:true,}}},
+      where:{id:idPerfil,isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,}}},
       select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
               afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
-                medidores:{id:true,nroMedidor:true,ubicacion:{barrio:true,numeroVivienda:true},
+                medidorAsociado:{
+                  ubicacion:{barrio:true,numeroVivienda:true},
                   planillas:{id:true,gestion:true,isActive:true,
                     lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
                       pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
                         comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
                         comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
                           comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
-                }}}},
-      relations:{afiliado:{medidores:{planillas:{lecturas:{pagar:{comprobantesAdd:{comprobante:true},comprobante:true}}}}}}
+                },
+                medidor:{id:true,nroMedidor:true,
+              }}},
+
+                },
+      relations:{afiliado:{medidorAsociado :{medidor:true,planillas:{lecturas:{pagar:{comprobantesAdd:{comprobante:true},comprobante:true}}}}}}
     })
     return{
       OK:true,
@@ -154,7 +159,7 @@ export class PagosDeServicioService {
     
     const perfil = await qb
                           .innerJoinAndSelect('perfil.afiliado','afiliado','afiliado.perfilId = perfil.id AND afiliado.isActive = true')
-                          .innerJoinAndSelect('afiliado.medidores','medidor','medidor.afiliadoId = afiliado.id AND medidor.isActive = true')
+                          .innerJoinAndSelect('afiliado.medidorAsociado','medidor','medidor.afiliadoId = afiliado.id AND medidor.isActive = true')
                           .innerJoinAndSelect('medidor.planillas','planilla','planilla.medidorId = medidor.id')
                           .innerJoinAndSelect('planilla.lecturas','lectura','lectura.planillaId = planilla.id')
                           .innerJoinAndSelect('lectura.pagar','pagar','pagar.pagado = false')
@@ -170,7 +175,7 @@ export class PagosDeServicioService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    for(const medidor of perfil.afiliado.medidores){
+    for(const medidor of perfil.afiliado.medidorAsociado){
       for(const planilla of medidor.planillas){
         for(const lectura of planilla.lecturas){
           if(!(lectura.pagar.pagado) && pagosDto.comprobantes.includes(lectura.pagar.id)){
@@ -315,21 +320,34 @@ export class PagosDeServicioService {
   async findAllPefiles(paginationDto: SearchPerfil) {
     const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
     const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    let arg =[''];
+    if(q.length>0){
+      arg =q.toLocaleLowerCase().split(/\s/).filter(val=>val.length>0);
+    }
+    if(arg.length===0) arg=[''];
+    
+    // console.log(arg);
+    const finders:FindOptionsWhere<Perfil>[] = [];
+    for(const data of arg){
+      finders.push(
+        { nombrePrimero:   ILike(`%${data}%`) },
+        { nombreSegundo:   ILike(`%${data}%`) },
+        { apellidoPrimero: ILike(`%${data}%`) },
+        { apellidoSegundo: ILike(`%${data}%`) },
+        { CI:              ILike(`%${data}%`) },
+      )
+    }
     const { '0': data, '1': size } = await qb
       .innerJoinAndSelect(
         'perfil.afiliado',
         'afiliado',
         'afiliado."perfilId" = perfil.id',
       ).innerJoinAndSelect(
-        'afiliado.medidores',
+        'afiliado.medidorAsociado',
         'medidores',
         'medidores."afiliadoId" = afiliado.id'
       )
-      .where('perfil.nombre_primero LIKE :query', { query: `${q}%` })
-      .orWhere('perfil.nombre_segundo LIKE :query', { query: `${q}%` })
-      .orWhere('perfil.apellido_primero LIKE :query', { query: `${q}%` })
-      .orWhere('perfil.apellido_segundo LIKE :query', { query: `${q}%` })
-      .orWhere('perfil.cedula_identidad LIKE :query', { query: `${q}%` })
+      .orWhere(finders)
       .offset(offset)
       .limit(limit)
       .orderBy('perfil.id', 'ASC')
@@ -351,7 +369,7 @@ export class PagosDeServicioService {
       where:{id:idPerfil,isActive:true},
       select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
               afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
-                medidores:{id:true,nroMedidor:true,ubicacion:{barrio:true,numeroVivienda:true},
+              medidorAsociado:{id:true,medidor:{nroMedidor:true,id:true,},ubicacion:{barrio:true,numeroVivienda:true},
                 //   planillas:{id:true,gestion:true,isActive:true,
                 //     lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
                 //       pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
@@ -360,13 +378,13 @@ export class PagosDeServicioService {
                 //           comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
                 // }
               }}},
-      relations:{afiliado:{medidores:true}}
+      relations:{afiliado:{medidorAsociado:{medidor:true}}}
     })
     if(!perfil || !perfil.isActive) throw new BadRequestException(`Perfil ${idPerfil} not found`);
     if(!perfil.afiliado || !perfil.afiliado.isActive) throw new BadRequestException(`The perfil isn't afiliado`);
-    if(perfil.afiliado.medidores.length===0) throw new BadRequestException(`The perfil not have medidores de agua`)
+    if(perfil.afiliado.medidorAsociado.length===0) throw new BadRequestException(`The perfil not have medidores de agua asociados`)
     const perfilSend = {}
-    for(const medidor of perfil.afiliado.medidores){
+    for(const medidor of perfil.afiliado.medidorAsociado){
       // for(const planilla of medidor.planillas){
       //   for(const lectura of planilla.lecturas){
       //     if(lectura.pagar && !lectura.pagar.pagado){
@@ -411,14 +429,18 @@ export class PagosDeServicioService {
               barrio:true,
               numeroVivienda:true,
             },
-            medidores:{
+            medidorAsociado:{
+              medidor:{
+                id:true,
+                isActive:true,
+                nroMedidor:true,
+              },
               id:true,
               isActive:true,
-              nroMedidor:true,
-            }
+            },
           }
         },
-        relations:{afiliado:{medidores:true}}
+        relations:{afiliado:{medidorAsociado:{medidor:true}}}
       })
     if(!perfil.isActive) throw new BadRequestException(`This perfil isn't activated, please select another perfil or contact  the administrator`)
     if(!perfil.afiliado) throw new BadRequestException(`This perfil is'nt afiliado,`)
@@ -432,7 +454,9 @@ export class PagosDeServicioService {
     const planillas = await this.dataSource.getRepository(PlanillaLecturas).find({
       where:{
         medidor:{
-          nroMedidor,
+          medidor:{
+            nroMedidor,
+          },
           afiliado:{
             perfil:{
               id:idPerfil
@@ -457,8 +481,11 @@ export class PagosDeServicioService {
       where:{
         planilla:{
           id:idPlanilla,
+          
           medidor:{
-            nroMedidor,
+            medidor:{
+              nroMedidor,
+            }
           }
         },
         pagar:{

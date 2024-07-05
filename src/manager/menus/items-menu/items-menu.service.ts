@@ -35,7 +35,7 @@ export class ItemsMenuService {
     //todo: parameters
     const { '0': data, '1': size } =
       await this.itemsMenuRepository.findAndCount({
-        where: [{ nombre: Like(`%${q}%`) }],
+        where: [{ linkMenu: Like(`%${q}%`) }],
         skip: offset,
         take: limit,
         order: {
@@ -44,7 +44,7 @@ export class ItemsMenuService {
       });
     return {
       OK: true,
-      message: 'Listado de items de Menu',
+      message: 'Listado de options link',
       data: {
         data,
         size,

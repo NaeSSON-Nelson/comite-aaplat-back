@@ -31,11 +31,14 @@ class MenuSeed {
   estado?: Estado;
 }
 class MenuItemSeed {
-  nombre: string;
   linkMenu: string;
   estado?: Estado;
-  visible?:boolean;
 }
+// class ItemToMenuSeed{
+//   itemMenuId:
+//   nombre: string;
+//   visible?:boolean;
+// }
 class RoleSeed {
   nombre: string;
   nivel:  Nivel;
@@ -44,12 +47,16 @@ class RoleSeed {
 
 class MedidorSeed {
   nroMedidor: string;
-  fechaInstalacion: Date;
   lecturaInicial: number;
+  lecturaMedidor: number;
   estado?: Estado;
   marca: string;
+}
+class MedidorAsociadoSeed{
+  fechaInstalacion: Date;
+  estadoMedidorAsociado:string;
   ubicacion:Ubicacion;
-  ultimaLectura: number;
+  
 }
 class PlanillaLecturasSeed{
   gestion:number;
@@ -77,6 +84,7 @@ class SeedData {
   usuarios: UsuarioSeed[];
   planillas:PlanillaLecturasSeed[]
   medidores: MedidorSeed[];
+  medidoresAsociados:MedidorAsociadoSeed[];
   // aniosSeguimiento: AnioSeguimientoLecturaSeed[];
   // mesesSeguimiento: MesSeguimientoRegistroLectura[];
 }
@@ -476,209 +484,33 @@ export const initialData: SeedData = {
     },
   ],
   itemsMenu: [
-    {
-      nombre: 'registrar itemMenu',
-      linkMenu: 'item-menu-register',
-      estado: Estado.ACTIVO,
-      visible:true,
-    },
-    {
-      nombre: 'detalles de item menu',
-      linkMenu: 'item-menu-details',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'modificar itemMenu',
-      linkMenu: 'item-menu-update',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'bajar itemMenu',
-      linkMenu: 'item-menu-update-status',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'listar items de menus',
-      linkMenu: 'item-menu-list',
-      estado: Estado.ACTIVO,
-      visible:true
-    },
-    {
-      nombre: 'registrar menu',
-      linkMenu: 'menu-register',
-      estado: Estado.ACTIVO,
-      visible:true
-    },
-    {
-      nombre: 'detalles de menu',
-      linkMenu: 'menu-details',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'modificar menu',
-      linkMenu: 'menu-update',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'bajar menu',
-      linkMenu: 'menu-update-status',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'listar menus',
-      linkMenu: 'menu-list',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'registrar rol',
-      linkMenu: 'rol-register',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'detalles de rol',
-      linkMenu: 'rol-details',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'modificar rol',
-      linkMenu: 'rol-update',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'bajar rol',
-      linkMenu: 'rol-update-status',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'listar roles',
-      linkMenu: 'rol-list',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre: 'registrar medidor',
-      linkMenu: 'medidor-agua-register',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'detalles de afiliado con medidores',
-      linkMenu: 'medidor-agua-details',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'modificar medidor',
-      linkMenu: 'medidor-agua-update',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'bajar medidor',
-      linkMenu: 'medidor-agua-update-status',
-      estado: Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre: 'listar afiliados con medidores',
-      linkMenu: 'medidor-agua-list',
-      estado: Estado.ACTIVO,
-    },
-    {
-      nombre:'registrar nuevo perfil',
-      linkMenu:'perfil-register',
-      estado:Estado.ACTIVO,
-    },
-    {
-      nombre:'listar perfiles',
-      linkMenu:'perfil-list',
-      estado:Estado.ACTIVO,
-    },
-    {
-      nombre:'actualizar perfil',
-      linkMenu:'perfil-update',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'bajar perfil',
-      linkMenu:'perfil-update-status',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'detalles de perfil',
-      linkMenu:'perfil-details',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'asignar usuario a perfil',
-      linkMenu:'perfil-user-register',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'asignar afiliacion a perfil',
-      linkMenu:'perfil-afiliado-register',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'actualizar usuario de perfil',
-      linkMenu:'perfil-user-update',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'bajar usuario de perfil',
-      linkMenu:'perfil-user-update-status',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'actualizar afiliado de perfil',
-      linkMenu:'perfil-afiliado-update',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'bajar afiliado de perfil',
-      linkMenu:'perfil-afiliado-update-status',
-      estado:Estado.ACTIVO,
-      visible:false,
-    },
-    {
-      nombre:'registrar cobros',
-      linkMenu:'cobros-register',
-      estado:Estado.ACTIVO,
-    },
-    //FUNCIONES DE USUARIO AFILIADO
-    {
-      nombre:'medidores',
-      linkMenu:'medidores',
-      estado:Estado.ACTIVO,
-      visible:true,
-    },
     // {
-    //   nombre:'dashboard',
-    //   linkMenu:'dashboard',
-    //   estado:Estado.ACTIVO,
-    //   visible:true,
+    //   // nombre: 'registrar itemMenu',
+    //   linkMenu: 'register',
+    //   estado: Estado.ACTIVO,
     // },
+    {
+      // nombre: 'detalles de item menu',
+      linkMenu: 'details',
+      estado: Estado.ACTIVO,
+    },
+    {
+      // nombre: 'modificar itemMenu',
+      linkMenu: 'edit',
+      estado: Estado.ACTIVO,
+    },
+    {
+      // nombre: 'bajar itemMenu',
+      linkMenu: 'form',
+      estado: Estado.ACTIVO,
+    },
+    {
+      linkMenu:'list',
+      estado:Estado.ACTIVO,
+    },
     // {
-    //   nombre:'Panel de usuario',
-    //   linkMenu:'perfil',
+    //   linkMenu:'',
     //   estado:Estado.ACTIVO,
-    //   visible:true,
     // }
   ],
   menus: [
@@ -754,174 +586,247 @@ export const initialData: SeedData = {
     {
       nroMedidor: '98QW98E7SD',
       marca: 'LAO TAO',
-      // fechaInstalacion: new Date('24/05/2012'),
-      fechaInstalacion: new Date(2012, 4, 23),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio._20DeMarzo
-      },ultimaLectura:0,
     },
     {
       nroMedidor: '98CSX477744QW',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2012, 8, 16),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio._20DeMarzo
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '26HJT5645DF4D4W',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2015, 9, 9),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.mendezFortaleza
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '5R4ET45V4B4BVFGH5555',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2019, 5, 18),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.sanAntonio
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '138R78944165465E',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2018, 8, 8),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.primavera
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '5995DASD4WQ4',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2014, 2, 24),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.verdeOlivo
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '6QW8E7645ASD6W',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2019, 11, 11),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.primavera
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '9QWE5QWE4ASD4W',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2021, 2, 18),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.mendezFortaleza
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '4E48R7WW44',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2020, 11, 11),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.verdeOlivo
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '59QWE89Q8WE98QWE4',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2022, 8, 9),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.mendezFortaleza
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: 'EWRWE8W87W00',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2020, 8, 9),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.primavera
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: 'UX488448EWQ77LL',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2019, 5, 5),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.mendezFortaleza
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '98798ER7987E8',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2020, 2, 9),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio._20DeMarzo
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '3A1SD5DQ53W4EW',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2020, 7, 2),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.verdeOlivo
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '6Q5W4645AS6D54',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2019, 1, 2),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.sanAntonio
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: 'Q5W66XCC1C15',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2020, 6, 6),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
-      ubicacion:{
-        barrio:Barrio.primavera
-      },ultimaLectura:0,
+      
     },
     {
       nroMedidor: '645SD4546VVDDD',
       marca: 'LAO TAO',
-      fechaInstalacion: new Date(2020, 4, 7),
       lecturaInicial: 0,
+      lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      
+    },
+  ],
+  medidoresAsociados:[
+    {
+      fechaInstalacion: new Date(2012, 4, 23),
       ubicacion:{
         barrio:Barrio._20DeMarzo
-      },ultimaLectura:0,
+      },
+      estadoMedidorAsociado:'uso',
     },
+    {
+      fechaInstalacion: new Date(2012, 8, 16),
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
+      },
+      estadoMedidorAsociado:'uso'
+    },
+    {
+      fechaInstalacion: new Date(2015, 9, 9),
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      },
+      estadoMedidorAsociado:'uso'
+    },
+    {
+      fechaInstalacion: new Date(2019, 5, 18),
+      ubicacion:{
+        barrio:Barrio.sanAntonio
+      },
+      estadoMedidorAsociado:'uso'
+    },
+    {
+      fechaInstalacion: new Date(2018, 8, 8),
+      ubicacion:{
+        barrio:Barrio.primavera
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2014, 2, 24),
+      ubicacion:{
+        barrio:Barrio.verdeOlivo
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2019, 11, 11),
+      ubicacion:{
+        barrio:Barrio.primavera
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2021, 2, 18),
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2020, 11, 11),
+      ubicacion:{
+        barrio:Barrio.verdeOlivo
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2022, 8, 9),
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2020, 8, 9),
+      ubicacion:{
+        barrio:Barrio.primavera
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2019, 5, 5),
+      ubicacion:{
+        barrio:Barrio.mendezFortaleza
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2020, 2, 9),
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2020, 7, 2),
+      ubicacion:{
+        barrio:Barrio.verdeOlivo
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2019, 1, 2),
+      ubicacion:{
+        barrio:Barrio.sanAntonio
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2020, 6, 6),
+      ubicacion:{
+        barrio:Barrio.primavera
+      },
+      estadoMedidorAsociado:'uso'
+    },{
+      fechaInstalacion: new Date(2020, 4, 7),
+      ubicacion:{
+        barrio:Barrio._20DeMarzo
+      },
+      estadoMedidorAsociado:'uso'
+    }
   ],
   planillas:[
     {

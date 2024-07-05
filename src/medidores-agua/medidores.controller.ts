@@ -29,6 +29,8 @@ import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
 import { registerAllLecturasDto } from './dto/register-all-lecturas.dto';
 import { QueryLecturasDto } from './query/queryLecturas';
 import { Usuario } from 'src/auth/modules/usuarios/entities';
+import { CreateMedidorAsociadoDto } from './dto/create-medidor-asociado.dto';
+import { UpdateMedidorAsociadoDto } from './dto/update-medidor-asociado.dto';
 
 @Controller('medidores-agua')
 @Authentication()
@@ -42,6 +44,10 @@ export class MedidoresController {
   // @ItemMenuProtected(ValidItemMenu.medidorRegister)
   create(@Body() createMedidoreDto: CreateMedidorDto) {
     return this.medidoresService.create(createMedidoreDto);
+  }
+  @Post('asociacion')
+  createAsociacion(@Body() createMedidorAsociado:CreateMedidorAsociadoDto){
+    return this.medidoresService.createAsociacion(createMedidorAsociado);
   }
   
   @Post('planilla')
@@ -59,7 +65,14 @@ export class MedidoresController {
   medidoresAfiliado(@GetUser() user:Usuario){
     return this.medidoresService.listarMedidores(user.id);
   }
-  
+  @Get('asociacion')
+  medidoresWithoutAsociacion(@Query() paginationDto: PaginationDto){
+    return this.medidoresService.findMedidoresWithoutAsociacion(paginationDto);
+  } 
+  @Get('asociacion/:id')
+  medidorAsociado(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.findAsociacion(id);
+  } 
   @Get('afiliado/:id')
   findAllMedidoresOfAfiliado(@Param('id', ParseIntPipe) id: number) {
     return this.medidoresService.findAllMedidorOneAfiliado(id);
@@ -74,7 +87,7 @@ export class MedidoresController {
   }
   @Get('planillas/:id')
   getPlanillas(@Param('id', ParseIntPipe) id: number){
-    return this.medidoresService.getPlanillasMedidor(id);
+    return this.medidoresService.getPlanillasMedidorAsociado(id);
   }
   @Get('gestion/anios-seguimientos')
   aniosSeguimientos(){
@@ -110,6 +123,14 @@ export class MedidoresController {
   getLecturasWidthComprobante(@Param('id', ParseIntPipe) id: number){
     return this.medidoresService.lecturaDetails(id);
   }
+  @Get('')
+  findMedidores(@Query() query: PaginationDto){
+    return this.medidoresService.findMedidores(query);
+  }
+  @Get(':id')
+  findMedidorWithAsociationById(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.findMedidorWithAsociation(id);
+  }
   
   //TODO: PATCH - UPDATES
   @Patch(':id')
@@ -118,6 +139,10 @@ export class MedidoresController {
     @Body() updateMedidoreDto: UpdateMedidorDto,
   ) {
     return this.medidoresService.update(id, updateMedidoreDto);
+  }
+  @Patch('asociacion/:id')
+  updateAsociacion(@Param('id', ParseIntPipe) id: number,@Body() updst: UpdateMedidorAsociadoDto,){
+    return this.medidoresService.updateAsociacion(id,updst);
   }
 
   @Patch('status/:id')
@@ -135,5 +160,9 @@ export class MedidoresController {
   @Patch('planilla/:id')
   updateStatusPanilla(@Param('id', ParseIntPipe) id: number,@Body() updatePlanillaMedidorDto:UpdatePlanillaMedidorDto){
     return this.medidoresService.updateStatusPlanillaMedidor(id,updatePlanillaMedidorDto);
+  }
+  @Patch('asociacion/status/:id')
+  updateStatusAsociacion(@Param('id', ParseIntPipe) id: number,@Body() updateMedidorAsociadoDto:UpdateMedidorAsociadoDto){
+    return this.medidoresService.updateStatusAsociacion(id,updateMedidorAsociadoDto);
   }
 }

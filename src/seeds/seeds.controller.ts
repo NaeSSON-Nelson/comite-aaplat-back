@@ -16,4 +16,8 @@ export class SeedsController {
   executeSeedsTwo() {
     return this.seedsService.executeSeedPartTwo();
   }
+  @Get('execute-three')
+  executeSeedsThree() {
+    return this.seedsService.executeSeedPartThree();
+  }
 }

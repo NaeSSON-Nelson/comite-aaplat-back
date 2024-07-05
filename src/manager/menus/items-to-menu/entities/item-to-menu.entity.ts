@@ -13,7 +13,18 @@ export class ItemToMenu extends ColumnsAlways{
   @Column()
   itemMenuId: number;
   
-
+  @Column({
+    type:'varchar',
+    length:100,
+    nullable:false,
+  })
+  nombre:string;
+  @Column({
+    type:'bool',
+    default:true,
+  })
+  visible:boolean;
+  
   @ManyToOne(() => Menu, (menu) => menu.menu)
   menu: Menu;
   @ManyToOne(() => ItemMenu, (itemMenu) => itemMenu.itemToMenu)

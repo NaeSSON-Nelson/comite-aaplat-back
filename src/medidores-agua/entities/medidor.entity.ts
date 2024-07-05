@@ -9,10 +9,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Afiliado } from '../../auth/modules/usuarios/entities/afiliado.entity';
-import { Barrio, Estado } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, Medicion } from 'src/interfaces/enum/enum-entityes';
 import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
 import { PlanillaLecturas } from './planilla-lecturas.entity';
+import { MedidorAsociado } from './medidor-asociado.entity';
 
 @Entity('medidores')
 export class Medidor extends ColumnsAlways{
@@ -29,16 +29,6 @@ export class Medidor extends ColumnsAlways{
   nroMedidor: string;
 
   @Column({
-    name: 'fecha_instalacion',
-    type: 'text',
-    nullable: false,
-  })
-  fechaInstalacion: Date;
-
-  @Column(() => Ubicacion)
-  ubicacion:Ubicacion;
-
-  @Column({
     name: 'lectura_inicial',
     type: 'integer',
     nullable: false,
@@ -49,7 +39,7 @@ export class Medidor extends ColumnsAlways{
     type: 'integer',
     default: 0,
   })
-  ultimaLectura: number;
+  lecturaMedidor: number;
 
 
   @Column({
@@ -59,11 +49,22 @@ export class Medidor extends ColumnsAlways{
   })
   marca: string;
 
-  @OneToMany(() => PlanillaLecturas, (planillaLecturas) => planillaLecturas.medidor)
-  planillas: PlanillaLecturas[];
+  @Column({
+    type:'varchar',
+    length:20,
+    nullable:true,
+  })
+  funcionamiento:string;
 
-  @ManyToOne(() => Afiliado, (afiliado) => afiliado.medidores)
-  afiliado: Afiliado;
+  @Column({
+    type:'enum',
+    enum:Medicion,
+    default:Medicion.mt3,
+    nullable:false,
+  })
+  medicion:Medicion;
+  @OneToMany(() => MedidorAsociado, (asociado) => asociado.medidor)
+  medidorAsociado: MedidorAsociado[];
 
   
   

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Like, QueryRunner, Repository } from 'typeorm';
+import { DataSource, Like, QueryRunner, Repository, ILike } from 'typeorm';
 import { initialData } from './data/data';
 import { CommonService } from '../common/common.service';
 import { Menu } from '../manager/menus/menus/entities/menu.entity';
@@ -18,6 +18,7 @@ import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.
 import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
+import { MedidorAsociado } from 'src/medidores-agua/entities/medidor-asociado.entity';
 
 @Injectable()
 export class SeedsService {
@@ -27,6 +28,8 @@ export class SeedsService {
     private readonly perfilRepository:Repository<Perfil>,
     @InjectRepository(Afiliado)
     private readonly afiliadoRepository: Repository<Afiliado>,
+    @InjectRepository(MedidorAsociado)
+    private readonly medidorAsociadoRepository: Repository<MedidorAsociado>,
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
     @InjectRepository(ItemMenu)
@@ -79,14 +82,16 @@ export class SeedsService {
       await queryRunner.manager.save(afiliadosSave);
       const usuariosSave = await this.insertUsuarios(perfilesSave);
       await queryRunner.manager.save(usuariosSave);
-      
+      const medidoresSave = await this.insertMedidores();
+      await queryRunner.manager.save(medidoresSave);
+
       const anioSeguimientoSave = await this.insertAnioSeguimientos();
       await queryRunner.manager.save(anioSeguimientoSave);
       const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
       await queryRunner.manager.save(mesesSeguimientoSave);
-      const medidoresSave = await this.insertMedidores(afiliadosSave);
-      await queryRunner.manager.save(medidoresSave);
-      const planillasSave = await this.insertPlanillas(medidoresSave);
+      const medidoresAsociadosSave = await this.insertAsociacionMedidoresWithAfiliado(afiliadosSave,medidoresSave);
+      await queryRunner.manager.save(medidoresAsociadosSave);
+      const planillasSave = await this.insertPlanillas(medidoresAsociadosSave);
       await queryRunner.manager.save(planillasSave)
       const lecturasSave = await this.insertLecturas(planillasSave);
       await queryRunner.manager.save(lecturasSave);
@@ -183,6 +188,7 @@ export class SeedsService {
       usuarios.push(
         this.usuarioRepository.create({
           ...usuario,
+          
           perfil: perfiles[index],
         }),
       );
@@ -256,10 +262,24 @@ export class SeedsService {
     }
     return meses;
   }
-  private async insertPlanillas(medidores:Medidor[]){
+  private async insertAsociacionMedidoresWithAfiliado(afiliados:Afiliado[],medidores:Medidor[]){
+    const seedAsociacion = await initialData.medidoresAsociados;
+    const asociacion:MedidorAsociado[]=[];
+    seedAsociacion.forEach((val,index)=>{
+      asociacion.push(this.medidorAsociadoRepository.create({
+        afiliado:afiliados[index],
+        lecturaInicial:medidores[index].lecturaInicial,
+        lecturaSeguimiento:medidores[index].lecturaMedidor,
+        medidor:medidores[index],
+        ...val,
+      }))
+    })
+    return asociacion;
+  }
+  private async insertPlanillas(medidoresAsociados:MedidorAsociado[]){
     const seedPlanillas = await initialData.planillas;
     const planillas:PlanillaLecturas[]=[];
-    for(const medidor of medidores){
+    for(const medidor of medidoresAsociados){
       for(const {gestion} of seedPlanillas){
         planillas.push(this.planillaLecturasRepository.create({gestion,medidor}))
       }
@@ -272,10 +292,10 @@ export class SeedsService {
   private async insertLecturas(planillas:PlanillaLecturas[]){
     const fechaActual = new Date();
     const lecturas:MesLectura[]=[];
-    this.medidorName=planillas[0].medidor.nroMedidor;
+    this.medidorName=planillas[0].medidor.medidor.nroMedidor;
     for(const planilla of planillas){
-      if(this.medidorName !== planilla.medidor.nroMedidor){
-        this.medidorName= planilla.medidor.nroMedidor;
+      if(this.medidorName !== planilla.medidor.medidor.nroMedidor){
+        this.medidorName= planilla.medidor.medidor.nroMedidor;
         this.lecturaSalvada=0;
       }
       let lecturaSeguimiento = this.lecturaSalvada;
@@ -306,7 +326,7 @@ export class SeedsService {
         }
       }
       else 
-      for(let index=0;index<fechaActual.getMonth();index++){
+      for(let index=0;index<fechaActual.getMonth()-1;index++){
         let lecturaGen = Math.round((Math.random()*100)+10);
         lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
         const lectura = this.mesLecturaRepository.create({
@@ -353,27 +373,41 @@ export class SeedsService {
     }
     return comprobantesPorPagar;
   }
-  private async insertMedidores(afiliados: Afiliado[]) {
+  private async insertMedidores() {
     const seedMedidores = initialData.medidores;
     const medidores: Medidor[] = [];
-    seedMedidores.forEach((medidor, index) => {
+    seedMedidores.forEach((medidor) => {
       medidores.push(
         this.medidorRepository.create({
           ...medidor,
-          afiliado: afiliados[index],
         }),
       );
     });
     return medidores;
   }
-  private async insertRelationsItemMenuToMenu(itemMenuName:string,menuName:string){
-    const itemsMenus = await this.ItemMenuRepository.find({where:{linkMenu:Like(`${itemMenuName}%`)}});
-    const menu = await this.menuRepository.findOne({where:{linkMenu:Like(`${menuName}%`)}});
+  private async insertFunctionsAll(menuName:string){
+    const itemsMenus = await this.ItemMenuRepository.find(
+      {where:
+        [{linkMenu:'list'   },
+        {linkMenu:'form'   },
+        {linkMenu:'details'},
+        {linkMenu:'edit'   },
+        ]});
+        // console.log(itemsMenus);
+    const menu = await this.menuRepository.findOne({
+      where:{linkMenu:ILike(`${menuName}%`)}
+    });
+    // console.log(menu);
     const itemMenuToMenu:ItemToMenu[]=[];
     itemsMenus.forEach(itemMenu=>{
       itemMenuToMenu.push(this.itemToMenuRepository.create({
         itemMenu,
-        menu
+        menu,
+        nombre:
+          itemMenu.linkMenu=='list'?`${menuName}`:
+          itemMenu.linkMenu=='form'?`registrar ${menuName}`:
+          itemMenu.linkMenu=='details'?`detalles ${menuName}`:
+          itemMenu.linkMenu=='edit'?`editar ${menuName}`:'SIN NOMBRE DE LINK'
       }))
     })
     return itemMenuToMenu;
@@ -412,7 +446,21 @@ export class SeedsService {
     })
     return roleToUsuario
   }
-  
+  async updateLecturaMedidores(){
+
+    const asociados = await this.medidorAsociadoRepository.find({select:{id:true,lecturaSeguimiento:true,medidor:{id:true,nroMedidor:true,lecturaMedidor:true,},},relations:{medidor:true,}})
+    const updates:MedidorAsociado[]=[];
+    const updateMedidor:Medidor[]=[];
+    for(const asc of asociados){
+      const lastLectura = await this.mesLecturaRepository.findOne({where:{planilla:{medidor:{id:asc.id,}}},relations:{planilla:{medidor:{medidor:true,}}},order:{lectura:{direction:'DESC'}}})
+      // console.log(lastLectura,'\n fin lectura', asc.id);
+      const asoc = await this.medidorAsociadoRepository.preload({id:asc.id,lecturaSeguimiento:lastLectura.lectura});
+      const medi = await this.medidorRepository.preload({id:asc.medidor.id,lecturaMedidor:lastLectura.lectura}) 
+      updates.push(asoc);
+      updateMedidor.push(medi)
+    }
+    return {updates,updateMedidor};
+  }
   async executeSeedPartTwo() {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -421,20 +469,20 @@ export class SeedsService {
       //INSERT INTO RELATIONS TABLES
       // const datita = new Date();
       //INSERT INTO RELATIONS ITEMS TO MENU 
-      const itemToMenuRelationsPerfil = await this.insertRelationsItemMenuToMenu('perfil','perfiles')
+      const itemToMenuRelationsPerfil = await this.insertFunctionsAll('perfiles')
       await queryRunner.manager.save(itemToMenuRelationsPerfil);
-      const itemToMenuRelationsItemsMenu = await this.insertRelationsItemMenuToMenu('item-menu','items-menu')
-      await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
-      const itemToMenuRelationsMenu = await this.insertRelationsItemMenuToMenu('menu','menus')
-      await queryRunner.manager.save(itemToMenuRelationsMenu);
-      const itemToMenuRelationsRoles = await this.insertRelationsItemMenuToMenu('rol','roles')
-      await queryRunner.manager.save(itemToMenuRelationsRoles);
-      const itemToMenuRelationsCobros = await this.insertRelationsItemMenuToMenu('cobros','cobros')
-      await queryRunner.manager.save(itemToMenuRelationsCobros);
-      const itemToMenuRelationsMedidores = await this.insertRelationsItemMenuToMenu('medidor','medidores')
+      const itemToMenuRelationsMedidores = await this.insertFunctionsAll('medidores')
       await queryRunner.manager.save(itemToMenuRelationsMedidores);
-      const itemToMenuRelationsUser = await this.insertRelationsItemMenuToMenu('medidores','user')
-      await queryRunner.manager.save(itemToMenuRelationsUser);
+      const itemToMenuRelationsItemsMenu = await this.insertFunctionsAll('items-menu')
+      await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
+      const itemToMenuRelationsMenu = await this.insertFunctionsAll('menus')
+      await queryRunner.manager.save(itemToMenuRelationsMenu);
+      const itemToMenuRelationsRoles = await this.insertFunctionsAll('roles')
+      await queryRunner.manager.save(itemToMenuRelationsRoles);
+      // const itemToMenuRelationsCobros = await this.insertFunctionsAll('cobros')
+      // await queryRunner.manager.save(itemToMenuRelationsCobros);
+      // const itemToMenuRelationsUser = await this.insertFunctionsAll('user')
+      // await queryRunner.manager.save(itemToMenuRelationsUser);
       //INSERT INTO RELATIONS MENU TO ROLE
       
       const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua','cobros'],'root');
@@ -470,6 +518,24 @@ export class SeedsService {
     } finally {
       await queryRunner.release();
     }
+  }
+  async executeSeedPartThree(){
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const saved= await this.updateLecturaMedidores();
+      await queryRunner.manager.save(saved.updates)
+      await queryRunner.manager.save(saved.updateMedidor)
+      await queryRunner.commitTransaction();
+      return { OK: true, msg: 'SEED PART THREE EXECUTE' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally {
+      await queryRunner.release();
+    }
+
   }
   async registrarSeeds3(){
     const queryRunner = this.dataSource.createQueryRunner();

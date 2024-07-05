@@ -8,10 +8,10 @@ import {
   Matches,
   Min,
   MinLength,
-
+  
 } from 'class-validator';
 import { Barrio } from 'src/interfaces/enum/enum-entityes';
-import { patternTextLine } from 'src/interfaces/validators';
+import { aptternTextLineQuery, patternTextLine } from 'src/interfaces/validators';
 
 export  abstract class PaginationDto {
   @IsNumber()
@@ -33,8 +33,12 @@ export  abstract class PaginationDto {
   @IsOptional()
   @IsString({})
   @MinLength(1)
-  @Matches(patternTextLine, {
-    message: 'El query contiene caracteres no validos',
+  @Matches(aptternTextLineQuery, {
+    message: (str=>{
+      
+      return `${str.value}, contiene caracteres no validos`;
+    }),
+
   })
   q?: string; //PALABRAS DE BUSQUEDA
 

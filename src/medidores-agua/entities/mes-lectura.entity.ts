@@ -1,5 +1,5 @@
 import { ColumnsAlways } from "src/common/inherints-db";
-import { Mes } from "src/interfaces/enum/enum-entityes";
+import { Medicion, Mes } from "src/interfaces/enum/enum-entityes";
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { PlanillaLecturas } from "./planilla-lecturas.entity";
 import { ComprobantePorPago } from "src/pagos-de-servicio/entities";
@@ -26,6 +26,19 @@ export class MesLectura extends ColumnsAlways{
         nullable:false,
     })
     consumoTotal:number;
+    @Column({
+        type:'enum',
+        enum:Medicion,
+        default:Medicion.mt3,
+        nullable:false,
+    })
+    medicion:Medicion;
+    @Column({
+        type:'bool',
+        nullable:false,
+        default:true,
+    })
+    editable:boolean;
     @Column({
         type:"enum",
         enum:Mes,

@@ -34,10 +34,10 @@ export class MenusService {
     try {
       await queryRunner.manager.save(menu);
       if (idsItemsMenu && idsItemsMenu.length > 0) {
-        const themItemsMenu = idsItemsMenu.map((id) =>
+        const themItemsMenu = idsItemsMenu.map((itm) =>
           this.itemToMenuRepository.create({
             menuId: menu.id,
-            itemMenuId: id,
+            ...itm,
           }),
         );
 
@@ -77,10 +77,10 @@ export class MenusService {
 
       await queryRunner.manager.delete(ItemToMenu, { menu: { id: menu.id } });
 
-      const thems = itemsMenu.map((id) =>
+      const thems = itemsMenu.map((itm) =>
         this.itemToMenuRepository.create({
-          itemMenuId: id,
           menuId: menu.id,
+          ...itm
         }),
       );
 
@@ -107,6 +107,19 @@ export class MenusService {
     const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
     const { '0': data, '1': size } = await this.menuRepository.findAndCount({
       where: [{ nombre: Like(`%${q}%`) }],
+      relations:{
+        itemMenu:true,
+      },
+      select:{
+        id:true,
+        estado:true,
+        nombre:true,
+        linkMenu:true,
+        isActive:true,
+        itemMenu:{
+          id:true,
+        }
+      },
       skip: offset,
       take: limit,
       order: {
@@ -178,7 +191,7 @@ export class MenusService {
     });
     return {
       ...data,
-      itemsMenu:itemMenu.map((item) => item.itemMenu),
+      itemsMenu:itemMenu,
     };
   }
   // remove(id: number) {

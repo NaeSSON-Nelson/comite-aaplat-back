@@ -9,6 +9,7 @@ import { MesLectura } from './entities/mes-lectura.entity';
 import { PlanillaLecturas } from './entities/planilla-lecturas.entity';
 import { AnioSeguimientoLectura } from './entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-registro-lectura.entity';
+import { MedidorAsociado } from './entities/medidor-asociado.entity';
 
 @Module({
   controllers: [MedidoresController],
@@ -20,6 +21,7 @@ import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-regist
       MesLectura,
       AnioSeguimientoLectura,
       MesSeguimientoRegistroLectura,
+      MedidorAsociado,
     ]),
     AuthModule,
     CommonModule,

@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Like, Repository, QueryRunner } from 'typeorm';
+import { DataSource, In, Like, Repository, QueryRunner, ILike, Any, FindOptionsWhere } from 'typeorm';
 
 import { generateUsername } from 'unique-username-generator';
 import * as bcrypt from 'bcrypt';
@@ -29,6 +29,7 @@ import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
+import { MedidorAsociado } from 'src/medidores-agua/entities/medidor-asociado.entity';
 
 @Injectable()
 export class PerfilesService {
@@ -239,7 +240,7 @@ export class PerfilesService {
   async findAll(paginationDto: SearchPerfil) {
     const {
       offset = 0,
-      limit = 10,
+      limit = 10, 
       order = 'ASC',
       q = '',
       tipoPerfil,
@@ -248,15 +249,26 @@ export class PerfilesService {
       genero,
     } = paginationDto;
     // const qb = this.usuarioRepository.createQueryBuilder('user');
-
+    let arg =[''];
+    if(q.length>0){
+      arg =q.toLocaleLowerCase().split(/\s/).filter(val=>val.length>0);
+    }
+    if(arg.length===0) arg=[''];
+    
+    // console.log(arg);
+    const finders:FindOptionsWhere<Perfil>[] = [];
+    for(const data of arg){
+      finders.push(
+        { nombrePrimero:   ILike(`%${data}%`) },
+        { nombreSegundo:   ILike(`%${data}%`) },
+        { apellidoPrimero: ILike(`%${data}%`) },
+        { apellidoSegundo: ILike(`%${data}%`) },
+        { CI:              ILike(`%${data}%`) },
+      )
+    }
     const { '0': data, '1': size } = await this.perfilRepository.findAndCount({
-      where: [
-        { nombrePrimero: Like(`%${q}%`) },
-        { nombreSegundo: Like(`%${q}%`) },
-        { apellidoPrimero: Like(`%${q}%`) },
-        { apellidoSegundo: Like(`%${q}%`) },
-        { CI: Like(`%${q}%`) },
-      ],
+      where: finders,
+
       take: limit,
       skip: offset,
       order: { id: order },
@@ -658,44 +670,59 @@ export class PerfilesService {
   async medidoresAfiliadoInSelect(user:Usuario){
     // console.log(user);
     const perfil = await this.dataSource.getRepository(Perfil).findOne(
-      {where:{ usuario:{id:user.id,isActive:true},isActive:true,afiliado:{isActive:true,medidores:{isActive:true}}},
-      select:{usuario:{id:true,isActive:true},isActive:true,id:true,afiliado:{isActive:true,id:true,medidores:{id:true,nroMedidor:true,isActive:true,}}},
-      relations:{usuario:true,afiliado:{medidores:true},}
+      {where:{ usuario:{id:user.id,isActive:true},isActive:true,afiliado:{isActive:true}},
+      select:{usuario:{id:true,isActive:true},isActive:true,id:true,afiliado:{isActive:true,id:true,medidorAsociado:{id:true,isActive:true,medidor:{id:true,nroMedidor:true,}}}},
+      relations:{usuario:true,afiliado:{medidorAsociado:{medidor:true}},}
     })
     return {
       OK:true,
-      message:'medidores seleccionados',
-      data:perfil.afiliado.medidores}
+      message:'medidores Asociados seleccionados',
+      data:perfil.afiliado.medidorAsociado}
   }
-  async medidorAfiliadoDetails(user:Usuario,nro:string){
-    const medidor = await this.dataSource.getRepository(Medidor).findOne(
+  async medidorAfiliadoDetails(user:Usuario,nroMedidor:string){
+    const medidorAsc = await this.dataSource.getRepository(MedidorAsociado).findOne(
       {
         where:{
-          afiliado:{
-            perfil:{
-              usuario:{id:user.id,isActive:true},
-              isActive:true
+            afiliado:{
+              perfil:{
+                usuario:{id:user.id,isActive:true},
+                // isActive:true
+              },
+              // isActive:true
             },
-            isActive:true
-          },
-          nroMedidor:nro,
+          medidor:{
+            nroMedidor
+          }
         },
         select:{
-          estado:true,id:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,marca:true,nroMedidor:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},ultimaLectura:true,
-          planillas:{id:true,gestion:true},
-          afiliado:{id:true,isActive:true,
-            perfil:{id:true,isActive:true,
-              usuario:{id:true,isActive:true}}
-            },
+          medidor:{
+            estado:true,id:true,
+            marca:true,
+            nroMedidor:true,
           },
-        relations:{afiliado:{perfil:{usuario:true}},planillas:true}
+            fechaInstalacion:true,
+            isActive:true,
+            estado:true,
+            estadoMedidorAsociado:true,
+            id:true,
+            lecturaInicial:true,
+            ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},
+            lecturaSeguimiento:true,
+            planillas:{id:true,gestion:true,isActive:true,estado:true,registrable:true,},
+            afiliado:{id:true,isActive:true,
+              perfil:{id:true,isActive:true,
+                usuario:{id:true,isActive:true}}
+              },
+          
+          },
+        relations:{afiliado:{perfil:{usuario:true}},planillas:true,medidor:true,}
       })
-      if(!medidor) throw new BadRequestException(`No se encontro ningun medidor con el Nro. ${nro} relacionado al usuario`)
-      const {afiliado,...resto} = medidor;
+      if(!medidorAsc) throw new BadRequestException(`No se encontro ningun medidor con el Nro. ${nroMedidor} relacionado al usuario`)
+      const {afiliado,...dataAsc} = medidorAsc;
       return {
         OK:true,
-        message:'Medidor relacionado encontrado',
-        data:resto
+        message:'Medidor asociado encontrado',
+        data:dataAsc
       }
   }
   async profileUser(user:Usuario){
@@ -727,22 +754,26 @@ export class PerfilesService {
   }
   async obtenerComprobantesPorPagar(user:Usuario,nroMedidor:string){
     const perfil = await this.dataSource.getRepository(Perfil).findOne({
-      where:{usuario:{id:user.id},afiliado:{medidores:{nroMedidor}}},
+      where:{usuario:{id:user.id},afiliado:{medidorAsociado:{medidor:{nroMedidor}}}},
       select:{id:true,isActive:true,
         usuario:{id:true,isActive:true},
         afiliado:{id:true,isActive:true,
-          medidores:{id:true,isActive:true,nroMedidor:true,
+          medidorAsociado:{
+            medidor:{id:true,isActive:true,nroMedidor:true},
             planillas:{id:true,isActive:true,gestion:true,
               lecturas:{id:true,isActive:true,lectura:true,mesLecturado:true,consumoTotal:true,created_at:true,
                 pagar:{id:true,created_at:true,pagado:true,moneda:true,monto:true,motivo:true,estado:true,estadoComprobate:true,
-                  comprobantesAdd:{metodoRegistro:true,created_at:true,id:true,moneda:true,monto:true,motivo:true,pagado:true,estadoComprobate:true,}}}}}}},
-      relations:{usuario:true,afiliado:{medidores:{planillas:{lecturas:{pagar:{comprobantesAdd:true}}}}}}
+                  comprobantesAdd:{metodoRegistro:true,created_at:true,id:true,moneda:true,monto:true,motivo:true,pagado:true,estadoComprobate:true,}}}}
+                }},
+
+          },
+      relations:{usuario:true,afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:{pagar:{comprobantesAdd:true}}}}}}
     })
     if(!perfil) throw new BadRequestException(`No se encontro datos de medidor con Numero: ${nroMedidor}`)
-    const medidorRes = Object.assign({},perfil.afiliado.medidores[0]);
-    medidorRes.planillas=Object.assign({},perfil.afiliado.medidores[0].planillas);
+    const medidorRes = Object.assign({},perfil.afiliado.medidorAsociado[0]);
+    medidorRes.planillas=Object.assign({},perfil.afiliado.medidorAsociado[0].planillas);
     medidorRes.planillas=[];
-    for(const planilla of perfil.afiliado.medidores[0].planillas){
+    for(const planilla of perfil.afiliado.medidorAsociado[0].planillas){
       for(const lectura of planilla.lecturas){
         if(lectura.pagar){
           if(!lectura.pagar.pagado){

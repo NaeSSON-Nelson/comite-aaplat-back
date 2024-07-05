@@ -2,7 +2,7 @@ import { IsEnum, IsNotEmpty, IsNotEmptyObject, IsNumber, IsOptional, Min, Valida
 import { Medidor } from "../entities/medidor.entity";
 import { Type } from "class-transformer";
 import { Estado } from "src/interfaces/enum/enum-entityes";
-export class MedidorForm{
+export class MedidorAsociadoForm{
 
     @IsNumber()
     @Min(1)
@@ -15,8 +15,8 @@ export class CreatePlanillaMedidorDto {
     gestion:number;
 
     @ValidateNested()
-    @Type(()=>MedidorForm)
-    medidor:MedidorForm;
+    @Type(()=>MedidorAsociadoForm)
+    medidor:MedidorAsociadoForm;
 
     @IsEnum(Estado)
     @IsNotEmpty()

@@ -3,10 +3,7 @@ import { Estado } from 'src/interfaces/enum/enum-entityes';
 
 
 export class CreateItemMenuDto {
-  @IsString()
-  @MinLength(3)
-  nombre: string;
-
+  
   @IsString()
   @MinLength(2)
   linkMenu: string;
@@ -15,7 +12,7 @@ export class CreateItemMenuDto {
   @IsOptional()
   estado?: Estado;
 
-  @IsBoolean()
-  @IsOptional()
-  visible?:boolean;
+  // @IsBoolean()
+  // @IsOptional()
+  // visible?:boolean;
 }

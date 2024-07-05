@@ -181,7 +181,8 @@ export class AuthService {
           const {itemMenu,menu,...dataMenu} = toRole.menu
           return{
             ...dataMenu,
-            itemsMenu:itemMenu.map(toMenu=> toMenu.itemMenu)
+            itemsMenu:itemMenu
+            // .map(toMenu=> toMenu.itemMenu)
           }
         })
       },
