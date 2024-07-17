@@ -109,7 +109,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1995, 2, 24),
       genero: 'masculino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.administrativo],
+      tipoPerfil: [TipoPerfil.administrativo,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Arturo',
@@ -120,7 +120,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1987, 8, 10),
       genero: 'masculino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.secretaria],
     },
     {
       nombrePrimero: 'Franz',
@@ -131,7 +131,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1990, 6, 10),
       genero: 'masculino',
       profesion: 'Ingenieria Electrica',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.secretaria],
     },
     {
       nombrePrimero: 'Gwato',
@@ -141,7 +141,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1998, 7, 24),
       genero: 'masculino',
       profesion: 'Contaduria',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
     {
       nombrePrimero: 'Luis',
@@ -153,7 +153,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1995, 1, 18),
       genero: 'masculino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
     {
       nombrePrimero: 'Rosa',
@@ -164,7 +164,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1974, 8, 19),
       genero: 'femenino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
     {
       nombrePrimero: 'Victor',
@@ -175,7 +175,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 10, 17),
       genero: 'masculino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
     {
       nombrePrimero: 'Ricardo',
@@ -186,7 +186,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1990, 4, 5),
       genero: 'masculino',
       profesion: 'Contador',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Ricardo',
@@ -197,7 +197,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 8, 8),
       genero: 'masculino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Ana',
@@ -209,7 +209,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1989, 4, 24),
       genero: 'femenino',
       profesion: 'Doctorado',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Kira',
@@ -321,7 +321,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1997, 5, 2),
       genero: 'masculino',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado],
+      tipoPerfil: [,TipoPerfil.usuario],
     },
   ],
   afiliados: [
@@ -448,12 +448,12 @@ export const initialData: SeedData = {
   ],
   usuarios: [
     {
-      username: 'admin',
+      username: 'root',
       password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
     {
-      username: 'root',
+      username: 'admin',
       password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
@@ -463,7 +463,12 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
     },
     {
-      username: 'contador',
+      username: 'secretaria',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'lecturador',
       password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
@@ -477,30 +482,17 @@ export const initialData: SeedData = {
       password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
-    {
-      username: 'afiliado2',
-      password: bcrypt.hashSync('123456', 10),
-      estado: Estado.ACTIVO,
-    },
   ],
   itemsMenu: [
-    // {
-    //   // nombre: 'registrar itemMenu',
-    //   linkMenu: 'register',
-    //   estado: Estado.ACTIVO,
-    // },
     {
-      // nombre: 'detalles de item menu',
       linkMenu: 'details',
       estado: Estado.ACTIVO,
     },
     {
-      // nombre: 'modificar itemMenu',
       linkMenu: 'edit',
       estado: Estado.ACTIVO,
     },
     {
-      // nombre: 'bajar itemMenu',
       linkMenu: 'form',
       estado: Estado.ACTIVO,
     },
@@ -508,10 +500,22 @@ export const initialData: SeedData = {
       linkMenu:'list',
       estado:Estado.ACTIVO,
     },
-    // {
-    //   linkMenu:'',
-    //   estado:Estado.ACTIVO,
-    // }
+    {
+      linkMenu:'pagar',
+      estado:Estado.ACTIVO,
+    },
+    {
+      linkMenu:'medidores',
+      estado:Estado.ACTIVO,
+    },
+    {
+      linkMenu:'deudas',
+      estado:Estado.ACTIVO,
+    },
+    {
+      linkMenu:'cobrar',
+      estado:Estado.ACTIVO,
+    }
   ],
   menus: [
     {
@@ -530,9 +534,14 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
     },
     {
-      nombre: 'medidores-agua',
+      nombre: 'medidores de agua',
       linkMenu: 'medidores-agua',
       estado: Estado.ACTIVO,
+    },
+    {
+      nombre:'asociaciones de medidores',
+      linkMenu:'asociaciones',
+      estado:Estado.ACTIVO,
     },
     {
       nombre:'perfiles',
@@ -540,12 +549,17 @@ export const initialData: SeedData = {
       estado:Estado.ACTIVO,
     },
     {
-      nombre:'cobros',
+      nombre:'Cobros de servicio',
       linkMenu:'cobros',
       estado:Estado.ACTIVO,
     },
     {
-      nombre:'funciones afiliado',
+      nombre:'Lecturas de medidor de agua',
+      linkMenu:'lecturas',
+      estado:Estado.ACTIVO,
+    },
+    {
+      nombre:'Consultar',
       linkMenu:'user',
       estado:Estado.ACTIVO,
     }
@@ -562,12 +576,17 @@ export const initialData: SeedData = {
       nivel:Nivel.administrativo,
     },
     {
-      nombre: 'administrativo',
+      nombre: 'administrador',
       estado: Estado.ACTIVO,
       nivel:Nivel.administrativo,
     },
     {
-      nombre: 'contador',
+      nombre: 'secretaria',
+      estado: Estado.ACTIVO,
+      nivel:Nivel.contador,
+    },
+    {
+      nombre: 'lecturador',
       estado: Estado.ACTIVO,
       nivel:Nivel.contador,
     },

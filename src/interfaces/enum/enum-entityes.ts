@@ -17,6 +17,8 @@ export enum TipoPerfil{
   administrativo='ADMINISTRATIVO',
   afiliado='AFILIADO',
   usuario='USUARIO',
+  secretaria = 'SECRETARIA',
+  lecturador='LECTURADOR,'
 }
 export enum Nivel{
   afiliado=10,

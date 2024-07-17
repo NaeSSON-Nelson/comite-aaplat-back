@@ -69,26 +69,28 @@ export class SeedsService {
     try {
       // await this.deleteTables();
       //INSERT INTO TABLES
-      const perfilesSave = await this.insertPerfiles();
-      await queryRunner.manager.save(perfilesSave);
       const itemsMenusSave = await this.insertItemsMenu();
       await queryRunner.manager.save(itemsMenusSave);
       const menusSave = await this.insertMenus();
       await queryRunner.manager.save(menusSave);
       const rolesSave = await this.insertRoles();
       await queryRunner.manager.save(rolesSave);
-      //DEPENDENCIES
-      const afiliadosSave = await this.insertAfiliados(perfilesSave);
-      await queryRunner.manager.save(afiliadosSave);
-      const usuariosSave = await this.insertUsuarios(perfilesSave);
-      await queryRunner.manager.save(usuariosSave);
-      const medidoresSave = await this.insertMedidores();
-      await queryRunner.manager.save(medidoresSave);
 
       const anioSeguimientoSave = await this.insertAnioSeguimientos();
       await queryRunner.manager.save(anioSeguimientoSave);
       const mesesSeguimientoSave = await this.insertMesSeguimiento(anioSeguimientoSave);
       await queryRunner.manager.save(mesesSeguimientoSave);
+      
+      const perfilesSave = await this.insertPerfiles();
+      await queryRunner.manager.save(perfilesSave);
+      const usuariosSave = await this.insertUsuarios(perfilesSave);
+      await queryRunner.manager.save(usuariosSave);
+      const afiliadosSave = await this.insertAfiliados(perfilesSave);
+      await queryRunner.manager.save(afiliadosSave);
+      const medidoresSave = await this.insertMedidores();
+      await queryRunner.manager.save(medidoresSave);
+      //DEPENDENCIES
+
       const medidoresAsociadosSave = await this.insertAsociacionMedidoresWithAfiliado(afiliadosSave,medidoresSave);
       await queryRunner.manager.save(medidoresAsociadosSave);
       const planillasSave = await this.insertPlanillas(medidoresAsociadosSave);
@@ -388,7 +390,8 @@ export class SeedsService {
   private async insertFunctionsAll(menuName:string){
     const itemsMenus = await this.ItemMenuRepository.find(
       {where:
-        [{linkMenu:'list'   },
+        [
+        {linkMenu:'list'   },
         {linkMenu:'form'   },
         {linkMenu:'details'},
         {linkMenu:'edit'   },
@@ -407,24 +410,144 @@ export class SeedsService {
           itemMenu.linkMenu=='list'?`${menuName}`:
           itemMenu.linkMenu=='form'?`registrar ${menuName}`:
           itemMenu.linkMenu=='details'?`detalles ${menuName}`:
-          itemMenu.linkMenu=='edit'?`editar ${menuName}`:'SIN NOMBRE DE LINK'
+          itemMenu.linkMenu=='edit'?`editar ${menuName}`:'SIN NOMBRE DE LINK',
+        visible: itemMenu.linkMenu === 'list'?true:false,
       }))
     })
     return itemMenuToMenu;
   }
+  private async insertFuncionesLecturas(){
+    const itemsMenu = await this.ItemMenuRepository.find({
+      where:[{
+        linkMenu:'list'
+      },{
+        linkMenu:'form'
+      },{
+        linkMenu:'details'
+      }]});
+    const menu = await this.menuRepository.findOneBy({
+      linkMenu:'lecturas'
+    });
+    const items:ItemToMenu[]=[];
+    for(let i=0;i<itemsMenu.length;i++){
+      switch (i) {
+        case 0:
+          items.push(this.itemToMenuRepository.create({
+            visible:true,
+            itemMenu:itemsMenu[i],
+            menu,
+            nombre:'Registrar nuevas lecturas',
+          }))
+          break;
+          case 1:
+          items.push(this.itemToMenuRepository.create({
+            visible:false,
+            itemMenu:itemsMenu[i],
+            menu,
+            nombre:'Formulario de registro de lectura',
+          }))
+          break;
+          case 2:
+          items.push(this.itemToMenuRepository.create({
+            visible:false,
+            itemMenu:itemsMenu[i],
+            menu,
+            nombre:'detalles de registro de lectura',
+          }))
+          break;
+        default:
+          break;
+      }
+    }
+    return items;
+  }
+  private async insertFuncionesCobros(){
+    const itemsMenu = await this.ItemMenuRepository.find({
+      where:[{
+        linkMenu:'list'
+      },{
+        linkMenu:'details'
+      },{
+        linkMenu:'cobrar'
+      }]
+  });
+  const menu = await this.menuRepository.findOneBy({linkMenu:'cobros'});
+  const items:ItemToMenu[]=[];
+  for(let i=0;i<itemsMenu.length;i++){
+    switch (i) {
+      case 0:
+        items.push(this.itemToMenuRepository.create({
+          visible:true,
+          itemMenu:itemsMenu[i],
+          menu,
+          nombre:'cobros de servicio',
+        }))
+        break;
+        case 1:
+        items.push(this.itemToMenuRepository.create({
+          visible:false,
+          itemMenu:itemsMenu[i],
+          menu,
+          nombre:'detalles de cobros de servicio',
+        }))
+        break;
+        case 2:
+        items.push(this.itemToMenuRepository.create({
+          visible:false,
+          itemMenu:itemsMenu[i],
+          menu,
+          nombre:'cobro de servicio',
+        }))
+        break;
+      default:
+        break;
+    }
+  }
+  return items;
+  }
+
+  private async insertItemsFuncionesUsuario(){
+    const itemMenuMedidor = await this.ItemMenuRepository.findOneBy({
+        linkMenu:'medidores'
+    });
+    const itemMenuDeudas = await this.ItemMenuRepository.findOneBy({
+        linkMenu:'deudas'
+    });
+    if(!itemMenuMedidor) console.log('NO HAY ITEM CONSULTAR');
+    if(!itemMenuDeudas) console.log('NO HAY ITEM CONSULTAR');
+    const menu = await this.menuRepository.findOneBy({
+    linkMenu:'user'
+    });
+    if(!menu) console.log('NO HAY MENU CONSULTAR');
+
+    const items:ItemToMenu[]=[];
+    items.push(this.itemToMenuRepository.create({
+      itemMenu:itemMenuMedidor,
+      menu,
+      nombre:'Consultar medidores',
+      visible:true,
+    }))
+    items.push(this.itemToMenuRepository.create({
+      itemMenu:itemMenuDeudas,
+      menu,
+      nombre:'Consultar deudas',
+      visible:true,
+    }))
+    return items
+  }
   private async insertRelationsMenuToRole(menuName:string[],roleName:string){
     const menus:Menu[]=[]; 
-    menuName.forEach(async menuName=>{
-      const menu =await this.menuRepository.findOne({where:{linkMenu:menuName}})
+    for(let i =0 ;i<menuName.length;i++){
+      const menu = await this.menuRepository.findOne({where:{linkMenu:menuName[i]}})
       if(menu)
       menus.push(menu);
-    })
+    }
     const role = await this.roleRepository.findOne({where:{nombre:roleName}});
     const menuToRole:MenuToRole[]=[];
     menus.forEach(menu=>{
       menuToRole.push(this.menuToRoleRepository.create({
         menu,
-        role
+        role,
       }))
     })
     return menuToRole;
@@ -432,18 +555,20 @@ export class SeedsService {
   //TODO: REPARAR
   private async insertRolesToUsuario(roles:string[],username:string){
     const rolesExist:Role[]=[];
-    roles.forEach(async roleName=>{
-      const role = await this.roleRepository.findOne({where:{nombre:roleName}});
+    for(const rol of roles){
+      const role = await this.roleRepository.findOne({where:{nombre:rol}});
+      if(role)
       rolesExist.push(role);
-    })
-    const usuario = await this.usuarioRepository.findOne({where:{username}})
+    }
+    const usuario = await this.usuarioRepository.findOne({where:{username}});
+    if(!usuario) return [];
     const roleToUsuario:RoleToUsuario[]=[];
     rolesExist.forEach(role=>{
       roleToUsuario.push(this.roleToUsuarioRepository.create({
         usuario,
         role
       }))
-    })
+    });
     return roleToUsuario
   }
   async updateLecturaMedidores(){
@@ -461,6 +586,20 @@ export class SeedsService {
     }
     return {updates,updateMedidor};
   }
+  async updateStatusPerfiles(){
+    const perfiles = await this.perfilRepository.find({
+      relations:{usuario:true},
+      select:{id:true,usuario:{id:true,isActive:true}}
+    })
+    const perfilActu:Promise<Perfil>[]=[];
+    for(const per of perfiles){
+      if(per.usuario){
+        const preload = this.perfilRepository.preload({id:per.id,accessAcount:true,})
+        perfilActu.push(preload);
+      }
+    }
+    return perfilActu;
+  }
   async executeSeedPartTwo() {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -473,40 +612,63 @@ export class SeedsService {
       await queryRunner.manager.save(itemToMenuRelationsPerfil);
       const itemToMenuRelationsMedidores = await this.insertFunctionsAll('medidores')
       await queryRunner.manager.save(itemToMenuRelationsMedidores);
+      const itemToMenuRelationsAsociaciones = await this.insertFunctionsAll('asociaciones')
+      await queryRunner.manager.save(itemToMenuRelationsAsociaciones);
       const itemToMenuRelationsItemsMenu = await this.insertFunctionsAll('items-menu')
       await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
       const itemToMenuRelationsMenu = await this.insertFunctionsAll('menus')
       await queryRunner.manager.save(itemToMenuRelationsMenu);
       const itemToMenuRelationsRoles = await this.insertFunctionsAll('roles')
       await queryRunner.manager.save(itemToMenuRelationsRoles);
+
+      const consultasAF= await this.insertItemsFuncionesUsuario();
+      await queryRunner.manager.save(consultasAF)
+      const itemsCOBRRAR = await this.insertFuncionesCobros();
+      await queryRunner.manager.save(itemsCOBRRAR);
+      const lecturasDM = await this.insertFuncionesLecturas();
+      await queryRunner.manager.save(lecturasDM);
       // const itemToMenuRelationsCobros = await this.insertFunctionsAll('cobros')
       // await queryRunner.manager.save(itemToMenuRelationsCobros);
       // const itemToMenuRelationsUser = await this.insertFunctionsAll('user')
       // await queryRunner.manager.save(itemToMenuRelationsUser);
+     
       //INSERT INTO RELATIONS MENU TO ROLE
       
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua','cobros'],'root');
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua','asociaciones','cobros','lecturas'],'root');
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
       const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles'],'admin');
       await queryRunner.manager.save(menuToRoleRelationsAdmin);
       
-      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole(['perfiles','medidores-agua','cobros'],'contador');
+      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole(['perfiles','medidores-agua','cobros','asociaciones','lecturas'],'secretaria');
       await queryRunner.manager.save(menuToRoleRelationsContador);
+
+      const menuToRoleRelationsLecturador = await this.insertRelationsMenuToRole(['medidores-agua','asociaciones','lecturas'],'lecturador');
+      await queryRunner.manager.save(menuToRoleRelationsLecturador);
       
       const menuToRoleRelationsUser = await this.insertRelationsMenuToRole(['user'],'user');
       await queryRunner.manager.save(menuToRoleRelationsUser);
       
+
+      //ADD ROLES TO USUARIO
       const roleToUsuarioAdmin = await this.insertRolesToUsuario(['root','admin'],'admin');
       await queryRunner.manager.save(roleToUsuarioAdmin);
+
       const roleToUsuarioAdministrativo = await this.insertRolesToUsuario(['administrativo'],'administrativo');
       await queryRunner.manager.save(roleToUsuarioAdministrativo);
-      const roleToUsuarioAdministrativoContador = await this.insertRolesToUsuario(['administrativo','contador'],'contador');
-      await queryRunner.manager.save(roleToUsuarioAdministrativoContador);
-      const roleToUsuarioContador = await this.insertRolesToUsuario(['contador'],'afiliado2');
+
+      const roleToUsuarioAdministrativoSecretaria = await this.insertRolesToUsuario(['secretaria','lecturador','user'],'secretaria');
+      await queryRunner.manager.save(roleToUsuarioAdministrativoSecretaria);
+
+      const roleToUsuarioAdministrativoLecturador = await this.insertRolesToUsuario(['lecturador','user'],'lecturador');
+      await queryRunner.manager.save(roleToUsuarioAdministrativoLecturador);
+
+      const roleToUsuarioContador = await this.insertRolesToUsuario(['user'],'afiliado2');
       await queryRunner.manager.save(roleToUsuarioContador);
+
       const roleToUsuarioAfiliadoUser1 = await this.insertRolesToUsuario(['afiliado','user'],'user');
       await queryRunner.manager.save(roleToUsuarioAfiliadoUser1);
+
       const roleToUsuarioAfiliadoUser2 = await this.insertRolesToUsuario(['afiliado','user'],'afiliado');
       await queryRunner.manager.save(roleToUsuarioAfiliadoUser2);
 
@@ -520,13 +682,29 @@ export class SeedsService {
     }
   }
   async executeSeedPartThree(){
+    
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const saved= await this.updateLecturaMedidores();
-      await queryRunner.manager.save(saved.updates)
-      await queryRunner.manager.save(saved.updateMedidor)
+    const asociados = await this.medidorAsociadoRepository.find({select:{id:true,lecturaSeguimiento:true,medidor:{id:true,nroMedidor:true,lecturaMedidor:true}},relations:{medidor:true,}})
+    for(const asc of asociados){
+
+      const lastLectura = await this.mesLecturaRepository.findOne({where:{planilla:{medidor:{id:asc.id,}}},relations:{planilla:{medidor:{medidor:true,}}},order:{lectura:{direction:'DESC'}}})
+      await queryRunner.manager.update(MedidorAsociado,asc.id,{lecturaSeguimiento:lastLectura.lectura})
+      await queryRunner.manager.update(Medidor,asc.medidor.id,{lecturaMedidor:lastLectura.lectura})
+    }
+    const perfiles = await this.perfilRepository.find({
+      relations:{usuario:true},
+      where:{
+        usuario:{isActive:true}
+      }
+    })
+    for(const per of perfiles){
+      if(per.usuario){
+        await queryRunner.manager.update(Perfil,per.id,{accessAcount:true});
+      }
+    }
       await queryRunner.commitTransaction();
       return { OK: true, msg: 'SEED PART THREE EXECUTE' };
     } catch (error) {
