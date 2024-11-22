@@ -8,9 +8,15 @@ import { ManagerModule } from './manager/manager.module';
 import { MedidoresModule } from './medidores-agua/medidores.module';
 import { PagosDeServicioModule } from './pagos-de-servicio/pagos-de-servicio.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MulterModule } from '@nestjs/platform-express';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { AsociacionesModule } from './asociaciones/asociaciones.module';
 
 @Module({
   imports: [
+    MulterModule.register({
+      
+    }),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type:     'postgres',
@@ -21,7 +27,8 @@ import { ScheduleModule } from '@nestjs/schedule';
       password: process.env.DB_PASSWORD,
 
       autoLoadEntities:true,
-      synchronize:true //PARA PRODUCCION EN false
+      synchronize:true //PARA PRODUCCION EN false,
+      
     }
     ),
     ScheduleModule.forRoot(),
@@ -30,6 +37,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     SeedsModule,
     MedidoresModule,
     PagosDeServicioModule,
+    CloudinaryModule,
+    AsociacionesModule,
   ],
 })
 export class AppModule {}

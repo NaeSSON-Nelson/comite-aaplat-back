@@ -178,7 +178,7 @@ export class RolesService {
   async updateRoleStatus(id: number, updateRoleDto: UpdateRoleDto) {
     const { estado } = updateRoleDto;
 
-    const role = await this.roleRepository.preload({ id, estado });
+    const role = await this.roleRepository.preload({ id, estado,isActive:estado===Estado.ACTIVO?true:false });
     if (!role) throw new NotFoundException(`Rol con id ${id} no encontrado`);
     try {
       await this.roleRepository.save(role);

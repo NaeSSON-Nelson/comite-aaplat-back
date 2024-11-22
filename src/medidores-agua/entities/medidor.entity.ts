@@ -11,8 +11,7 @@ import {
 } from 'typeorm';
 import { Barrio, Estado, Medicion } from 'src/interfaces/enum/enum-entityes';
 import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
-import { PlanillaLecturas } from './planilla-lecturas.entity';
-import { MedidorAsociado } from './medidor-asociado.entity';
+import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
 
 @Entity('medidores')
 export class Medidor extends ColumnsAlways{
@@ -50,16 +49,16 @@ export class Medidor extends ColumnsAlways{
   marca: string;
 
   @Column({
-    type:'varchar',
-    length:20,
-    nullable:true,
+    type:'bool',
+    nullable:false,
+    default:false,
   })
-  funcionamiento:string;
+  funcionamiento:boolean;
 
   @Column({
     type:'enum',
     enum:Medicion,
-    default:Medicion.mt3,
+    // default:Medicion.mt3,
     nullable:false,
   })
   medicion:Medicion;

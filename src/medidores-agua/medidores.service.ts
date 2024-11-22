@@ -8,16 +8,16 @@ import {
 import { CreateMedidorDto } from './dto/create-medidor.dto';
 import { UpdateMedidorDto } from './dto/update-medidor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOperator, FindOptionsWhere, ILike, IsNull, Like, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, FindOperator, FindOptionsOrder, FindOptionsWhere, ILike, IsNull, Like, Repository, SelectQueryBuilder, MoreThanOrEqual } from 'typeorm';
 import { Medidor } from './entities/medidor.entity';
 import { CommonService } from '../common/common.service';
 import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Perfil } from 'src/auth/modules/usuarios/entities';
-import { Barrio, Estado, Mes } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
 import { PlanillaLecturas } from './entities/planilla-lecturas.entity';
-import { MesLectura } from './entities/mes-lectura.entity';
+import { PlanillaMesLectura } from './entities/planilla-mes-lectura.entity';
 import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
 import { registerAllLecturasDto } from './dto/register-all-lecturas.dto';
 import { AnioSeguimientoLectura } from './entities/anio-seguimiento-lecturas.entity';
@@ -25,9 +25,9 @@ import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-regist
 import { QueryLecturasDto } from './query/queryLecturas';
 import { Cron,CronExpression } from '@nestjs/schedule';
 import { isNotEmpty } from 'class-validator';
-import { MedidorAsociado } from './entities/medidor-asociado.entity';
-import { CreateMedidorAsociadoDto } from './dto/create-medidor-asociado.dto';
-import { UpdateMedidorAsociadoDto } from './dto/update-medidor-asociado.dto';
+import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
+import { CreateTarifaPorPagarDto } from './dto/create-tarifa-por-pagar.dto';
+import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 
 @Injectable()
 export class MedidoresService {
@@ -37,20 +37,20 @@ export class MedidoresService {
     @InjectRepository(Medidor)
     private readonly medidorRepository: Repository<Medidor>,
     
-    @InjectRepository(MedidorAsociado)
-    private readonly medidorAsociadoRepository:Repository<MedidorAsociado>,
     @InjectRepository(PlanillaLecturas)
     private readonly planillasMedidoresRepository: Repository<PlanillaLecturas>,
-    @InjectRepository(MesLectura)
-    private readonly mesLecturasRepository: Repository<MesLectura>,
+    @InjectRepository(PlanillaMesLectura)
+    private readonly planillaMesLecturasRepository: Repository<PlanillaMesLectura>,
 
     @InjectRepository(AnioSeguimientoLectura)
     private readonly anioSeguimientoLecturaRepository: Repository<AnioSeguimientoLectura>,
     @InjectRepository(MesSeguimientoRegistroLectura)
     private readonly mesSeguimientoRegistroLecturaRepository: Repository<MesSeguimientoRegistroLectura>,
-
+    @InjectRepository(ComprobantePorPago)
+    private readonly comprobantePorPagarService: Repository<ComprobantePorPago>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
+    // private readonly schedulerRegistry: SchedulerRegistry
   ) {}
   async create(createMedidoreDto: CreateMedidorDto) {
     // const { } = createMedidoreDto;
@@ -69,207 +69,7 @@ export class MedidoresService {
       this.commonService.handbleDbErrors(error);
     }
   }
-  async createAsociacion(createMedidorAsociado:CreateMedidorAsociadoDto){
-
-    const {afiliado,medidor,ubicacion,...dataAsociacion} = createMedidorAsociado;
-    const afiliadoDb = await this.dataSource.getRepository(Afiliado).findOneBy({id:afiliado.id});
-    if(!afiliadoDb) throw new NotFoundException(`Afiliado con ID: ${afiliado.id} not found`);
-    if(!afiliadoDb.isActive) throw new BadRequestException(`No se puede asociar con afiliado deshabilitado`);
-    
-    const medidorDb = await this.medidorRepository.findOne({where:{id:medidor.id},relations:{medidorAsociado:true}})
-    if(!medidorDb) throw new NotFoundException(`Medidor de agua con ID: ${medidor.id} not found`);
-    if(!medidorDb.isActive) throw new BadRequestException(`El medidor no se encuentra Disponible para asociar`);
-    for(const asc of medidorDb.medidorAsociado){
-      if(asc.isActive) throw new BadRequestException(`El medidor con Nro ${medidorDb.nroMedidor} ya se encuentra en funcionamiento`)
-    }
-    const asociacion = this.medidorAsociadoRepository.create({
-      
-      afiliado:afiliadoDb,
-      medidor:medidorDb,
-      lecturaInicial:medidorDb.lecturaMedidor,
-      lecturaSeguimiento:medidorDb.lecturaMedidor,
-      ubicacion,  
-      ...dataAsociacion
-    })
-    try {
-      await this.medidorAsociadoRepository.save(asociacion);
-      return {
-        OK:true,
-        msg:`Asociacion Exitosa!`,
-        data:asociacion,
-      }
-    } catch (error) {
-      this.commonService.handbleDbErrors(error)
-    }
-  }
-  async updateAsociacion(idAsociacion,dataUpdate:UpdateMedidorAsociadoDto){
-    const {afiliado,estado,medidor,...data}=dataUpdate
-    const asociacion = await this.medidorAsociadoRepository.preload({id:idAsociacion,...data});
-    if(!asociacion) throw new NotFoundException(`ASOCIACION ${idAsociacion} NOT FOUND`);
-    try {
-      await this.medidorAsociadoRepository.save(asociacion);
-      return {
-        OK:true,
-        msg:`Asociacion actualizada correctamente!`,
-        data:asociacion,
-      }
-    } catch (error) {
-      
-      this.commonService.handbleDbErrors(error)
-    }
-  }
-  async updateStatusAsociacion(idAsociacion:number,updateMedidorAsociadoDto:UpdateMedidorAsociadoDto){
-    const {estado} =updateMedidorAsociadoDto;
-    if(estado === null || estado === undefined) throw new BadRequestException(`Debe Enviar un estado!`);
-
-    const asociacion = await this.medidorAsociadoRepository.findOne({where:{id:idAsociacion},relations:{medidor:true,}});
-    if(!asociacion) throw new NotFoundException(`Asociacion ${idAsociacion} not found`);
-    if(!asociacion.medidor.isActive) throw new BadRequestException(`El medidor ${asociacion.medidor.nroMedidor} no se encuentra disponible`);
-    
-    if(estado === Estado.ACTIVO){
-      if(asociacion.isActive) throw new BadRequestException(`La asociacion ya se encuentra activa`)
-      else{
-        if(await this.medidorAsociadoRepository.exist({where:{isActive:true,medidor:{id:asociacion.medidor.id}}})) throw new BadRequestException(`El medidor ${asociacion.medidor.nroMedidor} se encuentra asociado con un afiliado`)
-        else{
-          asociacion.isActive=true;
-          asociacion.estado=Estado.ACTIVO
-        } 
-      }
-    }else{
-      if(!asociacion.isActive) throw new BadRequestException(`La asociacion ya se encentra desactiva`);
-      else{
-        // if(await this.medidorAsociadoRepository.exist({where:{id:asociacion.id,planillas:{lecturas:{pagar:{pagado:false}}}},relations:{planillas:{lecturas:{pagar:true,}}}})) throw new BadRequestException(`El asociado tiene deudas pendientes por pagar, no se puede deshabilitar`);
-        // else{
-          // }
-          asociacion.isActive=false;
-          asociacion.estado=Estado.DESHABILITADO;
-      }
-
-    }
-    try {
-      await this.medidorAsociadoRepository.save(asociacion);
-      return {
-        OK:true,
-        msg:'cambio con exito!',
-        data:await this.findAfiliadoByAsociacion(asociacion.id),
-      }
-    } catch (error) {
-      this.commonService.handbleDbErrors(error)
-    }
-  }
-  async findAsociacion(idAsociacion:number){
-    const data = await this.medidorAsociadoRepository.findOne({
-      where:{
-        id:idAsociacion
-      },
-      relations:{
-        medidor:true,
-        afiliado:{
-          perfil:true,
-        }
-      },
-      select:{
-        id:true,isActive:true,
-        estadoMedidorAsociado:true,
-        fechaInstalacion:true,
-        lecturaInicial:true,
-        lecturaSeguimiento:true,
-        registrable:true,
-        estado:true,
-        ubicacion:{
-          barrio:true,
-          latitud:true,
-          longitud:true,
-          numeroVivienda:true
-        },
-        medidor:{
-          id:true,
-          estado:true,isActive:true,
-          nroMedidor:true,
-          medicion:true,
-        },
-        afiliado:{
-          id:true,isActive:true,
-          estado:true,
-          perfil:{
-            id:true,CI:true,
-            apellidoPrimero:true,
-            apellidoSegundo:true,
-            nombrePrimero:true,
-            nombreSegundo:true,
-            estado:true,isActive:true,  
-          }
-        }
-      }
-    })
-    if(!data) throw new BadRequestException(`Asociacion ${idAsociacion} not found`);
-    return{
-      OK:true,
-      msg:'asociacion ',
-      data
-    }
-  }
-  async findMedidorWithAsociation(idMedidor:number){
-    const medidor = await this.medidorRepository.findOne({
-      where:[
-        {
-        id:idMedidor,
-        medidorAsociado:{
-        isActive:true,}
-        },
-        {
-          id:idMedidor,
-        },
-      ],
-      relations:{medidorAsociado:{afiliado:{perfil:true}},},
-      select:{
-        id:true,estado:true,funcionamiento:true,isActive:true,lecturaInicial:true,lecturaMedidor:true,marca:true,nroMedidor:true,medicion:true,
-        medidorAsociado:{id:true,isActive:true,estado:true,afiliado:{id:true,isActive:true,estado:true,perfil:{id:true,isActive:true,estado:true,}}}
-      }
-    });
-    if(!medidor) throw new BadRequestException(`Medidor not found, ID: ${idMedidor}`);
-    return {
-      OK:true,
-      msg:'Medidor encontrado',
-      data:medidor,
-    }
-  }
- async findMedidoresWithoutAsociacion(paginationDto:PaginationDto){ // obtener medidores sin asociaciones y asociaciones inactivas
-   const { order = 'ASC', q = '' } = paginationDto;
-   const { '0': data, '1': size } = await 
-   this.medidorRepository.findAndCount({
-    where: [
-      { nroMedidor: Like(`%${q}%`), isActive:true },
-      // { nroMedidor: Like(`%${q}%`), isActive:true},
-    ],
-    relations:{medidorAsociado:true},
-    // skip: offset,
-    // take: limit,
-    order: {
-      id: order,
-    },
-  });
-  const relationsMedidores:Medidor[]=[];
-  for(const med of data){
-    if(med.medidorAsociado.length===0) relationsMedidores.push(med);
-    else
-      for(let i = 0; i < med.medidorAsociado.length;i++){
-        if(med.medidorAsociado[i].isActive) break;
-        if(i === med.medidorAsociado.length - 1) relationsMedidores.push(med);
-    }
-  }
-  // console.log(relationsMedidores);
-  return {
-    OK: true,
-    message: 'Listado de medidores sin asociacion',
-    data: {
-      data:relationsMedidores,
-      size:relationsMedidores.length,
-      // data,size,
-      order,
-    },
-  };
- }
+  
   async findAllMedidoresWithAfiliados(paginationDto: PaginationDto) {
     const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
     let arg =[''];
@@ -341,17 +141,38 @@ export class MedidoresService {
       data: afiliadoWithMedidores,
     };
   }
-  private async findAfiliadoByAsociacion(id: number) {
-    return await this.perfilRepository.findOne({
-      where: {
-        afiliado: {
+  async findMedidorById(id:number){
+    const medidor = await this.medidorRepository.findOne({
+      where:[
+        {
+          id,
           medidorAsociado:{
-            id
+            isActive:true,
           }
         },
-      },
-      relations: { afiliado: {medidorAsociado:{ medidor: true} } },
-    });
+      {
+        id
+      }
+    ],
+    select:{
+      id:true,isActive:true,estado:true,
+      nroMedidor:true,funcionamiento:true,lecturaInicial:true,lecturaMedidor:true,
+      marca:true,medicion:true,
+      medidorAsociado:{
+        id:true,isActive:true,estado:true,
+        afiliado:{id:true,perfil:{id:true}}
+      }
+    },
+    relations:{
+      medidorAsociado:{afiliado:{perfil:true}}
+    }
+    })
+    if(!medidor) throw new BadRequestException(`Medidor with id ${id} not found`);
+    return {
+      OK:true,
+      message:'MEDIDOR ENCONTRADO',
+      data:medidor
+    }
   }
 
   async update(id: number, updateMedidoreDto: UpdateMedidorDto) {
@@ -388,13 +209,11 @@ export class MedidoresService {
       throw new NotFoundException(`Medidor with id ${id} not found`);
     if(estado){
       medidor.isActive=true;
-      medidor.funcionamiento='NO'
     }else{
       for(const asc of medidor.medidorAsociado){
         if(asc.isActive) throw new BadRequestException(`El medidor con nro: ${id} tiene una asociacion, no se puede deshabilitar un medidor con una asociacion activa`);
       }
       medidor.isActive=false;
-      medidor.funcionamiento='DESHABILITADO';
     }
     try {
       await this.medidorRepository.save(medidor);
@@ -407,10 +226,10 @@ export class MedidoresService {
       this.commonService.handbleDbErrors(error);
     }
   }
-  async findMedidores(query:PaginationDto){
+  async   findMedidores(query:PaginationDto){
 
     const {q='',limit=10,offset=0,order='ASC'} = query;
-    const medidoresFind = await this.medidorRepository.find({
+    const {"0":data,"1":size} = await this.medidorRepository.findAndCount({
       where:[{nroMedidor:ILike(`%${q}%`)},
              {marca:ILike(`%${q}%`)},
       ],
@@ -431,8 +250,8 @@ export class MedidoresService {
       OK: true,
       message: 'Medidores ',
       data: {
-        data:medidoresFind,
-        size:medidoresFind.length,
+        data,
+        size,
         offset,
         limit,
         order,
@@ -454,7 +273,7 @@ export class MedidoresService {
   ) {
     const { medidor, gestion, ...dataPlanilla } = createPlanillaMedidorDto;
 
-    const medidorDb = await this.medidorAsociadoRepository.findOne({
+    const medidorDb = await this.dataSource.getRepository(MedidorAsociado).findOne({
       where: { id: medidor.id },
       relations: { planillas: true,medidor:true },
     });
@@ -558,7 +377,7 @@ export class MedidoresService {
       mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
       index = 11;
     }
-    const { registros} = registerAllLecturas;
+    const {registros} = registerAllLecturas;
     const anioExiste = await this.anioSeguimientoLecturaRepository.findOne({
       where: { anio:gestion },
       relations: { meses: true },
@@ -573,32 +392,57 @@ export class MedidoresService {
     if( fechaActual.getTime()<=mesExiste.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesExiste.fechaFinRegistroLecturas.getTime()){
       throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para registro`)
     }
+    const planillasLecturas = await this.planillaMesLecturasRepository.find({
+      where:{
+        PlanillaMesLecturar:mesExiste.mes,
+        registrable:true,
+        registrado:false,
+        planilla:{
+          gestion:anioExiste.anio,
+          registrable:true,
+          isActive:true,
+        }
+      },
+      relations:{planilla:{medidor:true}},
+    });
+    if(planillasLecturas.length===0) throw new NotFoundException(`NO HAY PLANILLAS DE MES PARA REGISTRAR DE: GESTION ${gestion}, MES ${mes}`);
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    const lecturas: MesLectura[] = [];
-    for (const lectura of registros) {
-      const planillaDb = await this.planillasMedidoresRepository.findOne({
-        where: { id: lectura.planilla.id },
-        relations: { lecturas: true, medidor: true },
-      });
-      if (!planillaDb)
-        throw new BadRequestException(`No existe la planilla con id ${lectura.planilla.id}`);
-      if (planillaDb.lecturas.find((reg) => reg.mesLecturado === mes))
-        throw new BadRequestException(`Ya se ha registrado en el mes ${mes} de la planilla-gestion: ${planillaDb.gestion}`);
-      const { planilla, ...dataLectura } = lectura;
-      const {medidor} = planillaDb;
-      const consumoTotal=(lectura.lectura-medidor.lecturaSeguimiento);
-      const lecturaRegister = this.mesLecturasRepository.create({
-        ...dataLectura,
-        // mesLecturado: mes,
-        mesLecturado:mesExiste.mes,
-        consumoTotal,
-        planilla: planillaDb,
-      });
-      lecturas.push(lecturaRegister);
-      medidor.lecturaSeguimiento=(medidor.lecturaSeguimiento+consumoTotal);
-      await queryRunner.manager.save(medidor)
+    const lecturas: PlanillaMesLectura[] = [];
+    for(const reg of registros){
+      const lect = planillasLecturas.find(lect=>lect.id === reg.id);
+      const medidor = lect.planilla.medidor;
+      if(lect){
+        const consumoTotal=(reg.lectura-lect.planilla.medidor.lecturaSeguimiento);
+        console.log('consumo total',consumoTotal);
+        console.log('registro lectura',reg.lectura);
+        console.log('lectura seguimiento',lect.planilla.medidor.lecturaSeguimiento);
+        const monto=consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA;
+        console.log(monto);
+        const predt = await queryRunner.manager.preload(PlanillaMesLectura,{
+          id:reg.id,  
+          consumoTotal,
+          estadoMedidor:reg.estadoMedidor,
+          lectura:reg.lectura,
+          medicion:reg.medicion,
+          registrado:true,
+          tarifaGenerada:true,
+          
+        });
+        lecturas.push(predt);
+        const comp = this.comprobantePorPagarService.create({
+          monto,
+          metodoRegistro:'GENERADO POR LA CAJA',
+          // consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA,
+          motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
+          moneda: Monedas.Bs,
+          lectura:predt,
+        })
+        medidor.lecturaSeguimiento=(medidor.lecturaSeguimiento+consumoTotal);
+        await queryRunner.manager.save(medidor)
+        await queryRunner.manager.save(comp);
+      }
     }
     try {
       await queryRunner.manager.save(lecturas);
@@ -624,7 +468,8 @@ export class MedidoresService {
       mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
       index = 11;
     }
-    const mesSeguimineto = await this.mesSeguimientoRegistroLecturaRepository.findOne({
+    
+    const mesSegumiento = await this.mesSeguimientoRegistroLecturaRepository.findOne({
       where:{mes:
         index===0?Mes.enero
         :index===1?Mes.febrero
@@ -642,126 +487,139 @@ export class MedidoresService {
         anioSeguimiento:{anio:gestion}},
       relations:{anioSeguimiento:true,}
     })
-
-    // if(!mesSeguimineto)throw new BadRequestException(`Gestion: ${gestion}, mes: ${mes} aun no generados`);
-    // if(mesSeguimineto.fechaRegistroLecturas.getTime()<fechaLecturas.getTime()){
-    //   if(mesSeguimineto.fechaFinRegistroLecturas.getTime()<fechaLecturas.getTime()){
-    //     throw new BadRequestException(`Fecha de registro de lecturas del mes ${mes}, gestion: ${gestion} finalizadas ${mesSeguimineto.fechaFinRegistroLecturas}`)
-    //   }
-    // }else{
-    //   throw new BadRequestException(`Los registros de lectura se podran registrar a la fecha ${mesSeguimineto.fechaRegistroLecturas}`)
-    // }
+    
+    if(!mesSegumiento)throw new BadRequestException(`Gestion: ${gestion}, mes: ${mes} aun no generados`);
+    if(mesSegumiento.fechaRegistroLecturas.getTime()<fechaLecturas.getTime()){
+      if(mesSegumiento.fechaFinRegistroLecturas.getTime()<fechaLecturas.getTime()){
+        throw new BadRequestException(`Fecha de registro de lecturas del mes ${mes}, gestion: ${gestion} finalizadas ${mesSegumiento.fechaFinRegistroLecturas}`)
+      }
+    }else{
+      throw new BadRequestException(`Los registros de lectura se podran registrar a la fecha ${mesSegumiento.fechaRegistroLecturas}`)
+    }
     const {
       // gestion = new Date().getFullYear(),
       barrio,
+      limit=50,
+      offset=0,
+      sort='id',
+      order='ASC',
+      q=''
       // mes = Mes.enero,
     } = query;
     // console.log(gestion, barrio, mes);
-    const qb = this.perfilRepository.createQueryBuilder('perfiles');
-    let data:Perfil[]=[];
-    let size =0;
-    if( isNotEmpty( barrio)){
-      console.log('tiene barrio:', barrio);
-      const plan = await qb
-      .innerJoinAndSelect(
-        'perfiles.afiliado',
-        'afiliado',
-        'afiliado."perfilId" = perfiles.id AND afiliado.isActive = true',
-      )
-      .innerJoinAndSelect(
-        'afiliado.medidor_asociado',
-        'asociado',
-        'asociado."afiliadoId" = afiliado.id AND asociado."ubicacionBarrio" = :barrio AND asociado.isActive = true AND asociado.registrable = true',
-        {barrio}
-      ).innerJoinAndSelect(
-        'asociado.medidor',
-        'medidor',
-        'medidor.id = asociado.id AND medidor.isActive = true '
-      )
-      .innerJoinAndSelect(
-        'asociado.planillas',
-        'planilla',
-        'planilla."medidorId" = medidor.id AND planilla.isActive = true AND planilla.registrable = true',
-      )
-      .leftJoinAndSelect(
-        'planilla.lecturas',
-        'lecturas',
-        'lecturas.mesLecturado = :mes',
-        { mes },
-      )
-      .where('planilla.gestion =:gestion', { gestion })
-      .getManyAndCount();
-     
-      data = plan[0];
-      size = plan[1];
-    }else{
-      console.log('sin barrio',barrio);
-      const plan = await qb
-      .innerJoinAndSelect(
-        'perfiles.afiliado',
-        'afiliado','afiliado."perfilId" = perfiles.id AND afiliado.isActive = true'
-      )
-      .innerJoinAndSelect(
-        'afiliado.medidorAsociado',
-        'asociado',
-        'asociado."afiliadoId" = afiliado.id AND asociado.isActive = true AND asociado.registrable = true'
-      )
-      .innerJoinAndSelect(
-        'asociado.medidor',
-        'medidor',
-        'medidor.id = asociado.id AND medidor.isActive = true'
-      )
-      .innerJoinAndSelect(
-        'asociado.planillas',
-        'planilla',
-        'planilla."medidorId" = medidor.id AND planilla.isActive = true AND planilla.registrable = true'
-      )
-      .leftJoinAndSelect(
-        'planilla.lecturas',
-        'lecturas',
-        'lecturas.mesLecturado = :mes',{ mes }
-      )
-      .where('planilla.gestion =:gestion', { gestion })
-      .getManyAndCount();
-      
-      data = plan[0];
-      size = plan[1];
+    let arg =[''];
+    if(q.length>0){
+      arg =q.toLocaleLowerCase().split(/\s/).filter(val=>val.length>0);
     }
-    const perfilesSinLectura:Perfil[]=[];
-    // console.log(data);
-    for(const per of data){
-      const medInd:number[]=[];
-      // const {medidores} = per.afiliado;
-      const dataPerfil = Object.assign({},per);
-       dataPerfil.afiliado = Object.assign({},per.afiliado);
-       dataPerfil.afiliado.medidorAsociado=per.afiliado.medidorAsociado.map(med=> Object.assign({},med))
-       dataPerfil.afiliado.medidorAsociado=[];
-      
-      for(let i =0;i< per.afiliado.medidorAsociado.length;i++){
-        if(per.afiliado.medidorAsociado[i].planillas[0].lecturas.length===0){
-          medInd.push(i);
-          // perfilesSinLectura.push(per);
-          // console.log('aloja ',i);
-          // console.log(per.afiliado.medidores[i]);
-          dataPerfil.afiliado.medidorAsociado.push(Object.assign({},per.afiliado.medidorAsociado[i]))
-        }
-      }
-      if(medInd.length>0)
-      perfilesSinLectura.push(dataPerfil);
+    if(arg.length===0) arg=[''];
+    
+    // console.log(arg);
+    const finders:FindOptionsWhere<Perfil>[] = [];
+    for(const data of arg){
+      finders.push(
+        { nombrePrimero:   ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { nombreSegundo:   ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { apellidoPrimero: ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { apellidoSegundo: ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { CI:              ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+      )
     }
+    
+    let orderOption:FindOptionsOrder<Perfil>={id:order};
+    if((sort!== null || sort !==undefined) && sort !=='id'){
+      if(sort==='nombres') orderOption={nombrePrimero:order};
+      if(sort ==='apellidos') orderOption={apellidoPrimero:order}
+      else if (sort ==='ci') orderOption={CI:order};
+      else if (sort ==='estado') orderOption={estado:order};
+    }
+    const {"0":data,"1":size} = await this.perfilRepository.findAndCount({
+      where:finders,
+      relations:{
+        afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:true}}}
+      },
+      select:{
+        id:true,isActive:true,estado:true,apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,
+        afiliado:{id:true,isActive:true,estado:true,ubicacion:{barrio:true,numeroVivienda:true,},
+          medidorAsociado:{
+            id:true,isActive:true,estado:true,lecturaSeguimiento:true,ubicacion:{barrio:true,numeroVivienda:true},registrable:true,
+            planillas:{
+              id:true,isActive:true,estado:true,registrable:true,gestion:true,
+              lecturas:{
+                id:true,registrado:true,registrable:true,PlanillaMesLecturar:true,medicion:true,
+                lectura:true,isActive:true,estadoMedidor:true,estado:true,editable:true,consumoTotal:true,
+              }
+            }
+          }}
+      },
+      take: limit,
+      skip: offset,
+      order: orderOption,
+    })
     return {
       OK: true,
       message: `REGISTRO DE LECTURAS DE MEDIDORES DEL mes ${mes}, gestion: ${gestion}`,
       data: {
         // datita:data,
-        data:perfilesSinLectura,
-        size:perfilesSinLectura.length,
+        data,size,
+        limit,
+        offset,
         // data,size
       },
     };
     
   }
-  async afiliadosPorGenerarComprobantes(){
+  private readonly TARIFA_MINIMA = 10;
+  private readonly LECTURA_MINIMA = 10;
+  private readonly COSTO_ADICIONAL = 2;
+  async generarTarfiasPorPagar(createTarifaPorPagarDto:CreateTarifaPorPagarDto){
+    const {lecturas} =createTarifaPorPagarDto;
+    const lecturasCreate:PlanillaMesLectura[]=[];
+    for(const lct of lecturas){
+      const dc = await this.planillaMesLecturasRepository.findOne({
+        where:{id:lct.id,tarifaGenerada:false,isActive:true,registrado:true}
+      })
+      if(dc) lecturasCreate.push(dc);
+    }
+    if(lecturasCreate.length===0) throw new NotFoundException(`SIN PLANILLAS POR GENERAR`);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
+    try {
+    for(const lectu of lecturasCreate){
+      const comp = queryRunner.manager.create(ComprobantePorPago,{
+        lectura:lectu,
+        metodoRegistro:'GENERADO POR LA CAJA',
+        monto:lectu.consumoTotal >this.LECTURA_MINIMA
+                ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
+                : this.TARIFA_MINIMA,
+        motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
+        moneda: Monedas.Bs,
+        
+      })
+      console.log('lectura',lectu);
+      console.log('comprobante',comp);
+        await queryRunner.manager.save(comp);
+        await queryRunner.manager.update(PlanillaMesLectura,lectu.id,{tarifaGenerada:true});
+        // comprobantesGenerados.push(comp);
+
+      }
+      await queryRunner.commitTransaction();
+      return {
+        OK:true,
+        message:'Comprobantes por pagar creados con exito',
+      };
+    } catch (error) {
+      this.logger.error('error al registrar un comprobante',error);
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally{
+      await queryRunner.release();
+    }
+    
+  }
+  async afiliadosPorGenerarComprobantes(paginationDto: PaginationDto){
+    const {offset=0,limit=10} = paginationDto;
     const fechaLecturas = new Date();
     let gestion = fechaLecturas.getFullYear();
     let index = fechaLecturas.getMonth()-1;
@@ -771,66 +629,34 @@ export class MedidoresService {
       mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
       index = 11;
     }
-    // const {
-    //   gestion = new Date().getFullYear(),
-    //   mes = Mes.enero,
-    // } = query;
-    // console.log(gestion, barrio, mes);
-    const qb = this.perfilRepository.createQueryBuilder('perfiles');
-    const {"0":data,"1":size}= await qb
-      .innerJoinAndSelect(
-        'perfiles.afiliado',
-        'afiliado',
-        'afiliado."perfilId" = perfiles.id AND afiliado.isActive = true',
-      )
-      .innerJoinAndSelect(
-        'afiliado.medidorAsociado',
-        'medidor_asociado',
-        'medidor_asociado."afiliadoId" = afiliado.id AND medidor_asociado.isActive = true'
-      ).innerJoinAndSelect(
-        'medidor_asociado.medidor',
-        'medidor',
-        'medidor.id = medidor_asociado.id AND medidor.isActive = true'
-      )
-      .innerJoinAndSelect(
-        'medidor_asociado.planillas',
-        'planilla',
-        'planilla."medidorId" = medidor.id AND planilla.isActive = true',
-      )
-      .innerJoinAndSelect(
-        'planilla.lecturas',
-        'lecturas',
-        'lecturas.mesLecturado = :mes',
-        { mes },
-      )
-      .leftJoinAndSelect(
-        'lecturas.pagar',
-        'pagar',
-        'pagar."lecturaId" = lecturas.id'
-      )
-      .where('planilla.gestion =:gestion', { gestion })
-      .getManyAndCount();
-      const perfilesSinLectura:Perfil[]=[];
-      for(const per of data){
-        const medInd:number[]=[];
-        // const {medidores} = per.afiliado;
-        const dataPerfil = Object.assign({},per);
-         dataPerfil.afiliado = Object.assign({},per.afiliado);
-         dataPerfil.afiliado.medidorAsociado=per.afiliado.medidorAsociado.map(med=> Object.assign({},med))
-         dataPerfil.afiliado.medidorAsociado=[];
-        for(let i =0;i< per.afiliado.medidorAsociado.length;i++){
-          if(per.afiliado.medidorAsociado[i].planillas[0].lecturas[0].pagar === null){
-            medInd.push(i);
-            dataPerfil.afiliado.medidorAsociado.push(Object.assign({},per.afiliado.medidorAsociado[i]))
+    const {"0":data,"1":size} = await this.perfilRepository.findAndCount({
+      where:{afiliado:{medidorAsociado:{planillas:{lecturas:{tarifaGenerada:false,isActive:true},isActive:true,registrable:true},isActive:true,registrable:true,},isActive:true},isActive:true}
+      ,relations:{afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:true}}}},
+      select:{
+        apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,id:true,isActive:true,estado:true,
+        afiliado:{id:true,isActive:true,
+          medidorAsociado:{ id:true,isActive:true,
+            medidor:{id:true,isActive:true,nroMedidor:true},planillas:{id:true,isActive:true,gestion:true,
+          lecturas:{lectura:true,tarifaGenerada:true,consumoTotal:true,id:true,isActive:true,updated_at:true,PlanillaMesLecturar:true,}}}}
+      },
+      skip:offset,
+      take:limit,
+      order:{
+        afiliado:{
+          medidorAsociado:{
+            planillas:{
+              lecturas:{
+                updated_at:'ASC'
+              }
+            }
           }
         }
-        if(medInd.length>0)
-        perfilesSinLectura.push(dataPerfil);
       }
+    })
       return {
         OK: true,
         message: `LISTADO DE LOS MEDIDORES DE AFILIADOS SIN GENERACION DE PAGOS DEL MES: ${mes} ${gestion}`,
-        data:perfilesSinLectura,
+        data:{data,limit,offset,size},
       };
   }
   async getAniosSeguimientos() {
@@ -848,7 +674,7 @@ export class MedidoresService {
   }
   async getPlanillasMedidorAsociado(idAsociado:number){
     // const medidor = await this.medidorRepository.findOne({where:{id:idMedidor,planillas:{isActive:true}},relations:{planillas:true},select:{nroMedidor:true,planillas:{gestion:true,id:true}}});
-    const qb = this.medidorAsociadoRepository.createQueryBuilder('asociado')
+    const qb = this.dataSource.getRepository(MedidorAsociado).createQueryBuilder('asociado')
     const medidor = await qb
                           .select(['asociado.id','asociado.estadoMedidorAsociado','asociado.isActive',
                                     'medidor.nroMedidor','medidor.id','medidor.isActive',
@@ -910,7 +736,7 @@ export class MedidoresService {
       .leftJoinAndSelect(
         'planilla.lecturas',
         'lecturas',
-        'lecturas.mesLecturado = :mes',
+        'lecturas.PlanillaMesLecturar = :mes',
         { mes },
       )
       //.select([''])
@@ -938,10 +764,10 @@ export class MedidoresService {
     }
   }
   async lecturaDetails(idLectura:number){
-    const lectura = await this.mesLecturasRepository.findOne(
+    const lectura = await this.planillaMesLecturasRepository.findOne(
       {where:{id:idLectura},
       select:{
-        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,lectura:true,mesLecturado:true,
+        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,lectura:true,PlanillaMesLecturar:true,
        // LecturaPorPagar:{created_at:true,estadoComprobate:true,fechaPagada:true,estado:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
         //comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,}}},
       //relations:{LecturaPorPagar:{comprobante:true}}})
@@ -969,7 +795,7 @@ export class MedidoresService {
   //* TASK SCHEDULING
   private readonly logger = new Logger(MedidoresService.name);
   //@Cron('45 * * * * *')
-  @Cron(CronExpression.EVERY_YEAR)
+  @Cron('0 1 1 1 *') //At 01:00 AM, on day 1 of the month, only in January
   private async registrarAnioSeguimiento(){
     
     const yearAct = new Date().getFullYear();
@@ -983,7 +809,7 @@ export class MedidoresService {
     }
   }
   //@Cron('15 * * * * *')
-  @Cron(CronExpression.EVERY_YEAR)
+  @Cron('30 1 1 1 *') //At 01:30 AM, on day 1 of the month, only in January
   private async registrarPlanillasDeMedidores(){
     const yearAct = new Date().getFullYear();
     const dateSeguimiento= await this.anioSeguimientoLecturaRepository.findOneBy({anio:yearAct});
@@ -1012,8 +838,9 @@ export class MedidoresService {
       this.logger.error(`Year ${yearAct} no registered!`)
     }
   }
+  
   // @Cron('10 * * * * *')
-  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
+  @Cron('0 2 1 * *') //At 02:00 AM, on day 1 of the month
   private async registrarMesSeguimiento(){
     
     const fechaActual = new Date()
@@ -1060,6 +887,134 @@ export class MedidoresService {
         this.logger.warn('OCURRIO UN ERROR AL REGISTRAR');
         this.logger.warn(error);
       }
+    }
+  }
+  @Cron('30 2 1 * *') //At 02:30 AM, on day 1 of the month
+  private async registerPlanillaMesGestion(){
+
+    const dataSeguimiento = await this.anioSeguimientoLecturaRepository.find(
+      {
+        order:{
+          anio:'DESC',
+          meses:{
+            id:'DESC'
+          }
+        },
+        relations:{
+          meses:true
+        }
+      },
+    )
+    if(dataSeguimiento.length===0) this.logger.warn(`NO EXISTEN SEGUIMIENTOS DE GESTIONES EN LA DB`);
+    else{
+      const planillasMedidoresAsociados = await this.planillasMedidoresRepository.find({
+        where:{
+          gestion:dataSeguimiento[0].anio,
+          isActive:true,registrable:true,
+        },
+        relations:{
+          lecturas:true,
+          medidor:true
+        },
+      });
+      if(planillasMedidoresAsociados.length===0) this.logger.warn(`SIN PLANILLAS DE REGISTROS DE GESTIONES DE LECTURAS PARA MEDIDORES DE AGUA`);
+      else{
+        const planillasLecturas:PlanillaMesLectura[]=[];
+        for(const planilla of planillasMedidoresAsociados){
+          if(planilla.lecturas.find(lect=>lect.PlanillaMesLecturar === dataSeguimiento[0].meses[0].mes)){
+            this.logger.warn(`LA ASOCIACION ${planilla.medidor.id} CON LA PLANILLA DE GESTION ${planilla.gestion} YA TIENE EL MES ${dataSeguimiento[0].meses[0].mes} REGISTRADO`);
+            continue;
+          }else{
+            const mesPorLecturar = this.planillaMesLecturasRepository.create({
+              PlanillaMesLecturar:dataSeguimiento[0].meses[0].mes,
+              editable:true,
+              planilla,
+              registrable:true,
+              registrado:false,
+            });
+            planillasLecturas.push(mesPorLecturar);
+          }
+        }
+        await this.planillaMesLecturasRepository.save(planillasLecturas)
+      }
+    }
+  }
+  async limiteTiempoRegistrosLecturas(){
+    const fechaActual = new Date()
+    let gestion = fechaActual.getFullYear();
+    let index=fechaActual.getMonth()-1;
+    if(fechaActual.getMonth()===0){
+      gestion = fechaActual.getFullYear()-1;
+      index=11;
+    }
+    const month = new Date(gestion,index).toLocaleString('default', { month: 'long' }).toUpperCase();
+    
+    const limites = await this.anioSeguimientoLecturaRepository.findOne({
+      where:{
+        anio:gestion,
+        meses:{
+          mes:
+          index===0?Mes.enero
+          :index===1?Mes.febrero
+          :index===2?Mes.marzo
+          :index===3?Mes.abril
+          :index===4?Mes.mayo
+          :index===5?Mes.junio
+          :index===6?Mes.julio
+          :index===7?Mes.agosto
+          :index===8?Mes.septiembre
+          :index===9?Mes.octubre
+          :index===10?Mes.noviembre
+          :index===11?Mes.diciembre
+          :Mes.enero,
+        }
+      },
+      relations:{meses:true}
+    })
+    if(!limites) throw new NotFoundException(`NO EXISTE EL MES DE REGISTRO PASADO O EL AÑO`);
+    return {
+      OK:true,
+      message:'FECHAS LIMITES',
+      data:limites
+    }
+  }
+  // ASOCIACIONES DE MEDIDORES
+
+  async getAsociacionesMedidor(idMedidor:number){
+    const asociados = await this.dataSource.getRepository(MedidorAsociado).find({
+      where:{ medidor:{id:idMedidor}},
+      select:{
+        id:true,estado:true,estadoMedidorAsociado:true,isActive:true,
+      },
+    })
+    return {
+      OK:true,
+      message:'asociaciones del medidor de agua',
+      data:asociados
+    }
+  }
+
+  async getAsociacionDetails(idAsociacion:number){
+    const asociacion = await this.dataSource.getRepository(MedidorAsociado).findOne({
+      where:{id:idAsociacion},
+      select:{
+        id:true,estado:true,estadoMedidorAsociado:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,lecturaSeguimiento:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},
+        afiliado:{id:true,isActive:true,estado:true,
+          perfil:{
+            nombrePrimero:true,nombreSegundo:true,estado:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,id:true,isActive:true,contacto:true,defaultClientImage:true,profileImageUri:true,urlImage:true,
+          }
+        },
+        medidor:{id:true,estado:true,nroMedidor:true,medicion:true},
+        multasAsociadas:{id:true,isActive:true,pagado:true,estado:true,moneda:true,monto:true,motivo:true}
+      },
+      relations:{multasAsociadas:true,afiliado:{perfil:true},medidor:true }
+    })
+    if(!asociacion) throw new NotFoundException(`Asociacion con id ${idAsociacion} no encontrada`);
+
+    return {
+      OK:true,
+      message:'Datos de asociacion',
+      data:asociacion
     }
   }
 }

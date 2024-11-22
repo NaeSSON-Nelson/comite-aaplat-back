@@ -11,7 +11,7 @@ import {
 import { Perfil } from '.';
 import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
 import { Estado } from 'src/interfaces/enum/enum-entityes';
-import { MedidorAsociado } from 'src/medidores-agua/entities/medidor-asociado.entity';
+import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
 
 @Entity({
   name: 'afiliados',
@@ -25,7 +25,7 @@ export class Afiliado extends ColumnsAlways {
   @OneToMany(() => MedidorAsociado, (asociacion) => asociacion.afiliado)
   medidorAsociado:MedidorAsociado [];
 
-  @OneToOne(() => Perfil,(perfil)=>perfil.afiliado)
+  @OneToOne(() => Perfil,(perfil)=>perfil.afiliado,{nullable:false})
   @JoinColumn()
   perfil: Perfil;
 

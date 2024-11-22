@@ -100,6 +100,7 @@ export class ItemsMenuService {
     const itemMenuPreload = await this.itemsMenuRepository.preload({
       id,
       estado,
+      isActive:estado ===Estado.DESHABILITADO?false:true
     });
     if (!itemMenuPreload)
     throw new NotFoundException(`Menu width id: ${id} not found`);
@@ -108,8 +109,8 @@ export class ItemsMenuService {
       await this.itemsMenuRepository.save(itemMenuPreload);
       return {
         OK: true,
-        message: `estado del menu cambiado'}`,
-        data: itemMenuPreload,
+        message: `estado del ítem menu cambiado`,
+        data: await this.itemsMenuRepository.findOne({where:{id},select:{id:true,isActive:true,estado:true,linkMenu:true}}),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);

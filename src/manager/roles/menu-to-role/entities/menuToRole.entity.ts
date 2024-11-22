@@ -15,8 +15,8 @@ export class MenuToRole extends ColumnsAlways{
     @Column()
     roleId:number;
 
-    @ManyToOne(()=>Menu,(menu)=>menu.menu)
+    @ManyToOne(()=>Menu,(menu)=>menu.menu,{nullable:false})
     menu:Menu;
-    @ManyToOne(()=>Role,(role)=>role.menuToRole)
+    @ManyToOne(()=>Role,(role)=>role.menuToRole,{nullable:false})
     role:Role;
 }

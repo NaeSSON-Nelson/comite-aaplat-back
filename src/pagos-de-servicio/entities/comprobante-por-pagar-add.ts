@@ -48,12 +48,12 @@ export class ComprobantePorPagoAdicional{
     })
     fechaPagada:Date;
 
-    @OneToOne(()=>ComprobantePorPago,(comprobante)=>comprobante.comprobantesAdd,{nullable:false,})
-    @JoinColumn()
-    primerComprobante:ComprobantePorPago;
+    // @OneToOne(()=>ComprobantePorPago,(comprobante)=>comprobante.comprobantesAdd,{nullable:false,})
+    // @JoinColumn()
+    // primerComprobante:ComprobantePorPago;
 
-    @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagarAdd)
-    comprobante:ComprobantePago;
+    // @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagarAdd)
+    // comprobante:ComprobantePago;
 
     @CreateDateColumn({
         type: 'timestamp',

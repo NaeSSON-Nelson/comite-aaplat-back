@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsNotEmptyObject,
   IsNumber,
+  IsNumberString,
   IsOptional,
   IsString,
   Min,
@@ -34,13 +35,13 @@ class UbicacionForm{
   @IsOptional()
   numeroVivienda?: string;
 
-  @IsNumber()
+  @IsNumberString()
   @IsOptional()
-  longitud?: number;
+  longitud?: string;
 
-  @IsNumber()
+  @IsNumberString()
   @IsOptional()
-  latitud?: number;
+  latitud?: string;
 }
 export class CreateMedidorAsociadoDto {
   @IsNotEmpty()

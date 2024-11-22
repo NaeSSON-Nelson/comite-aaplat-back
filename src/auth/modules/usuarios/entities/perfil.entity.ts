@@ -5,7 +5,7 @@ import {
   Entity,
   OneToOne,
   PrimaryGeneratedColumn,
-  PrimaryColumnOptions
+  
 } from 'typeorm';
 
 import { ColumnsAlways } from 'src/common/inherints-db/column-always';
@@ -16,6 +16,7 @@ import { Afiliado } from './afiliado.entity';
 @Entity()
 export class Perfil extends ColumnsAlways {
   @PrimaryGeneratedColumn()
+  
   id: number;
 
   @Column({
@@ -108,7 +109,27 @@ export class Perfil extends ColumnsAlways {
     default: false,
   })
   accessAcount: boolean;
+  @Column({
+    type: 'bool',
+    default: false,
+  })
+  isAfiliado: boolean;
 
+  @Column({
+    type:'text',
+    default:'default_client',
+  })
+  profileImageUri:string;
+  @Column({
+    type:'bool',
+    default:true,
+  })
+  defaultClientImage:boolean;
+  @Column({
+    type:'text',
+    default:'https://res.cloudinary.com/dfdheljso/image/upload/v1725280951/default_client.jpg',
+  })
+  urlImage:string;
   @OneToOne(() => Usuario, (usuario) => usuario.perfil) // specify inverse side as a second parameter
   usuario: Usuario
   @OneToOne(() => Afiliado, (afiliado) => afiliado.perfil) // specify inverse side as a second parameter

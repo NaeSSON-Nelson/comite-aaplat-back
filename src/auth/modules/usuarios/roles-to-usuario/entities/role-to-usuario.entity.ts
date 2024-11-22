@@ -14,8 +14,8 @@ export class RoleToUsuario extends ColumnsAlways{
   @Column()
   usuarioId: number;
 
-  @ManyToOne(() => Role, (role) => role.menuToRole)
+  @ManyToOne(() => Role, (role) => role.menuToRole,{nullable:false})
   role: Role;
-  @ManyToOne(() => Usuario, (usuario) => usuario.roleToUsuario)
+  @ManyToOne(() => Usuario, (usuario) => usuario.roleToUsuario,{nullable:false})
   usuario: Usuario;
 }

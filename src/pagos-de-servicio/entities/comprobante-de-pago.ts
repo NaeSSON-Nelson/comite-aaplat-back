@@ -18,14 +18,14 @@ export class ComprobantePago{
       enum:Monedas,
       nullable:false,
     })
-    @Column('text',{
-      nullable:false,
-    })
-    titular:string;
-    @Column('text',{
-      nullable:false
-    })
-    ciTitular:string;
+    // @Column('text',{
+    //   nullable:false,
+    // })
+    // titular:string;
+    // @Column('text',{
+    //   nullable:false
+    // })
+    // ciTitular:string;
     moneda:Monedas;
     @Column('varchar',{length:100,nullable:false,})
     entidadPago:string;
@@ -36,9 +36,9 @@ export class ComprobantePago{
     @JoinColumn()
     comprobantePorPagar:ComprobantePorPago;
 
-    @OneToOne(()=>ComprobantePorPagoAdicional,(porPagarAdd)=>porPagarAdd.comprobante)
-    @JoinColumn()
-    comprobantePorPagarAdd:ComprobantePorPagoAdicional;
+    // @OneToOne(()=>ComprobantePorPagoAdicional,(porPagarAdd)=>porPagarAdd.comprobante)
+    // @JoinColumn()
+    // comprobantePorPagarAdd:ComprobantePorPagoAdicional;
 
     // @OneToMany(()=>PorPagarToPagado,(toPagado)=>toPagado.comprobantePago)
     // comprobantePorPagarToComprobantePagado:PorPagarToPagado;

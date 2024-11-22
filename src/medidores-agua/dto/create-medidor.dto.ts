@@ -27,8 +27,4 @@ export class CreateMedidorDto {
   @IsOptional()
   estado?: Estado;
 
-  @IsString()
-  @MinLength(1)
-  funcionamiento?:string;
-
 }

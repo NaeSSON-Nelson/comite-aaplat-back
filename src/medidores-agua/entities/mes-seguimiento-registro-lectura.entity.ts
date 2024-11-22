@@ -15,6 +15,6 @@ export class MesSeguimientoRegistroLectura extends ColumnsAlways{
     @Column({type:'timestamp without time zone',nullable:false,name:'fecha_fin_registro_lecturas'})
     fechaFinRegistroLecturas:Date;
 
-    @ManyToOne(()=>AnioSeguimientoLectura,(anioSeguimientoLectura)=>anioSeguimientoLectura.meses)
+    @ManyToOne(()=>AnioSeguimientoLectura,(anioSeguimientoLectura)=>anioSeguimientoLectura.meses,{nullable:false})
     anioSeguimiento:AnioSeguimientoLectura;
 }

@@ -16,9 +16,9 @@ import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimi
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
-import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
+import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lectura.entity';
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
-import { MedidorAsociado } from 'src/medidores-agua/entities/medidor-asociado.entity';
+import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
 
 @Injectable()
 export class SeedsService {
@@ -52,8 +52,8 @@ export class SeedsService {
     private readonly mesSeguimientoRegistroLecturaRepository: Repository<MesSeguimientoRegistroLectura>,
     @InjectRepository(PlanillaLecturas)
     private readonly planillaLecturasRepository: Repository<PlanillaLecturas>,
-    @InjectRepository(MesLectura)
-    private readonly mesLecturaRepository: Repository<MesLectura>,
+    @InjectRepository(PlanillaMesLectura)
+    private readonly planillaMesLecturasRepository: Repository<PlanillaMesLectura>,
     @InjectRepository(ComprobantePorPago)
     private readonly comprobantesPorPagarRepository: Repository<ComprobantePorPago>,
     
@@ -95,9 +95,10 @@ export class SeedsService {
       await queryRunner.manager.save(medidoresAsociadosSave);
       const planillasSave = await this.insertPlanillas(medidoresAsociadosSave);
       await queryRunner.manager.save(planillasSave)
-      const lecturasSave = await this.insertLecturas(planillasSave);
-      await queryRunner.manager.save(lecturasSave);
-      const comprobantesPorPagar = await this.insertComprobantesPorPagarAnteriores(lecturasSave);
+      const {lecturasActuales,lecturasPasadas} = await this.insertLecturas(planillasSave);
+      await queryRunner.manager.save(lecturasPasadas);
+      await queryRunner.manager.save(lecturasActuales);
+      const comprobantesPorPagar = await this.insertComprobantesPorPagarAnteriores(lecturasPasadas);
       await queryRunner.manager.save(comprobantesPorPagar);
       
       // console.log('hola:3');
@@ -198,7 +199,7 @@ export class SeedsService {
     return usuarios;
   }
   private async insertAnioSeguimientos(){
-    const planillas = await initialData.planillas;
+    const planillas = initialData.planillas;
 
     const yearSeg = this.anioSeguimientoLecturaRepository.create(planillas.map(plan=>{
       return {
@@ -279,7 +280,7 @@ export class SeedsService {
     return asociacion;
   }
   private async insertPlanillas(medidoresAsociados:MedidorAsociado[]){
-    const seedPlanillas = await initialData.planillas;
+    const seedPlanillas = initialData.planillas;
     const planillas:PlanillaLecturas[]=[];
     for(const medidor of medidoresAsociados){
       for(const {gestion} of seedPlanillas){
@@ -292,8 +293,10 @@ export class SeedsService {
   lecturaSalvada:number=0
   medidorName:string='';
   private async insertLecturas(planillas:PlanillaLecturas[]){
+
     const fechaActual = new Date();
-    const lecturas:MesLectura[]=[];
+    const lecturasPasadas:PlanillaMesLectura[]=[];
+   const lecturasActuales:PlanillaMesLectura[]=[];
     this.medidorName=planillas[0].medidor.medidor.nroMedidor;
     for(const planilla of planillas){
       if(this.medidorName !== planilla.medidor.medidor.nroMedidor){
@@ -301,14 +304,15 @@ export class SeedsService {
         this.lecturaSalvada=0;
       }
       let lecturaSeguimiento = this.lecturaSalvada;
+      // GESTIONES PASADAS
       if(planilla.gestion<fechaActual.getFullYear()){
         for(let index=0;index<12;index++){
           let lecturaGen = Math.round((Math.random()*100)+5);
           lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
-          const lectura = this.mesLecturaRepository.create({
+          const lectura = this.planillaMesLecturasRepository.create({
             lectura:lecturaSeguimiento,
             consumoTotal:(lecturaSeguimiento-this.lecturaSalvada),
-            mesLecturado:index===0?Mes.enero
+            PlanillaMesLecturar:index===0?Mes.enero
             :index===1?Mes.febrero
             :index===2?Mes.marzo
             :index===3?Mes.abril
@@ -322,54 +326,111 @@ export class SeedsService {
             :index===11?Mes.diciembre
             :Mes.enero,
             planilla,
+            registrable:false,
+            registrado:true,
+            medicion:planilla.medidor.medidor.medicion,
+            editable:false,
+            tarifaGenerada:true,
           })
-          lecturas.push(lectura);
+          lecturasPasadas.push(lectura);
           this.lecturaSalvada=lecturaSeguimiento;
         }
       }
-      else 
-      for(let index=0;index<fechaActual.getMonth()-1;index++){
+      else  //GESTION ACTUAL
+      for(let index=0;index<=fechaActual.getMonth()-1;index++){
         let lecturaGen = Math.round((Math.random()*100)+10);
         lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
-        const lectura = this.mesLecturaRepository.create({
-          lectura:lecturaSeguimiento,
-          consumoTotal:(lecturaSeguimiento-this.lecturaSalvada),
-          mesLecturado:index===0?Mes.enero
-          :index===1?Mes.febrero
-          :index===2?Mes.marzo
-          :index===3?Mes.abril
-          :index===4?Mes.mayo
-          :index===5?Mes.junio
-          :index===6?Mes.julio
-          :index===7?Mes.agosto
-          :index===8?Mes.septiembre
-          :index===9?Mes.octubre
-          :index===10?Mes.noviembre
-          :index===11?Mes.diciembre
-          :Mes.enero,
-          planilla,
-        })
-        lecturas.push(lectura);
+        //MES PASADO PARA REGISTRO ACTUAL
+        if(index === (fechaActual.getMonth()-1)){
+          const lectura = this.planillaMesLecturasRepository.create({
+            PlanillaMesLecturar:
+             index===0?Mes.enero
+            :index===1?Mes.febrero
+            :index===2?Mes.marzo
+            :index===3?Mes.abril
+            :index===4?Mes.mayo
+            :index===5?Mes.junio
+            :index===6?Mes.julio
+            :index===7?Mes.agosto
+            :index===8?Mes.septiembre
+            :index===9?Mes.octubre
+            :index===10?Mes.noviembre
+            :index===11?Mes.diciembre
+            :Mes.enero,
+            planilla,
+            registrable:true,
+            registrado:false,
+            editable:true,
+          })
+          lecturasActuales.push(lectura);
+        }else{
+          //MESES PASADOS
+          const lectura= this.planillaMesLecturasRepository.create({
+            lectura:lecturaSeguimiento,
+            consumoTotal:(lecturaSeguimiento-this.lecturaSalvada),
+            PlanillaMesLecturar:index===0?Mes.enero
+            :index===1?Mes.febrero
+            :index===2?Mes.marzo
+            :index===3?Mes.abril
+            :index===4?Mes.mayo
+            :index===5?Mes.junio
+            :index===6?Mes.julio
+            :index===7?Mes.agosto
+            :index===8?Mes.septiembre
+            :index===9?Mes.octubre
+            :index===10?Mes.noviembre
+            :index===11?Mes.diciembre
+            :Mes.enero,
+            planilla,
+            registrable:false,
+            registrado:true,
+            medicion:planilla.medidor.medidor.medicion,
+            editable:false,
+            tarifaGenerada:true,
+          })
+          lecturasPasadas.push(lectura);
+
+        }
+        
         this.lecturaSalvada=lecturaSeguimiento;
       }
       //await this.medidorRepository.save(planilla.medidor);
     }
-    return lecturas;
+    return {lecturasPasadas,lecturasActuales};
   }
   private readonly TARIFA_MINIMA = 10;
   private readonly LECTURA_MINIMA = 10;
   private readonly COSTO_ADICIONAL = 2;
-  private async insertComprobantesPorPagarAnteriores(lecturas:MesLectura[]){
+  private async insertComprobantesPorPagarAnteriores(lecturas:PlanillaMesLectura[]){
     const comprobantesPorPagar:ComprobantePorPago[]=[];
     for(const lectu of lecturas){
+      let fechaLimitePago:Date;
+      if(lectu.PlanillaMesLecturar === Mes.diciembre){
+        fechaLimitePago = new Date(lectu.planilla.gestion+1,0,25)
+      }else{
+        fechaLimitePago = new Date(lectu.planilla.gestion,
+        lectu.PlanillaMesLecturar === Mes.enero?(1)
+        :lectu.PlanillaMesLecturar === Mes.febrero?(2)
+        :lectu.PlanillaMesLecturar === Mes.marzo?(3)
+        :lectu.PlanillaMesLecturar === Mes.abril?(4)
+        :lectu.PlanillaMesLecturar === Mes.mayo?(5)
+        :lectu.PlanillaMesLecturar === Mes.junio?(6)
+        :lectu.PlanillaMesLecturar === Mes.julio?(7)
+        :lectu.PlanillaMesLecturar === Mes.agosto?(8)
+        :lectu.PlanillaMesLecturar === Mes.septiembre?(9)
+        :lectu.PlanillaMesLecturar === Mes.octubre?(10)
+        :lectu.PlanillaMesLecturar === Mes.noviembre?(11)
+        :0,25)
+      }
       const comp = this.comprobantesPorPagarRepository.create({
         lectura:lectu,
         metodoRegistro:'GENERADO POR GENERACION DE RAIZ',
         monto:lectu.consumoTotal >this.LECTURA_MINIMA
                 ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
                 : this.TARIFA_MINIMA,
-        motivo: `PAGO DE SERVICIO, GESTION:${lectu.planilla.gestion}, MES: ${lectu.mesLecturado}`,
+        motivo: `PAGO DE SERVICIO, GESTION:${lectu.planilla.gestion}, MES: ${lectu.PlanillaMesLecturar}`,
         moneda: Monedas.Bs,
+        fechaLimitePago
       })
       comprobantesPorPagar.push(comp);
     }
@@ -577,7 +638,14 @@ export class SeedsService {
     const updates:MedidorAsociado[]=[];
     const updateMedidor:Medidor[]=[];
     for(const asc of asociados){
-      const lastLectura = await this.mesLecturaRepository.findOne({where:{planilla:{medidor:{id:asc.id,}}},relations:{planilla:{medidor:{medidor:true,}}},order:{lectura:{direction:'DESC'}}})
+      const lastLectura = await this.planillaMesLecturasRepository.findOne(
+        {where:
+          {planilla:
+            {medidor:{id:asc.id,
+            }
+          },registrado:true,
+        },
+          relations:{planilla:{medidor:{medidor:true,}}},order:{lectura:{direction:'DESC'}}})
       // console.log(lastLectura,'\n fin lectura', asc.id);
       const asoc = await this.medidorAsociadoRepository.preload({id:asc.id,lecturaSeguimiento:lastLectura.lectura});
       const medi = await this.medidorRepository.preload({id:asc.medidor.id,lecturaMedidor:lastLectura.lectura}) 
@@ -687,10 +755,33 @@ export class SeedsService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-    const asociados = await this.medidorAsociadoRepository.find({select:{id:true,lecturaSeguimiento:true,medidor:{id:true,nroMedidor:true,lecturaMedidor:true}},relations:{medidor:true,}})
+    const asociados = await this.medidorAsociadoRepository.find(
+      {
+        where:{
+        planillas:{lecturas:{registrado:true}}
+        },
+        select:{
+        id:true,
+        lecturaSeguimiento:true,
+        registrable:true,
+        planillas:{
+          id:true,isActive:true,
+          lecturas:{
+            id:true,
+            lectura:true,
+            consumoTotal:true,
+            PlanillaMesLecturar:true,
+          }
+        },
+        medidor:{id:true,nroMedidor:true,lecturaMedidor:true}
+      },
+      relations:{medidor:true,planillas:{lecturas:true}}
+    })
     for(const asc of asociados){
-
-      const lastLectura = await this.mesLecturaRepository.findOne({where:{planilla:{medidor:{id:asc.id,}}},relations:{planilla:{medidor:{medidor:true,}}},order:{lectura:{direction:'DESC'}}})
+      const lastLectura = await this.planillaMesLecturasRepository.findOne(
+        {where:{planilla:{medidor:{id:asc.id,}},registrado:true},
+        relations:{planilla:{medidor:{medidor:true,}}},
+        order:{lectura:{direction:'DESC'}}})
       await queryRunner.manager.update(MedidorAsociado,asc.id,{lecturaSeguimiento:lastLectura.lectura})
       await queryRunner.manager.update(Medidor,asc.medidor.id,{lecturaMedidor:lastLectura.lectura})
     }
@@ -703,6 +794,27 @@ export class SeedsService {
     for(const per of perfiles){
       if(per.usuario){
         await queryRunner.manager.update(Perfil,per.id,{accessAcount:true});
+      }
+    }
+    const perAfiliados = await this.perfilRepository.find({
+      relations:{afiliado:true}
+    })
+    for(const per of perAfiliados){
+      if(per.afiliado){
+        await queryRunner.manager.update(Perfil,per.id,{isAfiliado:true});
+
+      }
+    }
+    const medidores = await this.medidorRepository.find({
+      where:{medidorAsociado:{isActive:true}},
+      relations:{medidorAsociado:true}
+    });
+    for(const med of medidores){
+      for(const asc of med.medidorAsociado){
+        if(asc.isActive){
+          await queryRunner.manager.update(Medidor,med.id,{funcionamiento:true});
+          break;
+        }
       }
     }
       await queryRunner.commitTransaction();

@@ -14,11 +14,11 @@ export class PagosDeServicioController {
   constructor(private readonly pagosDeServicioService: PagosDeServicioService) {}
 
   
-  @Get('comprobantes/generar')
-  GenerarComprobantes()
-  {
-    return this.pagosDeServicioService.generarComprobantes(); 
-  }
+  // @Get('comprobantes/generar')
+  // GenerarComprobantes()
+  // {
+  //   return this.pagosDeServicioService.generarComprobantes(); 
+  // }
   @Get('perfiles')
   perfiles(@Query() paginationDto:SearchPerfil){
     return this.pagosDeServicioService.findAllPefiles(paginationDto)

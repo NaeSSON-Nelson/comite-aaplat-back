@@ -25,8 +25,8 @@ export class ItemToMenu extends ColumnsAlways{
   })
   visible:boolean;
   
-  @ManyToOne(() => Menu, (menu) => menu.menu)
+  @ManyToOne(() => Menu, (menu) => menu.menu,{nullable:false})
   menu: Menu;
-  @ManyToOne(() => ItemMenu, (itemMenu) => itemMenu.itemToMenu)
+  @ManyToOne(() => ItemMenu, (itemMenu) => itemMenu.itemToMenu,{nullable:false})
   itemMenu: ItemMenu;
 }

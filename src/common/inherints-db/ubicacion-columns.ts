@@ -13,8 +13,8 @@ export class Ubicacion {
   numeroVivienda?: string;
 
   @Column({ type: 'numeric', nullable: true,scale:20,precision:100 })
-  longitud?: number;
+  longitud?: string;
   
   @Column({ type: 'numeric', nullable: true,scale:20,precision:100 })
-  latitud?: number;
+  latitud?: string;
 }

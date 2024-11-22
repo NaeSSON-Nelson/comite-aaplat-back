@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Ubicacion } from 'src/common/inherints-db';
-import { Barrio, Estado, Mes, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, Medicion, Mes, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 
 class PerfilSeed {
   nombrePrimero: string;
@@ -51,6 +51,7 @@ class MedidorSeed {
   lecturaMedidor: number;
   estado?: Estado;
   marca: string;
+  medicion:Medicion;
 }
 class MedidorAsociadoSeed{
   fechaInstalacion: Date;
@@ -61,7 +62,7 @@ class MedidorAsociadoSeed{
 class PlanillaLecturasSeed{
   gestion:number;
 }
-class MesLecturaSeed{
+class PlanillaMesLecturarSeed{
   lectura:number;
   estadoMedidor?:string;
   mesLecturado:Mes;
@@ -107,7 +108,7 @@ export const initialData: SeedData = {
       CI: '5425762',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1995, 2, 24),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.administrativo,TipoPerfil.usuario],
     },
@@ -118,7 +119,7 @@ export const initialData: SeedData = {
       CI: '45824111',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1987, 8, 10),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.secretaria],
     },
@@ -129,7 +130,7 @@ export const initialData: SeedData = {
       CI: '65842174',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1990, 6, 10),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'Ingenieria Electrica',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.secretaria],
     },
@@ -139,7 +140,7 @@ export const initialData: SeedData = {
       CI: '6352478',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1998, 7, 24),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'Contaduria',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
@@ -151,7 +152,7 @@ export const initialData: SeedData = {
       CI: '752401254',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1995, 1, 18),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
@@ -162,7 +163,7 @@ export const initialData: SeedData = {
       CI: '24501247',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1974, 8, 19),
-      genero: 'femenino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
@@ -173,7 +174,7 @@ export const initialData: SeedData = {
       CI: '7410005',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1992, 10, 17),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
     },
@@ -184,7 +185,7 @@ export const initialData: SeedData = {
       CI: '85421077',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1990, 4, 5),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'Contador',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
@@ -195,7 +196,7 @@ export const initialData: SeedData = {
       CI: '885011424',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1992, 8, 8),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
@@ -207,7 +208,7 @@ export const initialData: SeedData = {
       CI: '65201487',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1989, 4, 24),
-      genero: 'femenino',
+      genero: 'FEMENINO',
       profesion: 'Doctorado',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
@@ -219,7 +220,7 @@ export const initialData: SeedData = {
       CI: '66258001',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1987, 12, 17),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'Ingenieria Industrial',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -229,7 +230,7 @@ export const initialData: SeedData = {
       CI: '7002541',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1985, 5, 10),
-      genero: 'femenino',
+      genero: 'FEMENINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -241,7 +242,7 @@ export const initialData: SeedData = {
       CI: '7749001',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1995, 5, 18),
-      genero: 'femenino',
+      genero: 'FEMENINO',
       profesion: 'Modelo',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -252,7 +253,7 @@ export const initialData: SeedData = {
       CI: '6899504',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1997, 8, 17),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'Ingenieria Informatica',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -263,7 +264,7 @@ export const initialData: SeedData = {
       CI: '7895510',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1992, 1, 24),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'Doctorado',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -275,7 +276,7 @@ export const initialData: SeedData = {
       CI: '45102477',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1992, 5, 18),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -286,7 +287,7 @@ export const initialData: SeedData = {
       CI: '7100245',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1992, 10, 10),
-      genero: 'femenino',
+      genero: 'FEMENINO',
       profesion: 'dentista',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -298,7 +299,7 @@ export const initialData: SeedData = {
       CI: '7100526',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1990, 8, 24),
-      genero: 'femenino',
+      genero: 'FEMENINO',
       profesion: 'Ingenieria',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -309,7 +310,7 @@ export const initialData: SeedData = {
       CI: '70114820',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1975, 5, 1),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado],
     },
@@ -319,7 +320,7 @@ export const initialData: SeedData = {
       CI: '6600777',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1997, 5, 2),
-      genero: 'masculino',
+      genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [,TipoPerfil.usuario],
     },
@@ -608,6 +609,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
     },
     {
       nroMedidor: '98CSX477744QW',
@@ -616,6 +618,7 @@ export const initialData: SeedData = {
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
       
+      medicion:Medicion.mt3
     },
     {
       nroMedidor: '26HJT5645DF4D4W',
@@ -623,6 +626,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -631,6 +635,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -639,6 +644,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -647,6 +653,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -655,6 +662,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -663,6 +671,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -671,6 +680,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -679,6 +689,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -687,6 +698,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -695,6 +707,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -703,6 +716,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -711,6 +725,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -720,6 +735,7 @@ export const initialData: SeedData = {
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
       
+      medicion:Medicion.mt3
     },
     {
       nroMedidor: 'Q5W66XCC1C15',
@@ -727,6 +743,7 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
     {
@@ -735,6 +752,99 @@ export const initialData: SeedData = {
       lecturaInicial: 0,
       lecturaMedidor:0,
       estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    //* MAS MEDIDORES
+    
+    {
+      nroMedidor: '54Y5YTYE6WER45WERWER',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'CVB46577F8REER',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'Z65DF4G64D465B4NN',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'ERT77UIOUI78BB',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: '165H65G04RGE0WEWE',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'XC65VXC6V7SD68EWR',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'FD54G6S8F7GDF68GE',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'SD98F7WERW465E465',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
+      
+    },
+    {
+      nroMedidor: 'TY68A7645HFG645FGH',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      
+      medicion:Medicion.mt3
+    },
+    {
+      nroMedidor: 'DF3574ER6864R0',
+      marca: 'LAO TAO',
+      lecturaInicial: 0,
+      lecturaMedidor:0,
+      estado: Estado.ACTIVO,
+      medicion:Medicion.mt3
       
     },
   ],

@@ -31,6 +31,10 @@ export  abstract class PaginationDto {
   order?: 'ASC' | 'DESC'; //EL ORDEN QUE VENDRAN
 
   @IsOptional()
+  @IsString()
+  sort?:string; // POR EL TIPO DE CAMPO A ORDENAR
+
+  @IsOptional()
   @IsString({})
   @MinLength(1)
   @Matches(aptternTextLineQuery, {

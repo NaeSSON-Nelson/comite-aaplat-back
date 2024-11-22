@@ -17,6 +17,7 @@ import { PerfilController } from './modules/usuarios/perfiles.controller';
 import { PerfilesService } from './modules/usuarios/perfiles.service';
 import { UsuarioController } from './modules/usuarios/usuario.controller';
 import { RefreshTokenJwtStrategy } from './strategies';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   controllers: [
@@ -54,7 +55,7 @@ import { RefreshTokenJwtStrategy } from './strategies';
     //   },
     // })
     ,CommonModule,
-    
+    CloudinaryModule,
     RolesToUsuarioModule,
     
   ],

@@ -12,13 +12,13 @@ export class CreateAfiliadoDto {
   @IsOptional()
   numeroVivienda?: string;
 
-  @IsNumber()
+  @IsNumberString()
   @IsOptional()
-  longitud?: number;
+  longitud?: string;
 
-  @IsNumber()
+  @IsNumberString()
   @IsOptional()
-  latitud?: number;
+  latitud?: string;
   
   @IsEnum(Estado)
   @IsOptional()

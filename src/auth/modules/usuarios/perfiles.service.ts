@@ -4,11 +4,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Like, Repository, QueryRunner, ILike, Any, FindOptionsWhere } from 'typeorm';
+import { DataSource, In, Like, Repository, QueryRunner, ILike, Any, FindOptionsWhere, FindOptionsOrder, FindOptionsSelect, FindManyOptions, FindOptionsRelations } from 'typeorm';
 
 import { generateUsername } from 'unique-username-generator';
 import * as bcrypt from 'bcrypt';
 import * as pdgerantor from 'generate-password';
+import {v4 as uuid} from 'uuid'
 import { RoleToUsuario } from './roles-to-usuario/entities/role-to-usuario.entity';
 import { CommonService } from '../../../common/common.service';
 import { Afiliado, Perfil, Usuario } from './entities';
@@ -28,8 +29,10 @@ import { Estado, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
-import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
-import { MedidorAsociado } from 'src/medidores-agua/entities/medidor-asociado.entity';
+import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lectura.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
+import { QueryExportPerfil } from './querys/query-export-perfil';
 
 @Injectable()
 export class PerfilesService {
@@ -43,6 +46,7 @@ export class PerfilesService {
     @InjectRepository(Afiliado)
     private readonly afiliadoRepository: Repository<Afiliado>,
 
+    private readonly cloudinaryService: CloudinaryService,
     private readonly dataSource: DataSource,
     private readonly commonService: CommonService,
   ) {}
@@ -108,6 +112,7 @@ export class PerfilesService {
       await queryRunner.manager.save(afiliado);
       tipoPerfil.push(TipoPerfil.afiliado);
       perfil.afiliado = afiliado;
+      perfil.isAfiliado=true;
     }
 
     //TODO: MEJORAR LA CREACION DE USERNAME RANDOM
@@ -155,6 +160,7 @@ export class PerfilesService {
     });
     perfil.afiliado = afiliado;
     try {
+      await this.perfilRepository.update(idPerfil,{isAfiliado:true})
       await this.afiliadoRepository.save(afiliado);
       return {
         OK: true,
@@ -237,12 +243,39 @@ export class PerfilesService {
       await queryRunner.release();
     }
   }
+  async uploadUserImage(file:Express.Multer.File,id:number){
+
+    const perfil = await this.perfilRepository.findOneBy({id});
+    if(!perfil) throw new NotFoundException(`Perfil ${id} not found`);
+
+    const filename = uuid()+file.originalname.replace(' ','_');
+    file.originalname=filename;
+    // console.log(file);
+    const res=await this.cloudinaryService.uploadFile(file)
+    // console.log(res);
+    if(perfil.defaultClientImage){
+      await this.perfilRepository.update({id:perfil.id},{urlImage:res.url,profileImageUri:res.display_name,defaultClientImage:false,})
+      
+    }else{
+      const result = await this.cloudinaryService.deleteFile(perfil.profileImageUri)
+      // console.log('resultado de borrado',result);
+      await this.perfilRepository.update({id:perfil.id},{urlImage:res.url,profileImageUri:res.display_name})
+
+    }
+    
+    // console.log(perfil);
+    return {
+      OK:true,
+      message:'profile Image Updated!',
+    }
+  }
   async findAll(paginationDto: SearchPerfil) {
     const {
       offset = 0,
       limit = 10, 
       order = 'ASC',
       q = '',
+      sort,
       tipoPerfil,
       accessAccount = true,
       barrio,
@@ -266,12 +299,36 @@ export class PerfilesService {
         { CI:              ILike(`%${data}%`) },
       )
     }
+    
+    let orderOption:FindOptionsOrder<Perfil>={id:order};
+    if((sort!== null || sort !==undefined) && sort !=='id'){
+      if(sort==='nombres') orderOption={nombrePrimero:order};
+      if(sort ==='apellidos') orderOption={apellidoPrimero:order}
+      else if (sort ==='ci') orderOption={CI:order};
+      else if (sort ==='estado') orderOption={estado:order};
+    }
+    
     const { '0': data, '1': size } = await this.perfilRepository.findAndCount({
       where: finders,
-
+      select:{
+        apellidoPrimero:true,
+        apellidoSegundo:true,
+        CI:true,
+        estado:true,
+        id:true,
+        isActive:true,
+        contacto:true,
+        fechaNacimiento:true,
+        direccion:true,
+        genero:true,
+        profesion:true,
+        nombrePrimero:true,
+        nombreSegundo:true,
+        tipoPerfil:true,
+      },
       take: limit,
       skip: offset,
-      order: { id: order },
+      order: orderOption,
     });
     return {
       OK: true,
@@ -289,6 +346,11 @@ export class PerfilesService {
   async findOne(id: number) {
     const qb = await this.perfilRepository.findOne({
       where: { id },
+      select:{
+        id:true,estado:true,accessAcount:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
+        afiliado:{id:true,estado:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true}},
+        usuario:{id:true,estado:true,correo:true,username:true,correoVerify:true,roleToUsuario:{id:true,estado:true,role:{id:true,estado:true,nombre:true,nivel:true}},isActive:true,}
+      },
       relations: { afiliado: true, usuario: {roleToUsuario:{role:true}} },
     });
 
@@ -332,7 +394,7 @@ export class PerfilesService {
       throw new BadRequestException(`No hay perfil con ID${idPerfil}`);
     return {
       OK: true,
-      msg: 'perfil con afiliado',
+      message: 'perfil con afiliado',
       data: perfil,
     };
   }
@@ -348,7 +410,7 @@ export class PerfilesService {
       const { roleToUsuario, ...dataUsuario } = usuario;
       return {
         OK: true,
-        msg: 'perfil con usuario',
+        message: 'perfil con usuario',
         data: {
           ...dataPerfil,
           usuario: {
@@ -364,7 +426,7 @@ export class PerfilesService {
     }else{
       return {
         OK:true,
-        msg:'perfil con usuario',
+        message:'perfil con usuario',
         data:perfil
       }
     }
@@ -428,7 +490,7 @@ export class PerfilesService {
       updatePerfilDto;
     const perfilUpdate = await this.perfilRepository.preload({
       id,
-      estado,
+      // estado,
       ...dataPerfilUpdate,
     });
 
@@ -495,7 +557,7 @@ export class PerfilesService {
     if (!perfil.afiliado)
       throw new BadRequestException(`El perfil no tiene asignado un afiliado`);
     const {
-      estado,
+      // estado,
       barrio,
       latitud,
       longitud,
@@ -505,7 +567,7 @@ export class PerfilesService {
     const afiliado = await this.afiliadoRepository.preload({
       id: perfil.afiliado.id,
       ubicacion: { barrio, latitud, longitud, numeroVivienda },
-      estado,
+      // estado,
     });
     try {
       await this.afiliadoRepository.save(afiliado);
@@ -534,7 +596,7 @@ export class PerfilesService {
     
     const usuario = await queryRunner.manager.preload(Usuario,{
       id: perfil.usuario.id,
-      estado,
+      // estado,
       ...dataUsuario,
     });
     if (dataUsuario.correo) usuario.correoVerify = false;
@@ -576,11 +638,11 @@ export class PerfilesService {
       throw new NotFoundException(`perfil con id ${id} no encontrado`);
 
     try {
-      await this.usuarioRepository.save(perfil);
+      await this.perfilRepository.save(perfil);
       return {
         OK: true,
         message: `estado de perfil actualizado'}`,
-        data: perfil,
+        data: await this.findInterPerfilAfiliadoUsuario(id),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
@@ -597,7 +659,7 @@ export class PerfilesService {
       throw new BadRequestException(
         `El perfil ${id} no tiene asignado un usuario`,
       );
-
+      console.log('updateUsuariDto',updateUsuarioDto);
     const { estado } = updateUsuarioDto;
     const usuarioPreload = await this.usuarioRepository.preload({
       id: perfil.usuario.id,
@@ -608,11 +670,8 @@ export class PerfilesService {
       await this.usuarioRepository.save(usuarioPreload);
       return {
         OK: true,
-        message: `estado de usuario actualizado'}`,
-        data: await this.perfilRepository.findOne({
-          where: { id },
-          relations: { usuario: true, afiliado: true },
-        }),
+        message: `estado de usuario actualizado`,
+        data: await this.findInterPerfilAfiliadoUsuario(id),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
@@ -638,14 +697,12 @@ export class PerfilesService {
       isActive: estado === Estado.DESHABILITADO ? false : true,
     });
     try {
+      await this.perfilRepository.update(id,{isAfiliado:estado === Estado.DESHABILITADO ? false : true})
       await this.afiliadoRepository.save(perfilPreload);
       return {
         OK: true,
-        message: `estado de afiliado actualizado'}`,
-        data: await this.perfilRepository.findOne({
-          where: { id },
-          relations: { afiliado: true, usuario: true },
-        }),
+        message: `estado de afiliado actualizado`,
+        data: await this.findInterPerfilAfiliadoUsuario(id),
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
@@ -761,13 +818,13 @@ export class PerfilesService {
           medidorAsociado:{
             medidor:{id:true,isActive:true,nroMedidor:true},
             planillas:{id:true,isActive:true,gestion:true,
-              lecturas:{id:true,isActive:true,lectura:true,mesLecturado:true,consumoTotal:true,created_at:true,
+              lecturas:{id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,consumoTotal:true,created_at:true,
                 pagar:{id:true,created_at:true,pagado:true,moneda:true,monto:true,motivo:true,estado:true,estadoComprobate:true,
-                  comprobantesAdd:{metodoRegistro:true,created_at:true,id:true,moneda:true,monto:true,motivo:true,pagado:true,estadoComprobate:true,}}}}
+                  }}}
                 }},
 
           },
-      relations:{usuario:true,afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:{pagar:{comprobantesAdd:true}}}}}}
+      relations:{usuario:true,afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:{pagar:true}}}}}
     })
     if(!perfil) throw new BadRequestException(`No se encontro datos de medidor con Numero: ${nroMedidor}`)
     const medidorRes = Object.assign({},perfil.afiliado.medidorAsociado[0]);
@@ -782,13 +839,9 @@ export class PerfilesService {
               const {lecturas,...resPlanilla}=planilla;
               medidorRes.planillas.push({...resPlanilla,lecturas:[]})
             }
-            if(lectura.pagar.comprobantesAdd){
-              if(!lectura.pagar.comprobantesAdd.pagado){
-                medidorRes.planillas.find(plan=>plan.gestion === planilla.gestion).lecturas.push(lectura)
-              }
-            }else{
+            
               medidorRes.planillas.find(plan=>plan.gestion === planilla.gestion).lecturas.push(lectura)
-            }
+            
           }
         }
       }
@@ -806,7 +859,7 @@ export class PerfilesService {
       isActive:true,
     },
     select:{id:true,isActive:true,gestion:true,lecturas:{
-      consumoTotal:true,lectura:true,mesLecturado:true,id:true,pagar:{monto:true,moneda:true,pagado:true,}
+      consumoTotal:true,lectura:true,PlanillaMesLecturar:true,id:true,pagar:{monto:true,moneda:true,pagado:true,}
     }},
     relations:{lecturas:{pagar:true}}
     })
@@ -818,22 +871,17 @@ export class PerfilesService {
     }
   }
   async lecturaDetails(id:number){
-    const lectura = await this.dataSource.getRepository(MesLectura).findOne({
+    const lectura = await this.dataSource.getRepository(PlanillaMesLectura).findOne({
       where:{
         id,isActive:true,
       },
-      select:{consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,mesLecturado:true,
+      select:{consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,
         pagar:{created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,moneda:true,motivo:true,monto:true,pagado:true,
-          comprobantesAdd:{created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,moneda:true,motivo:true,monto:true,pagado:true,metodoRegistro:true,
-            comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,}},
           comprobante:{
             created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,
           }}},
       relations:{
         pagar:{
-          comprobantesAdd:{
-            comprobante:true
-          },
           comprobante:true,
         }
       }
@@ -842,6 +890,78 @@ export class PerfilesService {
       OK:true,
       message:'Lectura',
       data:lectura
+    }
+  }
+
+  private async findInterPerfilAfiliadoUsuario(perfilId:number){
+    const data = await this.perfilRepository.findOne({
+      where:{id:perfilId},
+      select:{
+        id:true,estado:true,accessAcount:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
+        afiliado:{id:true,estado:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true}},
+        usuario:{id:true,estado:true,correo:true,username:true,correoVerify:true,roleToUsuario:{id:true,estado:true,role:{id:true,estado:true,nombre:true,nivel:true}},isActive:true,}
+      },
+      relations:{afiliado:true,usuario:true},
+    })
+    return data;
+  }
+  async exportPerfiles(query:QueryExportPerfil){
+    const {
+      order='ASC',sort='id',id,nombrePrimero,nombreSegundo,apellidoPrimero,apellidoSegundo,
+      CI,fechaNacimiento,contacto,direccion,isActive,isAfiliado,tipoPerfil,afiliado
+    } = query;
+    nombrePrimero
+    
+    let data:Perfil[]=[];
+    const dataManyOptions:FindManyOptions<Perfil>={
+      order:{
+        [sort]:order
+      }
+    }
+    const dataSelectOptions:FindOptionsSelect<Perfil>={
+      //selects
+      id:(id =='true'? true : false),
+      nombrePrimero:(nombrePrimero =='true'? true : false),
+      nombreSegundo:(nombreSegundo =='true'? true : false),
+      apellidoPrimero:(apellidoPrimero =='true'? true : false),
+      apellidoSegundo:(apellidoSegundo =='true'? true : false),
+      CI:(CI =='true'? true : false),
+      fechaNacimiento:(fechaNacimiento =='true'? true : false),
+      contacto:(contacto =='true'? true : false),
+      direccion:(direccion =='true'? true : false),
+      tipoPerfil:(tipoPerfil =='true'? true : false),
+      isActive:true,
+    }
+    const dataRelations:FindOptionsRelations<Perfil>={}
+    
+      const whereDataFinder:FindOptionsWhere<Perfil>={}
+      if(isActive !== undefined && isActive !== null){
+        whereDataFinder.isActive=(isActive === 'true'? true : false);
+      }
+      if(isAfiliado  !== undefined && isActive !== null){
+        //add where afiliado
+        whereDataFinder.isAfiliado=(isAfiliado === 'true'? true : false);
+        if(whereDataFinder.isAfiliado){
+          const afiliadoFnd:FindOptionsSelect<Afiliado>={}
+          if(afiliado){
+            afiliadoFnd.id=true;
+            afiliadoFnd.isActive=true;
+            dataRelations.afiliado=true; //afiliado relation
+          }
+          //add select afiliado
+          dataSelectOptions.afiliado=afiliadoFnd,
+          dataSelectOptions.isAfiliado=true;
+        }
+      }
+      dataManyOptions.where=whereDataFinder;
+    
+    dataManyOptions.select =dataSelectOptions;
+    dataManyOptions.relations=dataRelations;
+    data = await this.perfilRepository.find(dataManyOptions)
+    return {
+      OK:true,
+      message:'perfiles exportados',
+      data
     }
   }
 }

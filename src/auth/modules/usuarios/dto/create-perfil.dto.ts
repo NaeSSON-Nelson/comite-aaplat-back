@@ -1,4 +1,4 @@
-import { IsArray, IsDate, IsEnum, IsIn, IsNotEmpty, IsNotEmptyObject, IsOptional, IsString, Matches, MinLength, ValidateNested } from "class-validator";
+import { IsArray, IsDate, IsEnum, IsIn, IsNotEmpty, IsNotEmptyObject, IsNumberString, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { Barrio, Estado, TipoPerfil } from '../../../../interfaces/enum/enum-entityes';
 import { Type } from "class-transformer";
 import { Usuario } from "../entities";
@@ -61,9 +61,10 @@ export class CreatePerfilDto {
     fechaNacimiento: Date;
     
     @IsString()
-    @IsNotEmpty()
-    @Matches(/^\+[591]{3}\s[0-9]{6,8}$/gs,{message:'Debe ser un numero telefonico de bolivia valido, example: "+591 {de 6 a 8 digitos}"'})
     @IsOptional()
+    @IsNumberString()
+    @MinLength(6)
+    @MaxLength(8)
     contacto?: string;
     
     @IsEnum(Estado)

@@ -5,11 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Medidor } from './entities/medidor.entity';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
-import { MesLectura } from './entities/mes-lectura.entity';
+import { PlanillaMesLectura } from './entities/planilla-mes-lectura.entity';
 import { PlanillaLecturas } from './entities/planilla-lecturas.entity';
 import { AnioSeguimientoLectura } from './entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-registro-lectura.entity';
-import { MedidorAsociado } from './entities/medidor-asociado.entity';
+import { PagosDeServicioModule } from 'src/pagos-de-servicio/pagos-de-servicio.module';
+
 
 @Module({
   controllers: [MedidoresController],
@@ -18,13 +19,13 @@ import { MedidorAsociado } from './entities/medidor-asociado.entity';
     TypeOrmModule.forFeature([
       Medidor,
       PlanillaLecturas,
-      MesLectura,
+      PlanillaMesLectura,
       AnioSeguimientoLectura,
       MesSeguimientoRegistroLectura,
-      MedidorAsociado,
     ]),
     AuthModule,
     CommonModule,
+    PagosDeServicioModule
   ],
   exports: [TypeOrmModule, MedidoresService],
 })

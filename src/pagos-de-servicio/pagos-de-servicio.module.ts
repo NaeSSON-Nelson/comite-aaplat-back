@@ -3,22 +3,24 @@ import { PagosDeServicioService } from './pagos-de-servicio.service';
 import { PagosDeServicioController } from './pagos-de-servicio.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ComprobantePago, ComprobantePorPago,ComprobantePorPagoAdicional, PorPagarToPagado } from './entities';
+import { ComprobanteDePagoDeMultas, ComprobantePago, ComprobantePorPago,ComprobantePorPagoAdicional, MultaServicio, PorPagarToPagado } from './entities';
 import { CommonModule } from 'src/common/common.module';
+import { MultasServicioAguaService } from './multas-agua.service';
+import { MultasAguaController } from './multas-agua.controller';
 
 @Module({
-  controllers: [PagosDeServicioController],
+  controllers: [PagosDeServicioController,MultasAguaController],
   imports:[
     TypeOrmModule.forFeature([
       ComprobantePorPago,
       ComprobantePago,
-      ComprobantePorPagoAdicional,
-      // PorPagarToPagado,
+      MultaServicio,
+      ComprobanteDePagoDeMultas
     ]),
     AuthModule,
     CommonModule,
   ],
-  providers: [PagosDeServicioService],
+  providers: [PagosDeServicioService,MultasServicioAguaService],
   exports:[
     TypeOrmModule,PagosDeServicioService,
   ]

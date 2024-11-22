@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import {  ParseIntPipe} from "@nestjs/common/pipes";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+// import {} from '@nestjs/'
+import {  FileTypeValidator, MaxFileSizeValidator, ParseFilePipe, ParseIntPipe} from "@nestjs/common/pipes";
 
 import { PerfilesService } from './perfiles.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
@@ -8,11 +9,15 @@ import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { ItemMenuProtected, MenusProtected, RoleProtected } from 'src/auth/decorators/valid-protected.decorator';
 import {Authentication,Authorization,AuthorizationResource} from '../../decorators'
 
-import { ValidItemMenu, ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
+import {  ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 
-import { Usuario } from './entities';
 import { CreateAfiliadoDto, CreatePerfilDto, CreateUsuarioDto, UpdateAfiliadoDto, UpdatePerfilDto, UpdateUsuarioDto } from './dto';
 import { SearchPerfil } from './querys/search-perfil';
+import { FileInterceptor } from '@nestjs/platform-express';
+
+import { fileFilter } from 'src/common/utilities/FileFilters';
+import { UploadProfileImage } from './dto/uploadPerfilImage.dto';
+import { QueryExportPerfil } from './querys/query-export-perfil';
 
 
 @Controller('perfiles')
@@ -27,6 +32,27 @@ export class PerfilController {
   // @ItemMenuProtected(ValidItemMenu.usuarioRegister)
   create(@Body() createPerfilDto: CreatePerfilDto) {
     return this.perfilService.create(createPerfilDto);
+  }
+  @Post('upload-image-user')
+  @UseInterceptors(FileInterceptor('file',{
+  }),)
+  
+  uploadImageProfile(@UploadedFile(
+    new ParseFilePipe({
+      validators:[
+        new FileTypeValidator({
+          fileType:/image\/(jpeg|jpg|png)/,
+        }),
+        new MaxFileSizeValidator({
+          maxSize:1000*1000*10,
+          message:'Max size: 10MB',
+        }),
+      ],
+      fileIsRequired:true,
+    })
+  ) file: Express.Multer.File, @Body() body:UploadProfileImage){
+    
+    return this.perfilService.uploadUserImage(file,parseInt(body.id));
   }
   @Post('afiliado/:id')
   createAfiliado(@Param('id',ParseIntPipe) id: number, @Body() createAfiliadoDto: CreateAfiliadoDto){
@@ -66,6 +92,12 @@ export class PerfilController {
     return this.perfilService.findUserByEmail(term);
   }
   
+  @Get('export')
+  // @MenusProtected(ValidMenu.perfilservice)
+  findPerfilesFiltersExport(@Query() query:QueryExportPerfil) {
+    console.log('query controller',query);
+    return this.perfilService.exportPerfiles(query);
+  }
   @Get(':id')
   // @MenusProtected(ValidMenu.perfilservice)
   findOne(@Param('id',ParseIntPipe) id: number) {
@@ -99,7 +131,7 @@ export class PerfilController {
   // @MenusProtected(ValidMenu.perfilservice)
   // @ItemMenuProtected(ValidItemMenu.perfilServicetatus)
   updatePerfilServicetatus(@Param('id',ParseIntPipe) id: number, @Body() updateUsuarioDto: UpdateUsuarioDto) {
-    return this.perfilService.updateProfile(id, updateUsuarioDto);
+    return this.perfilService.updateUsuarioStatus(id, updateUsuarioDto);
   }
   @Patch('afiliado/status/:id')
   // @MenusProtected(ValidMenu.perfilservice)

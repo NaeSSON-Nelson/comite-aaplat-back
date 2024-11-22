@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ComprobantePago, ComprobantePorPago } from './entities';
+import { ComprobanteDePagoDeMultas, ComprobantePago, ComprobantePorPago, MultaServicio } from './entities';
 import { DataSource, FindOptionsWhere, ILike, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
@@ -11,7 +11,7 @@ import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { Afiliado, Perfil } from 'src/auth/modules/usuarios/entities';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { MesLectura } from 'src/medidores-agua/entities/mes-lectura.entity';
+import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lectura.entity';
 import { PagosServicesDto } from './dto/pagos-services.dto';
 import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
@@ -82,46 +82,46 @@ export class PagosDeServicioService {
         .innerJoinAndSelect(
           'planillas.lecturas',
           'lecturas',
-          'lecturas.mesLecturado = :month AND lecturas.isActive = true',
+          'lecturas.PlanillaMesLecturar = :month AND lecturas.isActive = true',
           { month },
         )
         .where('planillas.isActive = true')
         .getMany();
       // console.log(afiliados);
-      for (const afiliado of afiliados) {
-        for (const medidor of afiliado.medidorAsociado) {
-          const comprobante = await this.comprobantePorPagarService.findOneBy({
-            lectura: { id: medidor.planillas[0].lecturas[0].id },
-          });
-          if (comprobante) {
-            this.logger.warn(
-              `el mes lectura ${medidor.planillas[0].lecturas[0].mesLecturado} del medidor de agua con NRO:${medidor.medidor.nroMedidor} ya tiene un comprobante por pagar registrado`,
-            );
-          } else {
-            const comprobantePorPagar = this.comprobantePorPagarService.create({
-              lectura: medidor.planillas[0].lecturas[0],
-              //TODO: MONTO A PAGAR MINIMO ES DE 10 BS SI EL REGISTRO DE LECTURA ES INFERIOR A 10 M3, SE COBRA 2 BS POR CADA M3
-              monto:
-                medidor.planillas[0].lecturas[0].consumoTotal >
-                this.LECTURA_MINIMA
-                  ? this.TARIFA_MINIMA +
-                    (medidor.planillas[0].lecturas[0].consumoTotal -
-                      this.LECTURA_MINIMA) *
-                      this.COSTO_ADICIONAL
-                  : this.TARIFA_MINIMA,
-              motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
-              metodoRegistro: 'REGISTRO AUTOMATIZADO',
-              moneda: Monedas.Bs,
-            });
-            try {
-              await this.comprobantePorPagarService.save(comprobantePorPagar);
-              this.logger.log(`COMPROBANTE DE PAGO REGISTRADO!`);
-            } catch (error) {
-              this.logger.error(error);
-            }
-          }
-        }
-      }
+      // for (const afiliado of afiliados) {
+      //   for (const medidor of afiliado.medidorAsociado) {
+      //     const comprobante = await this.comprobantePorPagarService.findOneBy({
+      //       lectura: { id: medidor.planillas[0].lecturas[0].id },
+      //     });
+      //     if (comprobante) {
+      //       this.logger.warn(
+      //         `el mes lectura ${medidor.planillas[0].lecturas[0].PlanillaMesLecturar} del medidor de agua con NRO:${medidor.medidor.nroMedidor} ya tiene un comprobante por pagar registrado`,
+      //       );
+      //     } else {
+      //       const comprobantePorPagar = this.comprobantePorPagarService.create({
+      //         lectura: medidor.planillas[0].lecturas[0],
+      //         //TODO: MONTO A PAGAR MINIMO ES DE 10 BS SI EL REGISTRO DE LECTURA ES INFERIOR A 10 M3, SE COBRA 2 BS POR CADA M3
+      //         monto:
+      //           medidor.planillas[0].lecturas[0].consumoTotal >
+      //           this.LECTURA_MINIMA
+      //             ? this.TARIFA_MINIMA +
+      //               (medidor.planillas[0].lecturas[0].consumoTotal -
+      //                 this.LECTURA_MINIMA) *
+      //                 this.COSTO_ADICIONAL
+      //             : this.TARIFA_MINIMA,
+      //         motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
+      //         metodoRegistro: 'REGISTRO AUTOMATIZADO',
+      //         moneda: Monedas.Bs,
+      //       });
+      //       try {
+      //         await this.comprobantePorPagarService.save(comprobantePorPagar);
+      //         this.logger.log(`COMPROBANTE DE PAGO REGISTRADO!`);
+      //       } catch (error) {
+      //         this.logger.error(error);
+      //       }
+      //     }
+      //   }
+      // }
     } catch (error) {
       console.log(error);
     }
@@ -136,17 +136,15 @@ export class PagosDeServicioService {
                 medidorAsociado:{
                   ubicacion:{barrio:true,numeroVivienda:true},
                   planillas:{id:true,gestion:true,isActive:true,
-                    lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
+                    lecturas:{id:true,consumoTotal:true,PlanillaMesLecturar:true,isActive:true,estadoMedidor:true,lectura:true,
                       pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
-                        comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
-                        comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
-                          comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
+                        comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}
                 },
                 medidor:{id:true,nroMedidor:true,
               }}},
 
                 },
-      relations:{afiliado:{medidorAsociado :{medidor:true,planillas:{lecturas:{pagar:{comprobantesAdd:{comprobante:true},comprobante:true}}}}}}
+      relations:{afiliado:{medidorAsociado :{medidor:true,planillas:{lecturas:{pagar:{comprobante:true}}}}}}
     })
     return{
       OK:true,
@@ -170,13 +168,31 @@ export class PagosDeServicioService {
                           .andWhere('perfil.isActive = true')
                           .getOne();
     if(!perfil) throw new BadRequestException(`Perfil ${pagosDto.perfilId} not found`);
+    const multasPerfil = await this.dataSource.getRepository(MultaServicio).find({
+      where:{
+        medidorAsociado:{
+          afiliado:{
+            perfil:{
+              id:perfil.id
+            }
+          }
+        },
+        id:In(pagosDto.multas),
+        pagado:false,
+      },
+      relations:{
+        lecturasMultadas:true
+      },
+    })
     const pagados: ComprobantePago[]=[];
     const updateComprobantesPagados :ComprobantePorPago[]=[];
+    const planillasValidMultas:PlanillaLecturas[]=[];
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    for(const medidor of perfil.afiliado.medidorAsociado){
-      for(const planilla of medidor.planillas){
+    for(const medidorAsc of perfil.afiliado.medidorAsociado){
+      for(const planilla of medidorAsc.planillas){
+        planillasValidMultas.push(planilla);
         for(const lectura of planilla.lecturas){
           if(!(lectura.pagar.pagado) && pagosDto.comprobantes.includes(lectura.pagar.id)){
             const registroPagado = this.comprobantePagoService.create({
@@ -187,8 +203,6 @@ export class PagosDeServicioService {
               metodoPago:'PAGO POR CAJA - PRESENCIAL',
               montoPagado:lectura.pagar.monto,
               moneda:lectura.pagar.moneda,
-              ciTitular:pagosDto.ciTitular,
-              titular:pagosDto.titular,
             })
             lectura.pagar.pagado=true;
             lectura.pagar.estadoComprobate='PAGADO';
@@ -200,20 +214,42 @@ export class PagosDeServicioService {
         }
       }
     }
+    const comprobanteMultas:ComprobanteDePagoDeMultas[]=[];
+    
+    for(const multa of multasPerfil){
+      for(const gest of planillasValidMultas){
+        for(const lctMult of multa.lecturasMultadas){
+          console.log('lectura de multa:',lctMult);
+          console.log('lectura de gestion:',gest.lecturas);
+          const lt = gest.lecturas.find(res=>res.id===lctMult.id);
+          console.log(lt);
+          if(!lt){
+            console.log('MULTAN O INCLUIDA');
+            throw new BadRequestException(`NO SE ENVIARON TODAS LAS LECTURAS VINCULADAS A LA MULTA  N°${multa.id}`);
+          }
+        }
+      }
+      const comprobanteMulta = queryRunner.manager.create(ComprobanteDePagoDeMultas,{
+        fechaEmitida: new Date(),
+        metodoPago:'PAGO POR CAJA - PRESENCIAL',
+        entidadPago:'NINGUNO',
+        montoPagado:multa.monto,
+        moneda:multa.moneda,
+        multaServicio:multa
+    })
+    comprobanteMultas.push(comprobanteMulta);
+    await queryRunner.manager.update(MultaServicio,multa.id,{pagado:true});
+    }
     try {
-      console.log(pagados);
-      await queryRunner.manager.save(pagados)
-      await queryRunner.manager.save(updateComprobantesPagados)
+      // console.log(pagados);
+      await queryRunner.manager.save(pagados);
+      await queryRunner.manager.save(comprobanteMultas);
+      await queryRunner.manager.save(updateComprobantesPagados);
       await queryRunner.commitTransaction();
       return {
         OK:true,
-        message:'Total pagados',
-        data:await this.comprobantePagoService.find({
-          where:{id:In(pagados.map(val=>val.id))},
-          relations:{
-            comprobantePorPagar:true,
-          }
-        }),
+        message:'RESULT PAGE',
+        data: await this.findPlanillasMultasById(pagados,comprobanteMultas)
       }
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -223,11 +259,11 @@ export class PagosDeServicioService {
     }
   }
   async ComprobanteDetalles(idLectura: number) {
-    const lecturaPorPagar = await this.dataSource.getRepository(MesLectura).findOne({
+    const lecturaPorPagar = await this.dataSource.getRepository(PlanillaMesLectura).findOne({
       where: { id:idLectura},
       relations: { pagar:{comprobante:true} },
       select:{
-        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,mesLecturado:true,
+        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,
         pagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
           comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
         },
@@ -243,80 +279,80 @@ export class PagosDeServicioService {
       data: lecturaPorPagar,
     };
   }
-  async generarComprobantes(){
-    const fechaActual = new Date()
-    let gestion = fechaActual.getFullYear();
-    let index=fechaActual.getMonth()-1;
-    if(fechaActual.getMonth()===0){
-      gestion = fechaActual.getFullYear()-1;
-      index=11;
-    }
-    const mes=index===0?Mes.enero
-    :index===1?Mes.febrero
-    :index===2?Mes.marzo
-    :index===3?Mes.abril
-    :index===4?Mes.mayo
-    :index===5?Mes.junio
-    :index===6?Mes.julio
-    :index===7?Mes.agosto
-    :index===8?Mes.septiembre
-    :index===9?Mes.octubre
-    :index===10?Mes.noviembre
-    :index===11?Mes.diciembre
-    :Mes.enero;
-    const month = new Date(gestion,index).toLocaleString('default', { month: 'long' }).toUpperCase();
-    const mesRegistrar = await this.dataSource.getRepository(MesSeguimientoRegistroLectura).findOne({
-      where:[
-        {
-          mes,
-          anioSeguimiento:{
-            anio:gestion,
-          }
-        },
-      ],relations:{anioSeguimiento:true}
-    })
-    if(!mesRegistrar) throw new BadRequestException(`Mes no registrado ${month} año ${gestion}`);
-    if(fechaActual.getTime()<=mesRegistrar.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesRegistrar.fechaFinRegistroLecturas.getTime())
-    throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para generar los comprobantes`)
+  // async generarComprobantes(){
+  //   const fechaActual = new Date()
+  //   let gestion = fechaActual.getFullYear();
+  //   let index=fechaActual.getMonth()-1;
+  //   if(fechaActual.getMonth()===0){
+  //     gestion = fechaActual.getFullYear()-1;
+  //     index=11;
+  //   }
+  //   const mes=index===0?Mes.enero
+  //   :index===1?Mes.febrero
+  //   :index===2?Mes.marzo
+  //   :index===3?Mes.abril
+  //   :index===4?Mes.mayo
+  //   :index===5?Mes.junio
+  //   :index===6?Mes.julio
+  //   :index===7?Mes.agosto
+  //   :index===8?Mes.septiembre
+  //   :index===9?Mes.octubre
+  //   :index===10?Mes.noviembre
+  //   :index===11?Mes.diciembre
+  //   :Mes.enero;
+  //   const month = new Date(gestion,index).toLocaleString('default', { month: 'long' }).toUpperCase();
+  //   const mesRegistrar = await this.dataSource.getRepository(MesSeguimientoRegistroLectura).findOne({
+  //     where:[
+  //       {
+  //         mes,
+  //         anioSeguimiento:{
+  //           anio:gestion,
+  //         }
+  //       },
+  //     ],relations:{anioSeguimiento:true}
+  //   })
+  //   if(!mesRegistrar) throw new BadRequestException(`Mes no registrado ${month} año ${gestion}`);
+  //   if(fechaActual.getTime()<=mesRegistrar.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesRegistrar.fechaFinRegistroLecturas.getTime())
+  //   throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para generar los comprobantes`)
   
-    const planillasLecturas = await this.dataSource.getRepository(PlanillaLecturas)
-            .find({where:
-              {gestion:mesRegistrar.anioSeguimiento.anio,
-                lecturas:{mesLecturado:mesRegistrar.mes,isActive:true},
-                isActive:true},
-            relations:{lecturas:{pagar:true}}});
-    const lecturas:MesLectura[]=[];
-    planillasLecturas.forEach(plan=>{
-      plan.lecturas.forEach(lect=>{
+  //   const planillasLecturas = await this.dataSource.getRepository(PlanillaLecturas)
+  //           .find({where:
+  //             {gestion:mesRegistrar.anioSeguimiento.anio,
+  //               lecturas:{PlanillaMesLecturar:mesRegistrar.mes,isActive:true},
+  //               isActive:true},
+  //           relations:{lecturas:{pagar:true}}});
+  //   const lecturas:PlanillaMesLectura[]=[];
+  //   planillasLecturas.forEach(plan=>{
+  //     plan.lecturas.forEach(lect=>{
         
-        if(lect.pagar===null)
-        lecturas.push(lect);
-      })
-    })
-    const comprobantesGenerados:ComprobantePorPago[]=[];
-    for(const lectu of lecturas){
-      const comp = this.comprobantePorPagarService.create({
-        lectura:lectu,
-        metodoRegistro:'GENERADO POR LA CAJA',
-        monto:lectu.consumoTotal >this.LECTURA_MINIMA
-                ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
-                : this.TARIFA_MINIMA,
-        motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
-        moneda: Monedas.Bs,
-      })
-      try {
-        await this.comprobantePorPagarService.save(comp);
-        comprobantesGenerados.push(comp);
-      } catch (error) {
-        this.logger.error('error al registrar un comprobante',error);
-      }
-    }
-    return {
-      OK:true,
-      message:'Comprobantes creados con exito',
-      data:comprobantesGenerados.length,
-    };
-  }
+  //       if(lect.pagar===null)
+  //       lecturas.push(lect);
+  //     })
+  //   })
+  //   const comprobantesGenerados:ComprobantePorPago[]=[];
+  //   for(const lectu of lecturas){
+  //     const comp = this.comprobantePorPagarService.create({
+  //       lectura:lectu,
+  //       metodoRegistro:'GENERADO POR LA CAJA',
+  //       monto:lectu.consumoTotal >this.LECTURA_MINIMA
+  //               ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
+  //               : this.TARIFA_MINIMA,
+  //       motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
+  //       moneda: Monedas.Bs,
+  //     })
+  //     try {
+  //       await this.comprobantePorPagarService.save(comp);
+  //       comprobantesGenerados.push(comp);
+  //     } catch (error) {
+  //       this.logger.error('error al registrar un comprobante',error);
+  //     }
+  //   }
+  //   return {
+  //     OK:true,
+  //     message:'Comprobantes creados con exito',
+  //     data:comprobantesGenerados.length,
+  //   };
+  // }
   async findAllPefiles(paginationDto: SearchPerfil) {
     const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
     const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
@@ -370,13 +406,7 @@ export class PagosDeServicioService {
       select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
               afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
               medidorAsociado:{id:true,medidor:{nroMedidor:true,id:true,},ubicacion:{barrio:true,numeroVivienda:true},
-                //   planillas:{id:true,gestion:true,isActive:true,
-                //     lecturas:{id:true,consumoTotal:true,mesLecturado:true,isActive:true,estadoMedidor:true,lectura:true,
-                //       pagar:{id:true,created_at:true,estado:true,estadoComprobate:true,pagado:true,moneda:true,monto:true,motivo:true,
-                //         comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
-                //         comprobantesAdd:{id:true,estado:true,estadoComprobate:true,fechaPagada:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
-                //           comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,montoPagado:true,nroRecibo:true,},}}}
-                // }
+                
               }}},
       relations:{afiliado:{medidorAsociado:{medidor:true}}}
     })
@@ -385,24 +415,30 @@ export class PagosDeServicioService {
     if(perfil.afiliado.medidorAsociado.length===0) throw new BadRequestException(`The perfil not have medidores de agua asociados`)
     const perfilSend = {}
     for(const medidor of perfil.afiliado.medidorAsociado){
-      // for(const planilla of medidor.planillas){
-      //   for(const lectura of planilla.lecturas){
-      //     if(lectura.pagar && !lectura.pagar.pagado){
-
-      //     }
-      //   }
-      // }
       const deudas = await this.dataSource.getRepository(PlanillaLecturas).find({
         where:{
           medidor:{id:medidor.id},
           lecturas:{pagar:{pagado:false}},
         },
         select:{
-          gestion:true,id:true,lecturas:{estadoMedidor:true,id:true,lectura:true,mesLecturado:true,consumoTotal:true,pagar:{id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,created_at:true,estadoComprobate:true}}
+          gestion:true,id:true,
+          lecturas:{estadoMedidor:true,medicion:true,id:true,lectura:true,isMulta:true,PlanillaMesLecturar:true,consumoTotal:true,
+            multa:{
+              id:true,created_at:true,estado:true,isActive:true,monto:true,moneda:true,motivo:true,pagado:true
+            },
+            pagar:{id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,created_at:true,estadoComprobate:true,
+            }},
+            
         },
         relations:{
           lecturas:{
-            pagar:true
+            pagar:true,
+            multa:true
+          }
+        },
+        order:{
+          lecturas:{
+            id:'ASC'
           }
         }
       })
@@ -477,7 +513,7 @@ export class PagosDeServicioService {
   };
   }
   async historialCobros(nroMedidor:string,idPlanilla:number){
-    const lecturas = await this.dataSource.getRepository(MesLectura).find({
+    const lecturas = await this.dataSource.getRepository(PlanillaMesLectura).find({
       where:{
         planilla:{
           id:idPlanilla,
@@ -534,5 +570,51 @@ export class PagosDeServicioService {
       OK:true,
       message:'lecturas de planilla',
       data:lecturas};
+  }
+
+  async findPlanillasMultasById(comprobantesLecturasPagadas:ComprobantePago[],comprobantesMultas:ComprobanteDePagoDeMultas[]){
+    const planillas=await this.dataSource.getRepository(PlanillaLecturas).find({
+      select:{id:true,gestion:true,lecturas:{
+        id:true,consumoTotal:true,lectura:true,estadoMedidor:true,medicion:true,PlanillaMesLecturar:true,
+        pagar:{id:true,fechaPagada:true,moneda:true,monto:true,motivo:true,pagado:true,
+          comprobante:{id:true,created_at:true,entidadPago:true,fechaEmitida:true,metodoPago:true,moneda:true,montoPagado:true,nroRecibo:true}
+        }
+      }},
+      where:{
+        lecturas:{
+          pagar:{
+            comprobante:{
+              id:In(comprobantesLecturasPagadas.map(val=>val.id))},
+            }
+          }
+        },
+      relations:{
+        lecturas:{
+          pagar:{
+            comprobante:true,
+          }
+        }
+      }
+    });
+    const multasPagadas = await this.dataSource.getRepository(ComprobanteDePagoDeMultas).find({
+      where:{
+        id:In(comprobantesMultas.map(comp=>comp.id))
+      },
+      select:{
+        id:true,fechaEmitida:true,metodoPago:true,moneda:true,montoPagado:true,
+        multaServicio:{
+          id:true,motivo:true,moneda:true,monto:true,lecturasMultadas:{
+            id:true,isMulta:true,consumoTotal:true,lectura:true,PlanillaMesLecturar:true,medicion:true,
+          }
+        }
+      },
+      relations:{
+        multaServicio:{lecturasMultadas:true}
+      }
+    });
+    return{
+      multasPagadas,
+      planillas
+    }
   }
 }

@@ -142,6 +142,12 @@ export class MenusService {
   async findOneMenu(id: number) {
     let menu = await this.menuRepository.findOne({
       where: { id },
+      select:{id:true,isActive:true,estado:true,linkMenu:true,nombre:true,
+        itemMenu:{
+          id:true,isActive:true,estado:true,nombre:true,visible:true,
+          itemMenu:{id:true,linkMenu:true,estado:true,isActive:true}
+        }
+      },
       relations: { itemMenu: { itemMenu: true } },
     });
     if (!menu) throw new NotFoundException(`Menu not found with Id:${id}`);
@@ -168,7 +174,7 @@ export class MenusService {
 
   async updateStatusMenu(id: number, updateMenuDto: UpdateMenuDto) {
     const { estado, ...dataNotPermit } = updateMenuDto;
-    const menuPreload = await this.menuRepository.preload({ id, estado });
+    const menuPreload = await this.menuRepository.preload({ id, estado,isActive:estado===Estado.ACTIVO?true:false });
 
     if (!menuPreload)
       throw new NotFoundException(`Menu width id: ${id} not found`);
@@ -187,6 +193,12 @@ export class MenusService {
   async findOnePlaneMenu(id: number) {
     const { itemMenu, menu, ...data } = await this.menuRepository.findOne({
       where: { id },
+      select:{id:true,isActive:true,estado:true,linkMenu:true,nombre:true,
+        itemMenu:{
+          id:true,isActive:true,estado:true,nombre:true,visible:true,
+          itemMenu:{id:true,linkMenu:true,estado:true,isActive:true}
+        }
+      },
       relations: { itemMenu: { itemMenu: true } },
     });
     return {

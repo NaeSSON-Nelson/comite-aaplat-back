@@ -29,8 +29,7 @@ import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
 import { registerAllLecturasDto } from './dto/register-all-lecturas.dto';
 import { QueryLecturasDto } from './query/queryLecturas';
 import { Usuario } from 'src/auth/modules/usuarios/entities';
-import { CreateMedidorAsociadoDto } from './dto/create-medidor-asociado.dto';
-import { UpdateMedidorAsociadoDto } from './dto/update-medidor-asociado.dto';
+import { CreateTarifaPorPagarDto } from './dto/create-tarifa-por-pagar.dto';
 
 @Controller('medidores-agua')
 @Authentication()
@@ -45,10 +44,6 @@ export class MedidoresController {
   create(@Body() createMedidoreDto: CreateMedidorDto) {
     return this.medidoresService.create(createMedidoreDto);
   }
-  @Post('asociacion')
-  createAsociacion(@Body() createMedidorAsociado:CreateMedidorAsociadoDto){
-    return this.medidoresService.createAsociacion(createMedidorAsociado);
-  }
   
   @Post('planilla')
   createPanilla(@Body() createPlanillaMedidorDto:CreatePlanillaMedidorDto){
@@ -58,21 +53,17 @@ export class MedidoresController {
   registerAll(@Body() registerLecturas:registerAllLecturasDto){
     return this.medidoresService.registrarAllLecturas(registerLecturas);
   }
-  
+  @Post('comprobantes-por-pagar')
+  generarTarifasPorPagar(@Body() createTarifaPorPagarDto:CreateTarifaPorPagarDto){
+    return this.medidoresService.generarTarfiasPorPagar(createTarifaPorPagarDto);
+  }
   //TODO: GETS
   
   @Get('afiliado')
   medidoresAfiliado(@GetUser() user:Usuario){
     return this.medidoresService.listarMedidores(user.id);
   }
-  @Get('asociacion')
-  medidoresWithoutAsociacion(@Query() paginationDto: PaginationDto){
-    return this.medidoresService.findMedidoresWithoutAsociacion(paginationDto);
-  } 
-  @Get('asociacion/:id')
-  medidorAsociado(@Param('id', ParseIntPipe) id: number){
-    return this.medidoresService.findAsociacion(id);
-  } 
+ 
   @Get('afiliado/:id')
   findAllMedidoresOfAfiliado(@Param('id', ParseIntPipe) id: number) {
     return this.medidoresService.findAllMedidorOneAfiliado(id);
@@ -103,6 +94,10 @@ export class MedidoresController {
   getAllLecturas(@Query() query: QueryLecturasDto){
     return this.medidoresService.AllLecturasPerfilesMedidores(query)
   }
+  @Get('lecturas/time')
+  limiteDeRegistroLecturas(){
+    return this.medidoresService.limiteTiempoRegistrosLecturas();
+  }
   @Get('lecturas/reportes/meses')
   getMesesReportes(@Query() query: QueryLecturasDto){
     return this.medidoresService.getMesesSeguimientos(query);
@@ -116,21 +111,32 @@ export class MedidoresController {
     return this.medidoresService.lecturasPlanilla(id);
   }
   @Get('lecturas/comprobantes/perfiles')
-  getLecturasGenerarComprobantes(){
-    return this.medidoresService.afiliadosPorGenerarComprobantes();
+  getLecturasGenerarComprobantes(@Query() paginationDto: PaginationDto){
+    return this.medidoresService.afiliadosPorGenerarComprobantes(paginationDto);
   }
   @Get('lecturas/comprobantes/:id')
   getLecturasWidthComprobante(@Param('id', ParseIntPipe) id: number){
     return this.medidoresService.lecturaDetails(id);
   }
+  
+  @Get('asociaciones/:id')
+  getAsociacionesMedidor(@Param('id', ParseIntPipe) id:number){
+    return this.medidoresService.getAsociacionesMedidor(id);
+  }
+  @Get('asociacion/:id')
+  getAsociacionMedidor(@Param('id', ParseIntPipe) id:number){
+    return this.medidoresService.getAsociacionDetails(id);
+  }
+ 
+  @Get(':id')
+  findMedidorById(@Param('id',ParseIntPipe) id:number){
+    return this.medidoresService.findMedidorById(id);
+  }
   @Get('')
   findMedidores(@Query() query: PaginationDto){
     return this.medidoresService.findMedidores(query);
   }
-  @Get(':id')
-  findMedidorWithAsociationById(@Param('id', ParseIntPipe) id: number){
-    return this.medidoresService.findMedidorWithAsociation(id);
-  }
+  
   
   //TODO: PATCH - UPDATES
   @Patch(':id')
@@ -140,10 +146,7 @@ export class MedidoresController {
   ) {
     return this.medidoresService.update(id, updateMedidoreDto);
   }
-  @Patch('asociacion/:id')
-  updateAsociacion(@Param('id', ParseIntPipe) id: number,@Body() updst: UpdateMedidorAsociadoDto,){
-    return this.medidoresService.updateAsociacion(id,updst);
-  }
+  
 
   @Patch('status/:id')
   updateStatus(
@@ -160,9 +163,5 @@ export class MedidoresController {
   @Patch('planilla/:id')
   updateStatusPanilla(@Param('id', ParseIntPipe) id: number,@Body() updatePlanillaMedidorDto:UpdatePlanillaMedidorDto){
     return this.medidoresService.updateStatusPlanillaMedidor(id,updatePlanillaMedidorDto);
-  }
-  @Patch('asociacion/status/:id')
-  updateStatusAsociacion(@Param('id', ParseIntPipe) id: number,@Body() updateMedidorAsociadoDto:UpdateMedidorAsociadoDto){
-    return this.medidoresService.updateStatusAsociacion(id,updateMedidorAsociadoDto);
   }
 }

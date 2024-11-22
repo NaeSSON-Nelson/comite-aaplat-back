@@ -1,6 +1,5 @@
 import { Medicion, Mes } from "src/interfaces/enum/enum-entityes";
-import { MesLectura } from "../entities/mes-lectura.entity";
-import { ArrayMinSize, IsArray, IsEnum, IsNotEmpty, IsNotEmptyObject, IsNumber, IsObject, IsOptional, IsString, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsEnum,  IsNumber, IsOptional, IsString, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 
 class planillaForm{
@@ -9,6 +8,10 @@ class planillaForm{
     id:number;
 }
 class Lectura  {
+
+    @IsNumber()
+    @Min(1)
+    id:number;
     @IsNumber()
     @Min(1)
     lectura:number;

@@ -40,7 +40,7 @@ export class Usuario  extends ColumnsAlways{
     })
     correoVerify:boolean;
 
-    @OneToOne(() => Perfil, (perfil) => perfil.usuario)
+    @OneToOne(() => Perfil, (perfil) => perfil.usuario,{nullable:false})
     @JoinColumn()
     perfil: Perfil;
   
