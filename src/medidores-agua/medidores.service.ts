@@ -437,7 +437,11 @@ export class MedidoresService {
           // consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA,
           motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
           moneda: Monedas.Bs,
+          pagado:false,
+          fechaLimitePago: new Date(fechaLecturas.getFullYear(),fechaLecturas.getMonth(),28),
           lectura:predt,
+          estadoComprobate:'SIN PAGAR',
+          
         })
         medidor.lecturaSeguimiento=(medidor.lecturaSeguimiento+consumoTotal);
         await queryRunner.manager.save(medidor)
@@ -499,6 +503,7 @@ export class MedidoresService {
     const {
       // gestion = new Date().getFullYear(),
       barrio,
+      manzano,
       limit=50,
       offset=0,
       sort='id',
@@ -513,15 +518,32 @@ export class MedidoresService {
     }
     if(arg.length===0) arg=[''];
     
-    // console.log(arg);
+    console.log(query);
     const finders:FindOptionsWhere<Perfil>[] = [];
     for(const data of arg){
       finders.push(
-        { nombrePrimero:   ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
-        { nombreSegundo:   ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
-        { apellidoPrimero: ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
-        { apellidoSegundo: ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
-        { CI:              ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        //BARRIO EN AFILIACION
+        { nombrePrimero:   ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio,manzano},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { nombreSegundo:   ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio,manzano},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { apellidoPrimero: ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio,manzano},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { apellidoSegundo: ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio,manzano},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { CI:              ILike(`%${data}%`),isActive:true,afiliado:{ubicacion:{barrio,manzano},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        {                                     isActive:true,afiliado:{ubicacion:{barrio,manzano},isActive:true,medidorAsociado:{isActive:true,registrable:true,medidor:{isActive:true,nroMedidor:ILike(`%${data}%`)},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}}},
+        //BARRIO EN MEDIDOR ASOCIADO
+        { nombrePrimero:   ILike(`%${data}%`),isActive:true,afiliado:{                           isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { nombreSegundo:   ILike(`%${data}%`),isActive:true,afiliado:{                           isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { apellidoPrimero: ILike(`%${data}%`),isActive:true,afiliado:{                           isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { apellidoSegundo: ILike(`%${data}%`),isActive:true,afiliado:{                           isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        { CI:              ILike(`%${data}%`),isActive:true,afiliado:{                           isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        {                                     isActive:true,afiliado:{                           isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{nroMedidor:ILike(`%${data}%`),isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}}},
+        // //POR MANZANO
+        // { nombrePrimero:   ILike(`%${data}%`),isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        // { nombreSegundo:   ILike(`%${data}%`),isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        // { apellidoPrimero: ILike(`%${data}%`),isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        // { apellidoSegundo: ILike(`%${data}%`),isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        // { CI:              ILike(`%${data}%`),isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{barrio,manzano},medidor:{isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}} },
+        // { isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true,registrable:true,ubicacion:{manzano},medidor:{nroMedidor:ILike(`%${data}%`),isActive:true},planillas:{gestion,registrable:true,lecturas:{registrable:true,isActive:true,registrado:false,PlanillaMesLecturar:mesSegumiento.mes}}}}},
+      
       )
     }
     
@@ -539,9 +561,9 @@ export class MedidoresService {
       },
       select:{
         id:true,isActive:true,estado:true,apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,
-        afiliado:{id:true,isActive:true,estado:true,ubicacion:{barrio:true,numeroVivienda:true,},
+        afiliado:{id:true,isActive:true,estado:true,ubicacion:{manzano:true,numeroManzano:true,nroLote:true,barrio:true,numeroVivienda:true,},
           medidorAsociado:{
-            id:true,isActive:true,estado:true,lecturaSeguimiento:true,ubicacion:{barrio:true,numeroVivienda:true},registrable:true,
+            id:true,isActive:true,estado:true,lecturaSeguimiento:true,ubicacion:{manzano:true,numeroManzano:true,nroLote:true,barrio:true,numeroVivienda:true},registrable:true,
             planillas:{
               id:true,isActive:true,estado:true,registrable:true,gestion:true,
               lecturas:{
@@ -795,6 +817,7 @@ export class MedidoresService {
   //* TASK SCHEDULING
   private readonly logger = new Logger(MedidoresService.name);
   //@Cron('45 * * * * *')
+  //REGISTRA EL AÑO DE GESTION DE SEGUIMIENTO PARA LAS LECTURAS POSTERIORES
   @Cron('0 1 1 1 *') //At 01:00 AM, on day 1 of the month, only in January
   private async registrarAnioSeguimiento(){
     
@@ -808,6 +831,7 @@ export class MedidoresService {
       this.logger.log(`Year ${yearAct} registered!`)
     }
   }
+  //REGISTRA LAS PLANILLAS DE GESTION DE LOS MEDIDORES DE AGUA ASOCIADOS
   //@Cron('15 * * * * *')
   @Cron('30 1 1 1 *') //At 01:30 AM, on day 1 of the month, only in January
   private async registrarPlanillasDeMedidores(){
@@ -838,7 +862,7 @@ export class MedidoresService {
       this.logger.error(`Year ${yearAct} no registered!`)
     }
   }
-  
+  //REGISTRA MES SEGUIMIENTO PARA EL PERIODO DEL MES DE REGISTRO DE LECTURAS
   // @Cron('10 * * * * *')
   @Cron('0 2 1 * *') //At 02:00 AM, on day 1 of the month
   private async registrarMesSeguimiento(){
@@ -889,6 +913,8 @@ export class MedidoresService {
       }
     }
   }
+  //REGISTRA LAS PLANILLAS DE LECTURAS DE CADA GESTION DEL PRESENTE AÑO
+  //SI  NOSE SE REGISTRA LA LECTURA DEL MES ESTABLECIDO POSTERIORMENTE SERA ELIMINADO (LOGICO)
   @Cron('30 2 1 * *') //At 02:30 AM, on day 1 of the month
   private async registerPlanillaMesGestion(){
 
@@ -902,7 +928,7 @@ export class MedidoresService {
         },
         relations:{
           meses:true
-        }
+        },
       },
     )
     if(dataSeguimiento.length===0) this.logger.warn(`NO EXISTEN SEGUIMIENTOS DE GESTIONES EN LA DB`);
@@ -917,7 +943,7 @@ export class MedidoresService {
           medidor:true
         },
       });
-      if(planillasMedidoresAsociados.length===0) this.logger.warn(`SIN PLANILLAS DE REGISTROS DE GESTIONES DE LECTURAS PARA MEDIDORES DE AGUA`);
+      if(planillasMedidoresAsociados.length===0) this.logger.warn(`SIN PLANILLAS DE GESTIONES DE LECTURAS PARA MEDIDORES DE AGUA`);
       else{
         const planillasLecturas:PlanillaMesLectura[]=[];
         for(const planilla of planillasMedidoresAsociados){
@@ -938,6 +964,28 @@ export class MedidoresService {
         await this.planillaMesLecturasRepository.save(planillasLecturas)
       }
     }
+  }
+  //REMUEVE LAS LECTURAS GENERADAS DE PLANILLAS LECTURAS QUE NO HAYAN 
+  //SIDO REGISTRADAS DURANTE EL PERIODO DE TIEMPO PARA REGISTRAR LECTURA DEL MEDIDOR DEL MES
+  @Cron('0 23 28 * *') //At 23:00 PM, on day 28 of the month
+  private async removePlanillasMesGestonNoRegistradas(){ 
+    const lecturas = await this.planillaMesLecturasRepository.find({
+      where:{
+        registrado:false,
+        
+      },
+    });
+    for(const lectura of lecturas){
+        try {
+        await this.planillaMesLecturasRepository.update(lectura.id,{
+          isActive:false,
+          estado:Estado.DESHABILITADO,
+          editable:false,
+        })
+      } catch (error) {
+        this.logger.warn(`ERROR GENERADO EN LA FUNCION`, this.removePlanillasMesGestonNoRegistradas.name);
+      }}
+
   }
   async limiteTiempoRegistrosLecturas(){
     const fechaActual = new Date()
@@ -1017,4 +1065,97 @@ export class MedidoresService {
       data:asociacion
     }
   }
+
+
+  async exportMedidorAsociadosListFilter(){
+    //FILTERS
+
+    const dataSeguimiento = await this.anioSeguimientoLecturaRepository.find(
+      {
+        order:{
+          anio:'DESC',
+          meses:{
+            id:'DESC'
+          }
+        },
+        relations:{
+          meses:true
+        },
+        take:1
+      },
+    )
+    if(dataSeguimiento.length===0)throw new BadRequestException(`NO SE ENCUENTRA LA GESTION ACTUAL DE REGISTRO`);
+    
+      const asociados = await this.dataSource.getRepository(MedidorAsociado).find({
+        where:{
+          registrable:true,
+          isActive:true,
+          planillas:{
+            gestion:dataSeguimiento[0].anio,
+            registrable:true,
+            isActive:true,
+            lecturas:{
+              PlanillaMesLecturar:dataSeguimiento[0].meses[0].mes,
+              registrable:true,
+              registrado:false,
+              isActive:true
+            }
+          }
+        },
+        select:{
+          id:true,isActive:true,estado:true,estadoMedidorAsociado:true,lecturaSeguimiento:true,
+          afiliado:{id:true,estado:true,isActive:true,ubicacion:{barrio:true,manzano:true,nroLote:true,numeroManzano:true,},
+          perfil:{id:true,estado:true,isActive:true,apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,contacto:true,},},
+          medidor:{id:true,nroMedidor:true,lecturaMedidor:true,medicion:true,},
+          planillas:{id:true,isActive:true,gestion:true,lecturas:{
+            id:true,isActive:true,PlanillaMesLecturar:true,registrado:true,registrable:true,
+          }}
+        },
+        relations:{
+          afiliado:{
+            perfil:true
+          },
+          planillas:{
+            lecturas:true
+          },
+          medidor:true
+        },
+        order:{
+          id:'ASC',
+        }
+      })
+    return {
+      OK:true,
+      message:'Medidres asociadios para exportar',
+      data:asociados
+    }
+  }
+  async findAllManzanos(){
+      const tipos:string[]=[];
+      const perfiles = await this.perfilRepository.find({
+        where:{isActive:true,afiliado:{isActive:true,medidorAsociado:{isActive:true}}},
+        relations:{
+          afiliado:{medidorAsociado:true}
+        }
+      })
+      for(const perfil of perfiles){
+        if(!tipos.includes(perfil.afiliado!.ubicacion!.manzano!)){
+          tipos.push(perfil.afiliado!.ubicacion!.manzano!);
+        }
+        for(const asc of perfil!.afiliado!.medidorAsociado!)
+        if(!tipos.includes(asc!.ubicacion!.manzano!)){
+          tipos.push(asc.ubicacion!.manzano!);
+        }
+      }
+      return {
+        OK:true,
+        message:'todos los manzanos',
+        data:tipos.map(manzano=>{
+        return{
+          name:manzano.toUpperCase(),
+          value:manzano 
+        }
+      })};
+    }
+  
 }

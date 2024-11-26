@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Ubicacion } from 'src/common/inherints-db';
-import { Barrio, Estado, Medicion, Mes, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, Medicion, Mes, Monedas, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 
 class PerfilSeed {
   nombrePrimero: string;
@@ -18,6 +18,8 @@ class PerfilSeed {
 class AfiliadoSeed {
   estado: Estado;
   ubicacion: Ubicacion;
+  monto:number;
+  moneda:Monedas;
 }
 class UsuarioSeed {
   username: string;
@@ -329,122 +331,207 @@ export const initialData: SeedData = {
     {
       ubicacion: { 
         barrio: Barrio._20DeMarzo, 
-        numeroVivienda: '270588'
+        numeroVivienda: '270588',
+        manzano:'A',
+        numeroManzano:1,
+        nroLote:1,
       },
+      monto:1500,
+      moneda:Monedas.Bs,
       estado: Estado.ACTIVO,
     },
     {
       ubicacion: { 
         barrio: Barrio.mendezFortaleza, 
-        numeroVivienda: '55804'
+        numeroVivienda: '55804',
+        manzano:'A',
+        numeroManzano:1,
+        nroLote:2,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '99804'
+        numeroVivienda: '99804',
+        manzano:'A',
+        numeroManzano:1,
+        nroLote:3,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.sanAntonio, 
-        numeroVivienda: '5405'
+        numeroVivienda: '5405',
+        manzano:'A',
+        numeroManzano:2,
+        nroLote:1,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.verdeOlivo, 
-        numeroVivienda: '5408'
+        numeroVivienda: '5408',
+        manzano:'A',
+        numeroManzano:2,
+        nroLote:2,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '6874'
+        numeroVivienda: '6874',
+        manzano:'A',
+        numeroManzano:2,
+        nroLote:3,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     //
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '7848'
+        numeroVivienda: '7848',
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:1,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '9857'
+        numeroVivienda: '9857',
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:2,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '4501'
+        numeroVivienda: '4501',
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:3,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio._20DeMarzo, 
-        numeroVivienda: '1047'
+        numeroVivienda: '1047',
+        manzano:'B',
+        numeroManzano:2,
+        nroLote:1,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.mendezFortaleza, 
-        numeroVivienda: '2508'
+        numeroVivienda: '2508',
+        manzano:'B',
+        numeroManzano:2,
+        nroLote:2,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.verdeOlivo, 
-        numeroVivienda: '2659'
+        numeroVivienda: '2659',
+        manzano:'B',
+        numeroManzano:2,
+        nroLote:3,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '5684'
+        numeroVivienda: '5684',
+        manzano:'C',
+        numeroManzano:1,
+        nroLote:1,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio._20DeMarzo, 
-        numeroVivienda: '4700'
+        numeroVivienda: '4700',
+        manzano:'C',
+        numeroManzano:1,
+        nroLote:2,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.primavera, 
-        numeroVivienda: '8754'
+        numeroVivienda: '8754',
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:3,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.mendezFortaleza, 
-        numeroVivienda: '2504'
+        numeroVivienda: '2504',
+        manzano:'C',
+        numeroManzano:2,
+        nroLote:1,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
     {
       ubicacion: { 
         barrio: Barrio.sanAntonio, 
-        numeroVivienda: '6678'
+        numeroVivienda: '6678',
+        manzano:'C',
+        numeroManzano:2,
+        nroLote:2,
       },
       estado: Estado.ACTIVO,
+      monto:1500,
+      moneda:Monedas.Bs,
     },
   ],
   usuarios: [
@@ -852,107 +939,159 @@ export const initialData: SeedData = {
     {
       fechaInstalacion: new Date(2012, 4, 23),
       ubicacion:{
-        barrio:Barrio._20DeMarzo
+        barrio:Barrio._20DeMarzo,
+        manzano:'A',
+        numeroManzano:1,
+        nroLote:1,
       },
       estadoMedidorAsociado:'uso',
     },
     {
       fechaInstalacion: new Date(2012, 8, 16),
       ubicacion:{
-        barrio:Barrio._20DeMarzo
+        barrio:Barrio._20DeMarzo,
+        manzano:'A',
+        numeroManzano:1,
+        nroLote:2,
       },
       estadoMedidorAsociado:'uso'
     },
     {
       fechaInstalacion: new Date(2015, 9, 9),
       ubicacion:{
-        barrio:Barrio.mendezFortaleza
+        barrio:Barrio.mendezFortaleza,
+        manzano:'A',
+        numeroManzano:1,
+        nroLote:3,
       },
       estadoMedidorAsociado:'uso'
     },
     {
       fechaInstalacion: new Date(2019, 5, 18),
       ubicacion:{
-        barrio:Barrio.sanAntonio
+        barrio:Barrio.sanAntonio,
+        manzano:'A',
+        numeroManzano:2,
+        nroLote:1,
       },
       estadoMedidorAsociado:'uso'
     },
     {
       fechaInstalacion: new Date(2018, 8, 8),
       ubicacion:{
-        barrio:Barrio.primavera
+        barrio:Barrio.primavera,
+        manzano:'A',
+        numeroManzano:2,
+        nroLote:2,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2014, 2, 24),
       ubicacion:{
-        barrio:Barrio.verdeOlivo
+        barrio:Barrio.verdeOlivo,
+        manzano:'A',
+        numeroManzano:2,
+        nroLote:3,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2019, 11, 11),
       ubicacion:{
-        barrio:Barrio.primavera
+        barrio:Barrio.primavera,
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:1,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2021, 2, 18),
       ubicacion:{
-        barrio:Barrio.mendezFortaleza
+        barrio:Barrio.mendezFortaleza,
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:2,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2020, 11, 11),
       ubicacion:{
-        barrio:Barrio.verdeOlivo
+        barrio:Barrio.verdeOlivo,
+        manzano:'B',
+        numeroManzano:1,
+        nroLote:3,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2022, 8, 9),
       ubicacion:{
-        barrio:Barrio.mendezFortaleza
+        barrio:Barrio.mendezFortaleza,
+        manzano:'B',
+        numeroManzano:2,
+        nroLote:1,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2020, 8, 9),
       ubicacion:{
-        barrio:Barrio.primavera
+        barrio:Barrio.primavera,
+        manzano:'B',
+        numeroManzano:2,
+        nroLote:2,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2019, 5, 5),
       ubicacion:{
-        barrio:Barrio.mendezFortaleza
+        barrio:Barrio.mendezFortaleza,
+        manzano:'B',
+        numeroManzano:2,
+        nroLote:3,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2020, 2, 9),
       ubicacion:{
-        barrio:Barrio._20DeMarzo
+        barrio:Barrio._20DeMarzo,
+        manzano:'C',
+        numeroManzano:1,
+        nroLote:1,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2020, 7, 2),
       ubicacion:{
-        barrio:Barrio.verdeOlivo
+        barrio:Barrio.verdeOlivo,
+        manzano:'C',
+        numeroManzano:1,
+        nroLote:2,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2019, 1, 2),
       ubicacion:{
-        barrio:Barrio.sanAntonio
+        barrio:Barrio.sanAntonio,
+        manzano:'C',
+        numeroManzano:1,
+        nroLote:3,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2020, 6, 6),
       ubicacion:{
-        barrio:Barrio.primavera
+        barrio:Barrio.primavera,
+        manzano:'C',
+        numeroManzano:2,
+        nroLote:1,
       },
       estadoMedidorAsociado:'uso'
     },{
       fechaInstalacion: new Date(2020, 4, 7),
       ubicacion:{
-        barrio:Barrio._20DeMarzo
+        barrio:Barrio._20DeMarzo,
+        manzano:'C',
+        numeroManzano:2,
+        nroLote:2,
+
       },
       estadoMedidorAsociado:'uso'
     }

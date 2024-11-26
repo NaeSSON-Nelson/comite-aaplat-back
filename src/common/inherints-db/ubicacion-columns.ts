@@ -8,6 +8,12 @@ export class Ubicacion {
     nullable: false,
   })
   barrio: Barrio;
+  @Column({type:'varchar',length:50,nullable:false})
+  manzano:string;
+  @Column({type:'integer',nullable:false})
+  numeroManzano:number;
+  @Column({type:'integer',nullable:false})
+  nroLote:number;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   numeroVivienda?: string;

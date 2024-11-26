@@ -127,6 +127,14 @@ export class MedidoresController {
   getAsociacionMedidor(@Param('id', ParseIntPipe) id:number){
     return this.medidoresService.getAsociacionDetails(id);
   }
+  @Get('export')
+  getexportMedidorAsociadosListFilter(){
+    return this.medidoresService.exportMedidorAsociadosListFilter();
+  }
+  @Get('manzanos')
+  getMazanosList(){
+    return this.medidoresService.findAllManzanos();
+  }
  
   @Get(':id')
   findMedidorById(@Param('id',ParseIntPipe) id:number){

@@ -130,9 +130,9 @@ export class Perfil extends ColumnsAlways {
     default:'https://res.cloudinary.com/dfdheljso/image/upload/v1725280951/default_client.jpg',
   })
   urlImage:string;
-  @OneToOne(() => Usuario, (usuario) => usuario.perfil) // specify inverse side as a second parameter
+  @OneToOne(() => Usuario, (usuario) => usuario.perfil,{cascade:['insert']}) // specify inverse side as a second parameter
   usuario: Usuario
-  @OneToOne(() => Afiliado, (afiliado) => afiliado.perfil) // specify inverse side as a second parameter
+  @OneToOne(() => Afiliado, (afiliado) => afiliado.perfil,{cascade:['insert']}) // specify inverse side as a second parameter
   afiliado: Afiliado
 
   

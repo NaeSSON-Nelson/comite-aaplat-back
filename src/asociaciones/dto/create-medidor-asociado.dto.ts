@@ -32,6 +32,14 @@ class UbicacionForm{
   barrio: Barrio;
 
   @IsString()
+  manzano:string;
+  @IsNumber()
+  @Min(1)
+  numeroManzano:number;
+  @Min(1)
+  nroLote:number;
+  
+  @IsString()
   @IsOptional()
   numeroVivienda?: string;
 

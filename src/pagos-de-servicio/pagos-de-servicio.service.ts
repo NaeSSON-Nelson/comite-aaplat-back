@@ -184,6 +184,7 @@ export class PagosDeServicioService {
         lecturasMultadas:true
       },
     })
+    console.log('mutlas de perfil',multasPerfil);
     const pagados: ComprobantePago[]=[];
     const updateComprobantesPagados :ComprobantePorPago[]=[];
     const planillasValidMultas:PlanillaLecturas[]=[];
@@ -217,18 +218,19 @@ export class PagosDeServicioService {
     const comprobanteMultas:ComprobanteDePagoDeMultas[]=[];
     
     for(const multa of multasPerfil){
+      let totalMultas:number=0;
       for(const gest of planillasValidMultas){
         for(const lctMult of multa.lecturasMultadas){
           console.log('lectura de multa:',lctMult);
           console.log('lectura de gestion:',gest.lecturas);
           const lt = gest.lecturas.find(res=>res.id===lctMult.id);
-          console.log(lt);
-          if(!lt){
-            console.log('MULTAN O INCLUIDA');
-            throw new BadRequestException(`NO SE ENVIARON TODAS LAS LECTURAS VINCULADAS A LA MULTA  N°${multa.id}`);
+          console.log('hay lecto lt:',lt);
+          if(lt){
+            totalMultas++;
           }
         }
       }
+      if(totalMultas !== multa.lecturasMultadas.length) throw new BadRequestException(`NO SE ENCUENTRAN TODAS LAS LECTURAS MULTADAS DE LA MULTA ENVIADA PARA PAGAR.`)
       const comprobanteMulta = queryRunner.manager.create(ComprobanteDePagoDeMultas,{
         fechaEmitida: new Date(),
         metodoPago:'PAGO POR CAJA - PRESENCIAL',
@@ -263,9 +265,9 @@ export class PagosDeServicioService {
       where: { id:idLectura},
       relations: { pagar:{comprobante:true} },
       select:{
-        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,
-        pagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,
-          comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,},
+        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,estado:true,medicion:true,
+        pagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,fechaLimitePago:true,motivo:true,pagado:true,
+          comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,moneda:true,},
         },
       }
     });
@@ -573,7 +575,7 @@ export class PagosDeServicioService {
   }
 
   async findPlanillasMultasById(comprobantesLecturasPagadas:ComprobantePago[],comprobantesMultas:ComprobanteDePagoDeMultas[]){
-    const planillas=await this.dataSource.getRepository(PlanillaLecturas).find({
+    const planillasPagadas=await this.dataSource.getRepository(PlanillaLecturas).find({
       select:{id:true,gestion:true,lecturas:{
         id:true,consumoTotal:true,lectura:true,estadoMedidor:true,medicion:true,PlanillaMesLecturar:true,
         pagar:{id:true,fechaPagada:true,moneda:true,monto:true,motivo:true,pagado:true,
@@ -614,7 +616,7 @@ export class PagosDeServicioService {
     });
     return{
       multasPagadas,
-      planillas
+      planillasPagadas
     }
   }
 }

@@ -47,4 +47,8 @@ export enum Medicion{
   ft3 = "ft3",
   mt3 = 'mt3',
 }
+export enum MetodoPago{
+  presencial='PRESENCIAL',
+  deposito='DEPOSITO',
+}
 

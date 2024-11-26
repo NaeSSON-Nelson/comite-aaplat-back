@@ -18,6 +18,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { fileFilter } from 'src/common/utilities/FileFilters';
 import { UploadProfileImage } from './dto/uploadPerfilImage.dto';
 import { QueryExportPerfil } from './querys/query-export-perfil';
+import { RegistrarPagoAfiliacionDepositoDto, RegistrarPagoAfiliacionPresencialDto } from './dto/registrar-pago-afiliacion.dto';
+import { UpdatePagoAfiliacionDto } from './dto/update-pago-afiliacion.dto';
 
 
 @Controller('perfiles')
@@ -64,6 +66,14 @@ export class PerfilController {
     return this.perfilService.createUsuario(id,createUsuarioDto);
   }
 
+  @Post('afiliado/pagar/presencial')
+  registrarPagoAfiliacionPresencial(@Body() registrarPago:RegistrarPagoAfiliacionPresencialDto){
+    return this.perfilService.registrarPagoAfiliacionPresencial(registrarPago);
+  }
+  @Post('afiliado/pagar/deposito')
+  registrarPagoAfiliacionDeposito(@Body() registrarPago:RegistrarPagoAfiliacionDepositoDto){
+    return this.perfilService.registrarPagoAfiliacionDeposito(registrarPago);
+  }
   @Get()
   @RoleProtected(ValidRole.admin,ValidRole.administrativo)
   @MenusProtected(ValidMenu.perfiles)
@@ -82,6 +92,11 @@ export class PerfilController {
   // @ItemMenuProtected(ValidItemMenu.usuarioDetails)
   findOnePerfilAfiliado(@Param('id',ParseIntPipe) id: number) {
     return this.perfilService.findOnePerfilAfiliado(id);
+  }
+
+  @Get('afiliado/pago/:id')
+  findPagoAfiliacionPerfil(@Param('id',ParseIntPipe) id: number){
+    return this.perfilService.findPagoAfiliacion(id);
   }
 
 
@@ -115,6 +130,10 @@ export class PerfilController {
   @Patch('afiliado/:id')
   updateAfiliado(@Param('id',ParseIntPipe) id: number, @Body() updateAfiliadoDto: UpdateAfiliadoDto){
     return this.perfilService.updateAfiliado(id,updateAfiliadoDto);
+  }
+  @Patch('afiliado/pago/:id')
+  updatePagarAfiliado(@Param('id',ParseIntPipe) id: number, @Body() updateAfiliadoPagarDto: UpdatePagoAfiliacionDto){
+    return this.perfilService.updatePagarAfiliado(id,updateAfiliadoPagarDto);
   }
 
   @Patch('usuario/:id')
