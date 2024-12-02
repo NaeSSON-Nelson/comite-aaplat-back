@@ -370,8 +370,9 @@ export class PerfilesService {
     const qb = await this.perfilRepository.findOne({
       where: { id },
       select:{
-        id:true,estado:true,accessAcount:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
-        afiliado:{id:true,estado:true,isActive:true,pagado:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
+        id:true,estado:true,accessAcount:true,apellidoPrimero:true,isAfiliado:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
+        afiliado:{id:true,estado:true,entidad:true,fechaPago:true,metodoPago:true,moneda:true,monedaRecibido:true,montoRecibido:true,monto:true,nroCuenta:true,nroRecibo:true,remitente:true,
+          isActive:true,pagado:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
         usuario:{id:true,estado:true,correo:true,username:true,correoVerify:true,roleToUsuario:{id:true,estado:true,role:{id:true,estado:true,nombre:true,nivel:true}},isActive:true,}
       },
       relations: { afiliado: true, usuario: {roleToUsuario:{role:true}} },
@@ -426,11 +427,11 @@ export class PerfilesService {
       },
       relations: { afiliado: true },
     });
-    if (!perfil)
-      throw new BadRequestException(`No hay perfil con ID${idPerfil}`);
+    if (!perfil) throw new NotFoundException(`No hay perfil con ID${idPerfil}`);
+    // if(!perfil.afiliado) throw new BadRequestException(`El perfil no tiene afiliación`);
     return {
       OK: true,
-      message: 'perfil con afiliado',
+      message: 'perfil encontrado',
       data: perfil,
     };
   }
@@ -439,11 +440,12 @@ export class PerfilesService {
       where: { id: idPerfil },
       relations: { usuario: { roleToUsuario: { role: true } } },
     });
-    if (!perfil)
-      throw new BadRequestException(`No hay perfil con ID${idPerfil}`);
+    if (!perfil) throw new NotFoundException(`No hay perfil con ID${idPerfil}`);
+    if (perfil.usuario){
+      console.log('usuario',perfil.usuario);
     const { usuario, ...dataPerfil } = perfil;
-    if(usuario){
       const { roleToUsuario, ...dataUsuario } = usuario;
+      console.log(roleToUsuario);
       return {
         OK: true,
         message: 'perfil con usuario',
@@ -453,16 +455,16 @@ export class PerfilesService {
             ...dataUsuario,
             roles: roleToUsuario.map((toUsuario) => {
               // console.log(toUsuario);
+              // const {id,nivel,nombre,} = toUsuario.role;
               return toUsuario.role;
             }),
           },
         },
-        // data:perfil
-      };
+      }
     }else{
-      return {
+      return{
         OK:true,
-        message:'perfil con usuario',
+        message:'perfil sin usuario',
         data:perfil
       }
     }
@@ -499,29 +501,18 @@ export class PerfilesService {
         'to_menu',
         'menus.id = to_menu.menuId',
       )
-      .innerJoinAndSelect(
-        'to_menu.itemMenu',
-        'items',
-        'items.id = to_menu.itemMenuId',
-      )
+      // .innerJoinAndSelect(
+      //   'to_menu.itemMenu',
+      //   'items',
+      //   'items.id = to_menu.itemMenuId',
+      // )
       .where('user.id= :idUsuario', { idUsuario: usuario.id })
       .getOne();
-    const resultMap = roleToUsuario.map((toUsuario) =>
-      toUsuario.role.menuToRole.map((toRole) =>
-        toRole.menu.itemMenu.map((toMenu) => toMenu.itemMenu),
-      ),
-    );
-    for (const res of resultMap) {
-      for (const res2 of res) {
-        for (const item of res2) {
-          if (items.includes(item.linkMenu)) return item;
-        }
-      }
-    }
+    
     return null;
   }
   //TODO: UPDATE USUARIO DEBE SER PARA EL PERFIL DE USUARIO
-  async updateProfile(id: number, updatePerfilDto: UpdatePerfilDto) {
+  async updatePerfil(id: number, updatePerfilDto: UpdatePerfilDto) {
     const { estado, usuarioForm, afiliadoForm, ...dataPerfilUpdate } =
       updatePerfilDto;
     const perfilUpdate = await this.perfilRepository.preload({
@@ -695,7 +686,7 @@ export class PerfilesService {
     const perfil = await this.perfilRepository.preload({
       id,
       estado,
-      isActive: estado === Estado.DESHABILITADO ? false : true,
+      isActive: estado === Estado.ACTIVO ? true : false,
     });
     if (!perfil)
       throw new NotFoundException(`perfil con id ${id} no encontrado`);
@@ -722,12 +713,11 @@ export class PerfilesService {
       throw new BadRequestException(
         `El perfil ${id} no tiene asignado un usuario`,
       );
-      console.log('updateUsuariDto',updateUsuarioDto);
     const { estado } = updateUsuarioDto;
     const usuarioPreload = await this.usuarioRepository.preload({
       id: perfil.usuario.id,
       estado,
-      isActive: estado === Estado.DESHABILITADO ? false : true,
+      isActive: estado === Estado.ACTIVO ? true : false,
     });
     try {
       await this.usuarioRepository.save(usuarioPreload);
@@ -757,7 +747,7 @@ export class PerfilesService {
     const perfilPreload = await this.usuarioRepository.preload({
       id: perfil.afiliado.id,
       estado,
-      isActive: estado === Estado.DESHABILITADO ? false : true,
+      isActive: estado === Estado.ACTIVO ? true : false,
     });
     try {
       await this.perfilRepository.update(id,{isAfiliado:estado === Estado.DESHABILITADO ? false : true})
@@ -787,134 +777,9 @@ export class PerfilesService {
 
   //USER AFILIADO
 
-  async medidoresAfiliadoInSelect(user:Usuario){
-    // console.log(user);
-    const perfil = await this.dataSource.getRepository(Perfil).findOne(
-      {where:{ usuario:{id:user.id,isActive:true},isActive:true,afiliado:{isActive:true}},
-      select:{usuario:{id:true,isActive:true},isActive:true,id:true,afiliado:{isActive:true,id:true,medidorAsociado:{id:true,isActive:true,medidor:{id:true,nroMedidor:true,}}}},
-      relations:{usuario:true,afiliado:{medidorAsociado:{medidor:true}},}
-    })
-    return {
-      OK:true,
-      message:'medidores Asociados seleccionados',
-      data:perfil.afiliado.medidorAsociado}
-  }
-  async medidorAfiliadoDetails(user:Usuario,nroMedidor:string){
-    const medidorAsc = await this.dataSource.getRepository(MedidorAsociado).findOne(
-      {
-        where:{
-            afiliado:{
-              perfil:{
-                usuario:{id:user.id,isActive:true},
-                // isActive:true
-              },
-              // isActive:true
-            },
-          medidor:{
-            nroMedidor
-          }
-        },
-        select:{
-          medidor:{
-            estado:true,id:true,
-            marca:true,
-            nroMedidor:true,
-          },
-            fechaInstalacion:true,
-            isActive:true,
-            estado:true,
-            estadoMedidorAsociado:true,
-            id:true,
-            lecturaInicial:true,
-            ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},
-            lecturaSeguimiento:true,
-            planillas:{id:true,gestion:true,isActive:true,estado:true,registrable:true,},
-            afiliado:{id:true,isActive:true,
-              perfil:{id:true,isActive:true,
-                usuario:{id:true,isActive:true}}
-              },
-          
-          },
-        relations:{afiliado:{perfil:{usuario:true}},planillas:true,medidor:true,}
-      })
-      if(!medidorAsc) throw new BadRequestException(`No se encontro ningun medidor con el Nro. ${nroMedidor} relacionado al usuario`)
-      const {afiliado,...dataAsc} = medidorAsc;
-      return {
-        OK:true,
-        message:'Medidor asociado encontrado',
-        data:dataAsc
-      }
-  }
-  async profileUser(user:Usuario){
-    const perfil = await this.perfilRepository.findOne({
-      where:{
-        usuario:{id:user.id,isActive:true},
-        isActive:true,
-      },
-      select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
-        usuario:{id:true,correo:true,username:true,roleToUsuario:{id:true,role:{nombre:true,id:true}},correoVerify:true,},
-        afiliado:{id:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true},}
-      },
-      relations:{usuario:{roleToUsuario:{role:true}},afiliado:true}
-    });
-    // const {usuario,...dataPerfil} = perfil;
-    const usuario = perfil.usuario;
-    const {roleToUsuario,...dataUsuario}=usuario;
-    return{
-      OK:true,
-      message:'perfil de usuario',
-      data:{
-        ...perfil,
-        usuario:{
-          roles:roleToUsuario.map(toUsuario=>toUsuario.role.nombre),
-          ...dataUsuario,
-        }
-      }
-    }
-  }
-  async obtenerComprobantesPorPagar(user:Usuario,nroMedidor:string){
-    const perfil = await this.dataSource.getRepository(Perfil).findOne({
-      where:{usuario:{id:user.id},afiliado:{medidorAsociado:{medidor:{nroMedidor}}}},
-      select:{id:true,isActive:true,
-        usuario:{id:true,isActive:true},
-        afiliado:{id:true,isActive:true,
-          medidorAsociado:{
-            medidor:{id:true,isActive:true,nroMedidor:true},
-            planillas:{id:true,isActive:true,gestion:true,
-              lecturas:{id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,consumoTotal:true,created_at:true,
-                pagar:{id:true,created_at:true,pagado:true,moneda:true,monto:true,motivo:true,estado:true,estadoComprobate:true,
-                  }}}
-                }},
-
-          },
-      relations:{usuario:true,afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:{pagar:true}}}}}
-    })
-    if(!perfil) throw new BadRequestException(`No se encontro datos de medidor con Numero: ${nroMedidor}`)
-    const medidorRes = Object.assign({},perfil.afiliado.medidorAsociado[0]);
-    medidorRes.planillas=Object.assign({},perfil.afiliado.medidorAsociado[0].planillas);
-    medidorRes.planillas=[];
-    for(const planilla of perfil.afiliado.medidorAsociado[0].planillas){
-      for(const lectura of planilla.lecturas){
-        if(lectura.pagar){
-          if(!lectura.pagar.pagado){
-            const planillita = medidorRes.planillas.find(pl=>pl.gestion===planilla.gestion);
-            if(!planillita) {
-              const {lecturas,...resPlanilla}=planilla;
-              medidorRes.planillas.push({...resPlanilla,lecturas:[]})
-            }
-            
-              medidorRes.planillas.find(plan=>plan.gestion === planilla.gestion).lecturas.push(lectura)
-            
-          }
-        }
-      }
-    }
-    return {
-      OK:true,
-      message:'resultado de dudas',
-      data:medidorRes
-    };
-  }
+  
+  
+ 
   async lecturasPlanilla(id:number){
     const planilla = await this.dataSource.getRepository(PlanillaLecturas).findOne({
     where:{
@@ -960,8 +825,9 @@ export class PerfilesService {
     const data = await this.perfilRepository.findOne({
       where:{id:perfilId},
       select:{
-        id:true,estado:true,accessAcount:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
-        afiliado:{id:true,estado:true,isActive:true,pagado:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
+        id:true,estado:true,accessAcount:true,apellidoPrimero:true,isAfiliado:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
+        afiliado:{id:true,estado:true,entidad:true,fechaPago:true,metodoPago:true,moneda:true,monedaRecibido:true,montoRecibido:true,monto:true,nroCuenta:true,nroRecibo:true,remitente:true,
+          isActive:true,pagado:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
         usuario:{id:true,estado:true,correo:true,username:true,correoVerify:true,roleToUsuario:{id:true,estado:true,role:{id:true,estado:true,nombre:true,nivel:true}},isActive:true,}
       },
       relations:{afiliado:true,usuario:true},

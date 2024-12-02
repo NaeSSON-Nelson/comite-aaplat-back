@@ -4,7 +4,6 @@ import { SeedsController } from './seeds.controller';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { ItemsMenuModule } from '../manager/menus/items-menu/items-menu.module';
-import { ItemsToMenuModule } from '../manager/menus/items-to-menu/items-to-menu.module';
 import { MenusModule } from '../manager/menus/menus/menus.module';
 import { MenuToRoleModule } from '../manager/roles/menu-to-role/menu-to-role.module';
 
@@ -20,7 +19,6 @@ import { AsociacionesModule } from 'src/asociaciones/asociaciones.module';
   imports:[
     AuthModule,
     ItemsMenuModule,
-    ItemsToMenuModule,
     MenusModule,
     MenuToRoleModule,
     RolesModule,

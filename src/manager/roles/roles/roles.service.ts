@@ -15,6 +15,7 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Usuario } from 'src/auth/modules/usuarios/entities';
 import { Estado } from 'src/interfaces/enum/enum-entityes';
+import { Menu } from 'src/manager/menus/menus/entities/menu.entity';
 
 @Injectable()
 export class RolesService {
@@ -65,9 +66,11 @@ export class RolesService {
 
   async findAll(paginationDto:PaginationDto,usuario:Usuario) {
     const nivel = usuario.roleToUsuario.map(rol=>rol.role.nivel);
+    const maxNivel = Math.max(...nivel)
     const { offset = 0, limit = 5, order = 'ASC', q = '' } = paginationDto;
     const { '0': data, '1': size } = await this.roleRepository.findAndCount({
-      where: [{ nombre: Like(`%${q}%`),nivel:LessThan(In(nivel)) }],
+      where: [{ nombre: Like(`%${q}%`),nivel:LessThan(maxNivel) }],
+      select:{id:true,estado:true,isActive:true,nombre:true,},
       skip: offset,
       take: limit,
       order: {
@@ -90,7 +93,7 @@ export class RolesService {
   async findOneByName(term:string){
     const role = await this.roleRepository.findOne({
       where: { nombre:term },
-      select:{nombre:true,id:true}
+      select:{nombre:true,id:true,isActive:true,estado:true}
     });
     return {
       OK: true,
@@ -98,9 +101,9 @@ export class RolesService {
       data: role,
     };
   }
-  async findOne(id: number) {
-    const role = await this.roleRepository.findOneBy({ id });
-    if (!role) throw new NotFoundException(`Role width id: ${id}`);
+  async findOne(id: number) { // rol con menus y sub items
+    const roleExist = await this.roleRepository.exist({ where:{id} });
+    if (!roleExist) throw new NotFoundException(`Role width id: ${id}`);
 
     return {
       OK: true,
@@ -111,27 +114,16 @@ export class RolesService {
   async findOneRoleWithMenus(id: number) {
     const roles= await this.roleRepository.findOne({
       where: { id },
-      relations: { menuToRole: { menu: {itemMenu:{itemMenu:true}} } },
+      relations: { menuToRole: { menu: {itemMenu:true} } },
       // select:{nombre:true,menuToRole:true}
     });
     if(!roles) throw new NotFoundException('rol no encontrado')
-     const menus = roles.menuToRole.map(to=>to.menu);
-     const result = menus.map(({itemMenu,menu,...dataMenu})=>{
-      return{
-        ...dataMenu,
-        itemsMenu:itemMenu.map(({itemMenu})=>{
-          return {
-            ...itemMenu
-          }
-        })
-      }
-     })
-     console.log(result);
+     
       
     return {
       OK:true,
       message:'listado de menus',
-      data:result
+      data:roles
     }
   }
 
@@ -200,12 +192,35 @@ export class RolesService {
     const { roleToUsuario, menuToRole, ...data } =
       await this.roleRepository.findOne({
         where: { id },
-        relations: { menuToRole: { menu: true } },
+        select:{
+          id:true,isActive:true,estado:true,nombre:true,nivel:true,
+          menuToRole:{id:true,isActive:true,estado:true,
+            menu:{id:true,estado:true,isActive:true,linkMenu:true,nombre:true,
+              itemMenu:{id:true,isActive:true,estado:true,linkMenu:true,nombre:true,visible:true}}
+          }
+        },
+        relations: { menuToRole: { menu: {itemMenu:true}} },
       });
-
     return {
       ...data,
       menus: menuToRole.map((item) => item.menu),
     };
+  }
+
+  async getMenusForForm(){
+  const menus = await this.dataSource.getRepository(Menu).find({
+    relations:{
+      itemMenu:true
+    },
+    select:{
+      id:true,isActive:true,estado:true,nombre:true,
+      itemMenu:{id:true,estado:true,isActive:true,nombre:true}
+    }
+  });
+  return {
+    OK:true,
+    message:'Menus para asignacion a rol de acceso',
+    data:menus
+  }   
   }
 }

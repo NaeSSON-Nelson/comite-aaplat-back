@@ -10,7 +10,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Menu } from './entities/menu.entity';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CommonService } from '../../../common/common.service';
-import { ItemToMenu } from '../items-to-menu/entities/item-to-menu.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Estado } from 'src/interfaces/enum/enum-entityes';
 
@@ -19,94 +18,90 @@ export class MenusService {
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
-    @InjectRepository(ItemToMenu)
-    private readonly itemToMenuRepository: Repository<ItemToMenu>,
     private readonly dataSource: DataSource,
     private readonly commonService: CommonService,
   ) {}
 
-  async createMenu(createMenuDto: CreateMenuDto) {
-    const { itemsMenu: idsItemsMenu, ...dataMenu } = createMenuDto;
-    const queryRunner = this.dataSource.createQueryRunner();
-    const menu = this.menuRepository.create({...dataMenu});
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      await queryRunner.manager.save(menu);
-      if (idsItemsMenu && idsItemsMenu.length > 0) {
-        const themItemsMenu = idsItemsMenu.map((itm) =>
-          this.itemToMenuRepository.create({
-            menuId: menu.id,
-            ...itm,
-          }),
-        );
+  // async createMenu(createMenuDto: CreateMenuDto) {
+  //   const { itemsMenu: idsItemsMenu, ...dataMenu } = createMenuDto;
+  //   const queryRunner = this.dataSource.createQueryRunner();
+  //   const menu = this.menuRepository.create({...dataMenu});
+  //   await queryRunner.connect();
+  //   await queryRunner.startTransaction();
+  //   try {
+  //     await queryRunner.manager.save(menu);
+  //     if (idsItemsMenu && idsItemsMenu.length > 0) {
+  //       const themItemsMenu = idsItemsMenu.map((itm) =>
+  //         this.itemToMenuRepository.create({
+  //           menuId: menu.id,
+  //           ...itm,
+  //         }),
+  //       );
 
-        await queryRunner.manager.save(themItemsMenu);
-      }
-      await queryRunner.commitTransaction();
-      // console.log(menu);
-      return {
-        OK: true,
-        message: 'menu creado con exito',
-        data: {
-          menu,
-        },
-      };
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      this.commonService.handbleDbErrors(error);
-    } finally {
-      await queryRunner.release();
-    }
-  }
+  //       await queryRunner.manager.save(themItemsMenu);
+  //     }
+  //     await queryRunner.commitTransaction();
+  //     // console.log(menu);
+  //     return {
+  //       OK: true,
+  //       message: 'menu creado con exito',
+  //       data: {
+  //         menu,
+  //       },
+  //     };
+  //   } catch (error) {
+  //     await queryRunner.rollbackTransaction();
+  //     this.commonService.handbleDbErrors(error);
+  //   } finally {
+  //     await queryRunner.release();
+  //   }
+  // }
 
   //TODO: MEJORAR ASIGNAR ITEMS AL MENU
-  async updateMenu(idMenu: number, updateMenuDto: UpdateMenuDto) {
-    const { itemsMenu, estado, ...dataMenu } = updateMenuDto;
-    const menu = await this.menuRepository.preload({ id: idMenu, ...dataMenu });
+  // async updateMenu(idMenu: number, updateMenuDto: UpdateMenuDto) {
+  //   const { itemsMenu, estado, ...dataMenu } = updateMenuDto;
+  //   const menu = await this.menuRepository.preload({ id: idMenu, ...dataMenu });
 
-    if (!menu)
-      throw new NotFoundException(`El menu con Id: ${idMenu} no existe`);
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+  //   if (!menu)
+  //     throw new NotFoundException(`El menu con Id: ${idMenu} no existe`);
+  //   const queryRunner = this.dataSource.createQueryRunner();
+  //   await queryRunner.connect();
+  //   await queryRunner.startTransaction();
 
-    if (itemsMenu) {
-      if (itemsMenu.length === 0)
-        throw new BadRequestException('No contiene ningun item para asignar');
+  //   if (itemsMenu) {
+  //     if (itemsMenu.length === 0)
+  //       throw new BadRequestException('No contiene ningun item para asignar');
 
-      await queryRunner.manager.delete(ItemToMenu, { menu: { id: menu.id } });
+  //     await queryRunner.manager.delete(ItemToMenu, { menu: { id: menu.id } });
 
-      const thems = itemsMenu.map((itm) =>
-        this.itemToMenuRepository.create({
-          menuId: menu.id,
-          ...itm
-        }),
-      );
+  //     const thems = itemsMenu.map((itm) =>
+  //       this.itemToMenuRepository.create({
+  //         menuId: menu.id,
+  //         ...itm
+  //       }),
+  //     );
 
-      await queryRunner.manager.save(thems);
-      // menu.itemMenu=thems;
-    }
-    try {
-      await queryRunner.manager.save(menu);
-      await queryRunner.commitTransaction();
-      return {
-        OK: true,
-        message: 'Items menu asignados correctamente',
-        data: this.findOnePlaneMenu(menu.id),
-      };
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      this.commonService.handbleDbErrors(error);
-    } finally {
-      await queryRunner.release();
-    }
-  }
+  //     await queryRunner.manager.save(thems);
+  //     // menu.itemMenu=thems;
+  //   }
+  //   try {
+  //     await queryRunner.manager.save(menu);
+  //     await queryRunner.commitTransaction();
+  //     return {
+  //       OK: true,
+  //       message: 'Items menu asignados correctamente',
+  //       data: this.findOnePlaneMenu(menu.id),
+  //     };
+  //   } catch (error) {
+  //     await queryRunner.rollbackTransaction();
+  //     this.commonService.handbleDbErrors(error);
+  //   } finally {
+  //     await queryRunner.release();
+  //   }
+  // }
 
-  async findAll(paginationDto: PaginationDto) {
-    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
-    const { '0': data, '1': size } = await this.menuRepository.findAndCount({
-      where: [{ nombre: Like(`%${q}%`) }],
+  async findAll() {
+    const data = await this.menuRepository.find({
       relations:{
         itemMenu:true,
       },
@@ -118,24 +113,21 @@ export class MenusService {
         isActive:true,
         itemMenu:{
           id:true,
+          isActive:true,
+          linkMenu:true,
+          nombre:true,
+          estado:true,
+          visible:true,
         }
       },
-      skip: offset,
-      take: limit,
       order: {
-        id: order,
+        id: 'ASC',
       },
     });
     return {
       OK: true,
-      message: 'Listado de Menus',
-      data: {
-        data,
-        size,
-        offset,
-        limit,
-        order,
-      },
+      message: 'Listado de los menús y sus funciones',
+      data
     };
   }
 
@@ -144,11 +136,10 @@ export class MenusService {
       where: { id },
       select:{id:true,isActive:true,estado:true,linkMenu:true,nombre:true,
         itemMenu:{
-          id:true,isActive:true,estado:true,nombre:true,visible:true,
-          itemMenu:{id:true,linkMenu:true,estado:true,isActive:true}
+          id:true,isActive:true,estado:true,linkMenu:true,nombre:true,visible:true
         }
       },
-      relations: { itemMenu: { itemMenu: true } },
+      relations: { itemMenu:true},
     });
     if (!menu) throw new NotFoundException(`Menu not found with Id:${id}`);
     return {
@@ -195,11 +186,10 @@ export class MenusService {
       where: { id },
       select:{id:true,isActive:true,estado:true,linkMenu:true,nombre:true,
         itemMenu:{
-          id:true,isActive:true,estado:true,nombre:true,visible:true,
-          itemMenu:{id:true,linkMenu:true,estado:true,isActive:true}
+          id:true,isActive:true,estado:true,linkMenu:true,nombre:true,visible:true
         }
       },
-      relations: { itemMenu: { itemMenu: true } },
+      relations: { itemMenu:true},
     });
     return {
       ...data,

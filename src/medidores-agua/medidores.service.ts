@@ -15,10 +15,9 @@ import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Perfil } from 'src/auth/modules/usuarios/entities';
 import { Barrio, Estado, Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
-import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
 import { PlanillaLecturas } from './entities/planilla-lecturas.entity';
 import { PlanillaMesLectura } from './entities/planilla-mes-lectura.entity';
-import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
+import { UpdatePlanillaMedidorDto } from '../asociaciones/dto/update-planilla-medidor.dto';
 import { registerAllLecturasDto } from './dto/register-all-lecturas.dto';
 import { AnioSeguimientoLectura } from './entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from './entities/mes-seguimiento-registro-lectura.entity';
@@ -124,23 +123,6 @@ export class MedidoresService {
     };
   }
 
-  async findAllMedidorOneAfiliado(id: number) {
-   
-    const afiliadoWithMedidores = await this.perfilRepository.findOne({
-      relations: { afiliado: { medidorAsociado: {medidor:true} } },
-      // select: {},
-      where: { id },
-    });
-    if (!afiliadoWithMedidores)
-      throw new NotFoundException(
-        `Perfil de afiliado with Id: ${id} not found`,
-      );
-    return {
-      OK: true,
-      message: 'lista de medidores de afiliado',
-      data: afiliadoWithMedidores,
-    };
-  }
   async findMedidorById(id:number){
     const medidor = await this.medidorRepository.findOne({
       where:[
@@ -207,7 +189,7 @@ export class MedidoresService {
     });
     if (!medidor)
       throw new NotFoundException(`Medidor with id ${id} not found`);
-    if(estado){
+    if(estado === Estado.ACTIVO){
       medidor.isActive=true;
     }else{
       for(const asc of medidor.medidorAsociado){
@@ -216,15 +198,31 @@ export class MedidoresService {
       medidor.isActive=false;
     }
     try {
-      await this.medidorRepository.save(medidor);
+      medidor.estado=estado;
+      await this.medidorRepository.update(medidor.id,{isActive:medidor.isActive,estado});
       return {
         OK: true,
         message: `estado del medidor cambiado`,
-        data: medidor,
+        data: await this.findMedidorAsociacionesPlane(medidor.id) ,
       };
     } catch (error) {
       this.commonService.handbleDbErrors(error);
     }
+  }
+  private async findMedidorAsociacionesPlane(idMedidor:number){
+    const medidor = await this.medidorRepository.findOne({
+      where:{id:idMedidor},
+      select:{
+        id:true,isActive:true,estado:true,funcionamiento:true,lecturaInicial:true,lecturaMedidor:true,marca:true,medicion:true,nroMedidor:true,
+        medidorAsociado:{
+          id:true,isActive:true,estado:true,estadoMedidorAsociado:true,
+        }
+      },
+      relations:{
+        medidorAsociado:true
+      }
+    });
+    return medidor;
   }
   async   findMedidores(query:PaginationDto){
 
@@ -267,92 +265,6 @@ export class MedidoresService {
     };
   }
 
-  //TODO: PLANILLAS DE REGISTROS DE LECTURAS DE MEDIDOR
-  async createPlanillaMedidor(
-    createPlanillaMedidorDto: CreatePlanillaMedidorDto,
-  ) {
-    const { medidor, gestion, ...dataPlanilla } = createPlanillaMedidorDto;
-
-    const medidorDb = await this.dataSource.getRepository(MedidorAsociado).findOne({
-      where: { id: medidor.id },
-      relations: { planillas: true,medidor:true },
-    });
-
-    if (!medidorDb)
-      throw new BadRequestException(
-        `Medidor de agua width id: ${createPlanillaMedidorDto.medidor.id} not found`,
-      );
-    if (medidorDb.planillas.find((reg) => reg.gestion === gestion))
-      throw new BadRequestException(
-        `Ya existe la gestion ${gestion} registrada para el asociado de id ${medidor.id} con numero:${medidorDb.medidor.nroMedidor}`,
-      );
-
-    const planilla = this.planillasMedidoresRepository.create({
-      ...dataPlanilla,
-      gestion,
-      medidor: medidorDb,
-    });
-    try {
-      await this.planillasMedidoresRepository.save(planilla);
-      return {
-        OK: true,
-        message: 'Planilla de medidor asociado regitrada',
-        data: planilla,
-      };
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-  }
-  async updatePlanillaMedidor(
-    idPlanilla: number,
-    updatePlanillaMedidorDto: UpdatePlanillaMedidorDto,
-  ) {
-    const { medidor, gestion, ...dataPlanilla } = updatePlanillaMedidorDto;
-    const planilla = await this.planillasMedidoresRepository.preload({
-      id: idPlanilla,
-      ...dataPlanilla,
-    });
-    if (!planilla)
-      throw new BadRequestException(
-        `Planilla con id ${idPlanilla} no encontrada`,
-      );
-
-    try {
-      await this.planillasMedidoresRepository.save(planilla);
-      return {
-        OK: true,
-        message: 'planilla actualizada',
-        data: planilla,
-      };
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-  }
-  async updateStatusPlanillaMedidor(
-    idPlanilla: number,
-    updatePlanillaMedidorDto: UpdatePlanillaMedidorDto,
-  ) {
-    const { estado } = updatePlanillaMedidorDto;
-    const planilla = await this.planillasMedidoresRepository.preload({
-      id: idPlanilla,
-      estado,
-    });
-    if (!planilla)
-      throw new BadRequestException(
-        `Planilla con id ${idPlanilla} no encontrada`,
-      );
-
-    try {
-      await this.planillasMedidoresRepository.save(planilla);
-      return {
-        OK: true,
-        message: 'estado de planilla actualizada',
-        data: planilla,
-      };
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-  }
   async findAllPlanillasWidthMedidores() {
     const qb = this.medidorRepository.createQueryBuilder('medidor');
     const { '0': data, '1': size } = await qb

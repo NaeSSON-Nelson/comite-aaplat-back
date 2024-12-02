@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ComprobanteDePagoDeMultas, ComprobantePago, ComprobantePorPago, MultaServicio } from './entities';
-import { DataSource, FindOptionsWhere, ILike, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
+import { DataSource, FindOptionsOrder, FindOptionsWhere, ILike, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository, OrderByCondition } from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
@@ -356,7 +356,7 @@ export class PagosDeServicioService {
   //   };
   // }
   async findAllPefiles(paginationDto: SearchPerfil) {
-    const { offset = 0, limit = 10, order = 'ASC', q = '' } = paginationDto;
+    const { offset = 0, limit = 10, order = 'ASC', q = '',sort } = paginationDto;
     const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
     let arg =[''];
     if(q.length>0){
@@ -364,6 +364,13 @@ export class PagosDeServicioService {
     }
     if(arg.length===0) arg=[''];
     
+    let orderOption:OrderByCondition={'perfil.id':order};
+    if((sort!== null || sort !==undefined) && sort !=='id'){
+      if(sort==='nombres') orderOption={'perfil.nombre_primero':order};
+      if(sort ==='apellidos') orderOption={'perfil.apellido_primero':order}
+      else if (sort ==='ci') orderOption={'perfil.cedula_identidad':order};
+      else if (sort ==='estado') orderOption={'perfil.estado':order};
+    }
     // console.log(arg);
     const finders:FindOptionsWhere<Perfil>[] = [];
     for(const data of arg){
@@ -388,13 +395,25 @@ export class PagosDeServicioService {
       .orWhere(finders)
       .offset(offset)
       .limit(limit)
-      .orderBy('perfil.id', 'ASC')
+      .orderBy(orderOption)
       .getManyAndCount();
     return {
       OK: true,
       message: 'listado de afiliados con medidores asignados',
       data: {
-        data,
+        data:data.map(perfil=>{
+          const {CI,nombrePrimero, nombreSegundo,apellidoPrimero,apellidoSegundo,contacto,estado,id,isActive,
+
+          }=perfil;
+          return{
+            CI,nombrePrimero, nombreSegundo,apellidoPrimero,apellidoSegundo,contacto,estado,id,isActive,
+            afiliado:{
+              id:perfil.afiliado.id,
+              estado:perfil.afiliado.estado,
+              isActive:perfil.afiliado.isActive,
+            }            
+          }
+        }),
         size,
         offset,
         limit,
@@ -480,8 +499,9 @@ export class PagosDeServicioService {
         },
         relations:{afiliado:{medidorAsociado:{medidor:true}}}
       })
-    if(!perfil.isActive) throw new BadRequestException(`This perfil isn't activated, please select another perfil or contact  the administrator`)
+    // if(!perfil.isActive) throw new BadRequestException(`This perfil isn't activated, please select another perfil or contact  the administrator`)
     if(!perfil.afiliado) throw new BadRequestException(`This perfil is'nt afiliado,`)
+    // if(!perfil.afiliado.medidorAsociado.length===0) throw new BadRequestException(`This perfil is'nt afiliado,`)
     return {
       OK:true,
       message:'perfil con medidores',

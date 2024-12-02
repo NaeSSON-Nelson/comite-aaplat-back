@@ -5,19 +5,20 @@ import { META_ROLES } from '../decorators/valid-protected.decorator';
 import { PerfilesService } from '../modules/usuarios/perfiles.service';
 import { Usuario } from '../modules/usuarios/entities';
 import { ValidRole } from 'src/interfaces/valid-auth.enum';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class UserRoleGuard implements CanActivate {
   
   constructor(
     private readonly reflector:Reflector,
-    private readonly perfilService:PerfilesService
+    private readonly dataSource:DataSource,
   ){}
    async canActivate(
     context: ExecutionContext,
   ): Promise<boolean> {
     const validRoles:string[] = this.reflector.get(META_ROLES,context.getHandler());
-    // console.log(validRoles);
+   
     if(!validRoles) return true;
     if(validRoles.length===0) return true;
 
@@ -26,7 +27,7 @@ export class UserRoleGuard implements CanActivate {
     // console.log(req);
     const usuario = req.user as Usuario;
 
-    // console.log(usuario);
+    // console.log('usuario',usuario);
     if(!usuario) throw new BadRequestException(`Usuario not found`);
     // const {roles}= await this.usuarioService.findOnePlaneUsuario(usuario.id);
     const roles = usuario.roleToUsuario.map(toUsuario=>{
@@ -37,7 +38,7 @@ export class UserRoleGuard implements CanActivate {
     for(const nombre of roles){
       if(validRoles.includes(nombre) ) return true;
     }
-    throw new ForbiddenException(`User ${usuario.username} not has access`);
+    throw new ForbiddenException(`User ${usuario.username} no tiene acceso al modulo`);
   
   }
 }

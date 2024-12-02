@@ -1,6 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { Ubicacion } from 'src/common/inherints-db';
 import { Barrio, Estado, Medicion, Mes, Monedas, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { ValidItemMenu, ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 
 class PerfilSeed {
   nombrePrimero: string;
@@ -30,11 +31,15 @@ class UsuarioSeed {
 class MenuSeed {
   nombre: string;
   linkMenu: string;
+  prioridad:number;
   estado?: Estado;
+  items:MenuItemSeed[];
 }
 class MenuItemSeed {
+  nombre:string;
   linkMenu: string;
   estado?: Estado;
+  visible:boolean;
 }
 // class ItemToMenuSeed{
 //   itemMenuId:
@@ -82,7 +87,7 @@ class SeedData {
   perfiles: PerfilSeed[];
   afiliados: AfiliadoSeed[];
   menus: MenuSeed[];
-  itemsMenu: MenuItemSeed[];
+  // itemsMenu: MenuItemSeed[];
   roles: RoleSeed[];
   usuarios: UsuarioSeed[];
   planillas:PlanillaLecturasSeed[]
@@ -106,13 +111,13 @@ export const initialData: SeedData = {
       nombrePrimero: 'Juan',
       nombreSegundo: 'Robles',
       apellidoPrimero: 'Armadillo',
-      apellidoSegundo: 'Second',
+      apellidoSegundo: 'Segundo',
       CI: '5425762',
       estado: Estado.ACTIVO,
       fechaNacimiento: new Date(1995, 2, 24),
       genero: 'MASCULINO',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.administrativo,TipoPerfil.usuario],
+      tipoPerfil: [TipoPerfil.administrativo,TipoPerfil.usuario,TipoPerfil.administrativo],
     },
     {
       nombrePrimero: 'Arturo',
@@ -123,7 +128,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1987, 8, 10),
       genero: 'MASCULINO',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.secretaria],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Franz',
@@ -134,7 +139,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1990, 6, 10),
       genero: 'MASCULINO',
       profesion: 'Ingenieria Electrica',
-      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.secretaria],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Gwato',
@@ -144,7 +149,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1998, 7, 24),
       genero: 'MASCULINO',
       profesion: 'Contaduria',
-      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Luis',
@@ -156,7 +161,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1995, 1, 18),
       genero: 'MASCULINO',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Rosa',
@@ -167,7 +172,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1974, 8, 19),
       genero: 'MASCULINO',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Victor',
@@ -178,7 +183,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1992, 10, 17),
       genero: 'MASCULINO',
       profesion: 'comerciante',
-      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario,TipoPerfil.lecturador],
+      tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
     },
     {
       nombrePrimero: 'Ricardo',
@@ -324,7 +329,7 @@ export const initialData: SeedData = {
       fechaNacimiento: new Date(1997, 5, 2),
       genero: 'MASCULINO',
       profesion: 'comerciante',
-      tipoPerfil: [,TipoPerfil.usuario],
+      tipoPerfil: [TipoPerfil.usuario],
     },
   ],
   afiliados: [
@@ -571,123 +576,381 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
     },
   ],
-  itemsMenu: [
-    {
-      linkMenu: 'details',
-      estado: Estado.ACTIVO,
-    },
-    {
-      linkMenu: 'edit',
-      estado: Estado.ACTIVO,
-    },
-    {
-      linkMenu: 'form',
-      estado: Estado.ACTIVO,
-    },
-    {
-      linkMenu:'list',
-      estado:Estado.ACTIVO,
-    },
-    {
-      linkMenu:'pagar',
-      estado:Estado.ACTIVO,
-    },
-    {
-      linkMenu:'medidores',
-      estado:Estado.ACTIVO,
-    },
-    {
-      linkMenu:'deudas',
-      estado:Estado.ACTIVO,
-    },
-    {
-      linkMenu:'cobrar',
-      estado:Estado.ACTIVO,
-    }
-  ],
+  
   menus: [
+    // {
+    //   nombre: 'menus',
+    //   linkMenu: 'menus',
+    //   estado: Estado.ACTIVO,
+    // },
+    // {
+    //   nombre: 'items menus',
+    //   linkMenu: 'items-menu',
+    //   estado: Estado.ACTIVO,
+    // },
     {
-      nombre: 'menus',
-      linkMenu: 'menus',
+      nombre: 'Roles',
+      linkMenu: ValidMenu.roles,
       estado: Estado.ACTIVO,
+      prioridad:10,
+      items:[
+        
+    //ROLES MENUS
+
+    {
+      nombre:'Listar roles',
+      linkMenu:ValidItemMenu.rolList,
+      visible:true,
+      estado:Estado.ACTIVO
     },
     {
-      nombre: 'items menus',
-      linkMenu: 'items-menu',
-      estado: Estado.ACTIVO,
+      nombre:'Registrar nuevo rol',
+      linkMenu:ValidItemMenu.rolRegister,
+      visible:false,
+      estado:Estado.ACTIVO
     },
     {
-      nombre: 'roles',
-      linkMenu: 'roles',
-      estado: Estado.ACTIVO,
+      nombre:'Mostrar rol',
+      linkMenu:ValidItemMenu.rolDetails,
+      visible:false,
+      estado:Estado.ACTIVO
     },
     {
-      nombre: 'medidores de agua',
-      linkMenu: 'medidores-agua',
-      estado: Estado.ACTIVO,
+      nombre:'Modificar rol',
+      linkMenu:ValidItemMenu.rolUpdate,
+      visible:false,
+      estado:Estado.ACTIVO
     },
     {
-      nombre:'asociaciones de medidores',
-      linkMenu:'asociaciones',
+      nombre:'Eliminar rol',
+      linkMenu:ValidItemMenu.rolUpdateStatus,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+      ]
+    },
+    {
+      nombre: 'Medidres de agua',
+      linkMenu: ValidMenu.medidores,
+      estado: Estado.ACTIVO,
+      prioridad:50,
+      items:[
+        
+    // MENUS DE MEDIDORES DE AGUA
+    {
+      nombre:'Listar medidores de agua',
+      linkMenu:ValidItemMenu.medidorList,
+      visible:true,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Registrar nuevo medidor de agua',
+      linkMenu:ValidItemMenu.medidorRegister,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Mostrar medidor de agua',
+      linkMenu:ValidItemMenu.medidorDetails,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Modificar medidor de agua',
+      linkMenu:ValidItemMenu.medidorUpdate,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Historial de asociaciones',
+      linkMenu:ValidItemMenu.medidorHistorialAsociaciones,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+      ]
+    },
+    {
+      nombre:'Asociaciones de afiliados',
+      linkMenu:ValidMenu.asociaciones,
       estado:Estado.ACTIVO,
+      
+      prioridad:70,
+      items:[
+        
+    //ASOCIACIONES
+    {
+      nombre:'Listar afiliados',
+      linkMenu:ValidItemMenu.asociacionList,
+      visible:true,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Mostrar asociaciones de afiliado',
+      linkMenu:ValidItemMenu.asociacionesAfiliadoDetails,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Registrar nueva asociación',
+      linkMenu:ValidItemMenu.asociacionRegister,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Mostrar datos de asociación',
+      linkMenu:ValidItemMenu.asociacionDetails,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Actualizar datos de asociación',
+      linkMenu:ValidItemMenu.asociacionUpdate,
+      visible:false,
+      estado:Estado.ACTIVO
+    },
+    {
+      nombre:'Eliminar asociación',
+      linkMenu:ValidItemMenu.asociacionUpdateStatus,
+      visible:false,
+    },
+    {
+      nombre:'Administrar gestiones de asociación',
+      linkMenu:ValidItemMenu.asociacionGestiones,
+      visible:false,
+    },
+    {
+      nombre:'Administrar lecturas de asociación',
+      linkMenu:ValidItemMenu.asociacionLecturas,
+      visible:false,
+    },
+    {
+      nombre:'Reportes de consumo de agua de asociación',
+      linkMenu:ValidItemMenu.asociacionReportesGraficos,
+      visible:false,
+    },
+      ]
     },
     {
       nombre:'perfiles',
-      linkMenu:'perfiles',
+      linkMenu:ValidMenu.perfiles,
       estado:Estado.ACTIVO,
+      prioridad:80,
+      items:[
+        //Menus de Perfiles
+    {
+      nombre:'Listar Perfiles',
+      linkMenu:ValidItemMenu.perfilList,
+      visible:true,
+    },
+    {
+      nombre:'Registrar nuevo perfil',
+      linkMenu:ValidItemMenu.perfilRegister,
+      visible:false,
+    },
+    {
+      nombre:'Asignar afiliacion a perfil',
+      linkMenu:ValidItemMenu.perfilAfiliadoRegister,
+      visible:false,
+    },
+    {
+      nombre:'Asignar usuario de acceso a perfil',
+      linkMenu:ValidItemMenu.perfilUserRegister,
+      visible:false,
+    },
+    {
+      nombre:'Mostrar perfil',
+      linkMenu:ValidItemMenu.perfilDetails,
+      visible:false,
+    },
+    {
+      nombre:'Mostrar afiliado',
+      linkMenu:ValidItemMenu.perfilAfiliadoDetails,
+      visible:false,
+    },
+    {
+      nombre:'Mostrar usuario',
+      linkMenu:ValidItemMenu.perfilUserDetails,
+      visible:false,
+    },
+    {
+      nombre:'Modificar perfil',
+      linkMenu:ValidItemMenu.perfilUpdate,
+      visible:false,
+    },
+    {
+      nombre:'Modificar afiliacion',
+      linkMenu:ValidItemMenu.perfilAfiliadoUpdate,
+      visible:false,
+    },
+    {
+      nombre:'Modificar usuario',
+      linkMenu:ValidItemMenu.perfilUserUpdate,
+      visible:false,
+    },
+    {
+      nombre:'Eliminar perfil',
+      linkMenu:ValidItemMenu.perfilUpdateStatus,
+      visible:false,
+    },
+    {
+      nombre:'Eliminar afiliación',
+      linkMenu:ValidItemMenu.perfilAfiliadoUpdateStatus,
+      visible:false,
+    },
+    {
+      nombre:'Eliminar usuario',
+      linkMenu:ValidItemMenu.perfilUserUpdateStatus,
+      visible:false,
+    },
+    {
+      nombre:'Registrar pago de afiliación',
+      linkMenu:ValidItemMenu.perfilAfiliadoPagoRegister,
+      visible:false,
+    },
+    {
+      nombre:'Modificar pago de afiliación',
+      linkMenu:ValidItemMenu.perfilAfiliadoPagoUpdate,
+      visible:false,
+    },
+      ]
     },
     {
       nombre:'Cobros de servicio',
-      linkMenu:'cobros',
+      linkMenu:ValidMenu.cobros,
       estado:Estado.ACTIVO,
+      
+      prioridad:90,
+      items:[
+    //COBROS DE SERVICIO
+    {
+      nombre:'Listar afiliados asociados',
+      linkMenu:ValidItemMenu.cobrosListarAsociacionesAfiliados,
+      visible:true,
     },
     {
-      nombre:'Lecturas de medidor de agua',
-      linkMenu:'lecturas',
+      nombre:'Mostrar deudas de afiliado',
+      linkMenu:ValidItemMenu.cobrosDeudasPorPagarAsociacion,
+      visible:false,
+    },
+    {
+      nombre:'Registrar pago de servicio',
+      linkMenu:ValidItemMenu.cobrosRegistrarPagoDeudas,
+      visible:false,
+    },
+    {
+      nombre:'Historial de cobros de servicio',
+      linkMenu:ValidItemMenu.cobrosHistorialRegistroDeCobros,
+      visible:false,
+    },
+
+    //MENUS DE MULTAS
+    {
+      nombre:'Listar multas activas',
+      linkMenu:ValidItemMenu.cobrosMultasActivas,
+      visible:false,
+    },
+    {
+      nombre:'Historial de multas',
+      linkMenu:ValidItemMenu.cobrosMultasHistorial,
+      visible:false,
+    },
+    {
+      nombre:'Registrar nueva multa',
+      linkMenu:ValidItemMenu.cobrosMultasRegistrarNuevo,
+      visible:false,
+    },
+    {
+      nombre:'Registrar pago de multas seleccionadas',
+      linkMenu:ValidItemMenu.cobrosRegistrarPagoMultasSelected,
+      visible:false,
+    },
+      ]
+    },
+    {
+      nombre:'Módulo de registro de lecturas de medidores de agua',
+      linkMenu:ValidMenu.lecturas,
       estado:Estado.ACTIVO,
+      prioridad:90,
+      items:[
+        //MENUS DE REGISTRO DE LECTURAS
+    {
+      nombre:'Registrar planillas de lecturas',
+      linkMenu:ValidItemMenu.lecturasRegistrarLecturasAfiliados,
+      visible:false,
+    },
+    {
+      nombre:'Listar planillas de lecturas de afiliados disponibles',
+      linkMenu:ValidItemMenu.lecturasListarAfiliadosPlanillasLecturas,
+      visible:true,
+    },
+      ]
     },
     {
       nombre:'Consultar',
       linkMenu:'user',
       estado:Estado.ACTIVO,
+      prioridad:20,
+      items:[
+         //menus usuario afiliado 
+    {
+      nombre:'Medidores de agua',
+      linkMenu:ValidItemMenu.consultarConsultarMedidoresAgua,
+      visible:true,
+    },
+    {
+      nombre:'Deudas pendientes',
+      linkMenu:ValidItemMenu.consultarDeudas,
+      visible:true,
+    },
+    // {
+    //   nombre:'Mostrar deudas',
+    //   linkMenu:'deudas',
+    //   visible:false,
+    // },
+    // {
+    //   nombre:'Mostrar multas',
+    //   linkMenu:'multas',
+    //   visible:false,
+    // },
+      ]
     }
   ],
   roles: [
     {
-      nombre: 'root',
+      nombre: ValidRole.root,
       estado: Estado.ACTIVO,
       nivel:Nivel.root
     },
+    // {
+    //   nombre: ValidRole.admin,
+    //   estado: Estado.ACTIVO,
+    //   nivel:Nivel.administrativo,
+    // },
     {
-      nombre: 'admin',
+      nombre: ValidRole.administrativo,
       estado: Estado.ACTIVO,
       nivel:Nivel.administrativo,
     },
     {
-      nombre: 'administrador',
-      estado: Estado.ACTIVO,
-      nivel:Nivel.administrativo,
-    },
-    {
-      nombre: 'secretaria',
+      nombre: ValidRole.secretaria,
       estado: Estado.ACTIVO,
       nivel:Nivel.contador,
     },
+    // {
+    //   nombre: 'lecturador',
+    //   estado: Estado.ACTIVO,
+    //   nivel:Nivel.contador,
+    // },
     {
-      nombre: 'lecturador',
-      estado: Estado.ACTIVO,
-      nivel:Nivel.contador,
-    },
-    {
-      nombre: 'afiliado',
-      estado: Estado.ACTIVO,
-      nivel:Nivel.afiliado,
-    },
-    {
-      nombre: 'user',
+      nombre: ValidRole.afiliado,
       estado: Estado.ACTIVO,
       nivel:Nivel.afiliado,
     },
+    // {
+    //   nombre: 'user',
+    //   estado: Estado.ACTIVO,
+    //   nivel:Nivel.afiliado,
+    // },
   ],
   medidores: [
     {

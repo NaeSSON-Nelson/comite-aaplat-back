@@ -9,6 +9,5 @@ export function AuthorizationResource(...items:ValidItemMenu[]){
     return applyDecorators(
         ItemMenuProtected(...items),
         UseGuards(AuthGuard('jwt'),ItemMenuValidGuard)
-
     )
 }

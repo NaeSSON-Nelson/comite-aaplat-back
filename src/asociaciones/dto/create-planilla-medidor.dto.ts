@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsNotEmptyObject, IsNumber, IsOptional, Min, ValidateNested } from "class-validator";
-import { Medidor } from "../entities/medidor.entity";
+
 import { Type } from "class-transformer";
 import { Estado } from "src/interfaces/enum/enum-entityes";
 export class MedidorAsociadoForm{

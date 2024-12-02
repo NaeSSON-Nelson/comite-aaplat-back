@@ -23,19 +23,17 @@ import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}
 
-  @Post()
   // @MenusProtected(ValidMenu.menus)
   // @ItemMenuProtected(ValidItemMenu.menuRegister)
-  create(@Body() createMenuDto: CreateMenuDto) {
-    return this.menusService.createMenu(createMenuDto);
-  }
-
-
-  @Get()
+  // @Post()
+  // create(@Body() createMenuDto: CreateMenuDto) {
+  //   return this.menusService.createMenu(createMenuDto);
+  // }
   // @MenusProtected(ValidMenu.menus)
   // @ItemMenuProtected(ValidItemMenu.menuList)
-  findAll(@Query() paginationDto:PaginationDto) {
-    return this.menusService.findAll(paginationDto);
+  @Get()
+  findAllMenusWithItems() {
+    return this.menusService.findAll();
   }
   @Get('link/:term')
   // @MenusProtected(ValidMenu.menus)
@@ -53,12 +51,12 @@ export class MenusController {
   
  
 
-  @Patch(':id')
   // @MenusProtected(ValidMenu.menus)
   // @ItemMenuProtected(ValidItemMenu.menuUpdate)
-  updateMenu(@Param('id',ParseIntPipe) id: number, @Body() updateMenuDto: UpdateMenuDto) {
-    return this.menusService.updateMenu(id, updateMenuDto);
-  }
+  // @Patch(':id')
+  // updateMenu(@Param('id',ParseIntPipe) id: number, @Body() updateMenuDto: UpdateMenuDto) {
+  //   return this.menusService.updateMenu(id, updateMenuDto);
+  // }
   
 
   @Patch('status/:id')

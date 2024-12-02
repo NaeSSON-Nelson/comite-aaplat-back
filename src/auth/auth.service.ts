@@ -40,25 +40,12 @@ export class AuthService {
         isActive:true,
         id: true,
       }
-      //   roleToUsuario:{
-      //     id:true,
-      //     isActive:true,
-      //     role:{
-      //       nombre:true,
-      //       id:true,
-      //       nivel:true
-      //     }
-      //   }
-      // },
-      // relations: {
-      //   roleToUsuario: { role: true },
-      // },
     });
 
-    if (!usuario) throw new BadRequestException(`Credentials are not valid`);
+    if (!usuario) throw new BadRequestException(`Las credenciales no son validas`);
     if (!bcrypt.compareSync(password, usuario.password))
-      throw new BadRequestException(`Credentials are not valid`);
-    if(!usuario.isActive) throw new ForbiddenException(`User blocked`);
+      throw new BadRequestException(`Las credenciales no son validas`);
+    if(!usuario.isActive) throw new ForbiddenException(`El usuario se encuentra bloqueado, por favor contacte con el administrador`);
     try {
       //TODO: RESPUESTA DE ACUERDO A LO NECESITADO
       const { password, perfil, estado, roleToUsuario,isActive,id, ...dataUser } = usuario;
@@ -154,22 +141,25 @@ export class AuthService {
         }
   }
   async findOneUserRolesMenus(idRole:number,usuario: Usuario) {
-    // const queryBuilder = this.usuarioRepository.createQueryBuilder('user');
-    // const role = await this.usuarioRepository.exist({where:{roleToUsuario:{roleId:idRole},id:usuario.id}});
-    console.log('OBTENIENDO MENUS');
-    console.log(idRole,usuario);
+    
     const roleRepository =  this.dataSource.getRepository(Role);
     const rol = await roleRepository.findOne({where:{id:idRole}});
-    if(!rol) throw new BadRequestException(`No existe ese role`);
-    const qb = roleRepository.createQueryBuilder('role');
-
-    const query = await qb
-                  .innerJoinAndSelect('role.menuToRole','toRole','toRole.roleId = :roleId',{roleId:idRole})
-                  .innerJoinAndSelect('toRole.menu','menu','menu.id = toRole.menuId')
-                  .innerJoinAndSelect('menu.itemMenu','toMenu','toMenu.menuId = menu.id')
-                  .innerJoinAndSelect('toMenu.itemMenu','item','item.id = toMenu.itemMenuId')
-                  .getOne();
+    if(!rol) throw new BadRequestException(`No existe el role solicitado`);
+    
+    const query = await roleRepository.findOne({
+      where:{id:idRole},
+      select:{id:true,isActive:true,estado:true,nombre:true,nivel:true,menuToRole:{id:true,estado:true,isActive:true,menu:{id:true,isActive:true,estado:true,nombre:true,linkMenu:true,itemMenu:{id:true,estado:true,isActive:true,linkMenu:true,nombre:true,visible:true,}}}},
+      relations:{
+        menuToRole:{
+          menu:{
+            itemMenu:true
+          }
+        }
+      }
+    })
     if (!query) throw new BadRequestException(`Rol no encontrado`);
+    if (!query.isActive) throw new BadRequestException(`Rol no disponible`);
+
     const { menuToRole, ...roleData } = query;
 
     return {
@@ -181,13 +171,12 @@ export class AuthService {
           const {itemMenu,menu,...dataMenu} = toRole.menu
           return{
             ...dataMenu,
-            itemsMenu:itemMenu
-            // .map(toMenu=> toMenu.itemMenu)
+            itemMenu:itemMenu
           }
         })
       },
-      // data: queryC,
     };
+    
   }
   async getTokens(userId:number,username: string) {
 		const [accessToken, refreshToken] = await Promise.all([

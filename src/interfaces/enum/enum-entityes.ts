@@ -14,11 +14,11 @@ export enum Estado{
 }
 
 export enum TipoPerfil{
-  administrativo='ADMINISTRATIVO',
+  administrativo='ADMINISTRACION',
   afiliado='AFILIADO',
   usuario='USUARIO',
-  secretaria ='SECRETARIA',
-  lecturador='LECTURADOR',
+  // secretaria ='SECRETARIA',
+  // lecturador='LECTURADOR',
 }
 export enum Nivel{
   afiliado=10,

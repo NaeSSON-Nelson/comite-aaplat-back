@@ -14,13 +14,14 @@ import { PerfilesService } from '../modules/usuarios/perfiles.service';
 import { Usuario } from '../modules/usuarios/entities';
 import { Menu } from '../../manager/menus/menus/entities/menu.entity';
 import { Request } from 'express';
+import { DataSource } from 'typeorm';
 
 
 @Injectable()
 export class MenuValidGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    // private readonly rolesService: RolesService,
+    private readonly dataSource:DataSource,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const validMenus: string[] = this.reflector.get(META_MENUS,context.getHandler());
@@ -30,19 +31,18 @@ export class MenuValidGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     // console.log(req);
     const usuario = req.user as Usuario;
+    // console.log('usuario en menu',usuario);
     if (!usuario) throw new BadRequestException(`Usuario not found`);
     const roles = usuario.roleToUsuario.map(toUsuario=>{
       return toUsuario.role
     })
     let menu:Menu;
-    roles.forEach(role=>{
-     const menus=role.menuToRole.map(toRole=>toRole.menu);
-     for(const item of menus){
-       if(validMenus.includes(item.nombre)) {menu=item; continue;}
-     } if(menu) return;
-    })
-    // const menu:Menu = await this.usuarioService.findMenuByRole(validMenus,roles);
-    console.log('menu:',menu);
+    for(const rol of roles){
+      const menus = rol.menuToRole.map(toRole=>toRole.menu);
+      menu = menus.find(men=>validMenus.includes(men.linkMenu));
+      if(menu)break;
+    };
+    // console.log('menu buscado:',menu);
     if(!menu)throw new ForbiddenException(
       `El usuario ${usuario.username} no tiene acceso a este menu`,
     );

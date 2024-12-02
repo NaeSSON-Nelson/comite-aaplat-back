@@ -1,8 +1,8 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { MenuToRole } from '../../../roles/menu-to-role/entities/menuToRole.entity';
-import { ItemToMenu } from "../../items-to-menu/entities/item-to-menu.entity";
 import { ColumnsAlways } from "src/common/inherints-db";
 import { Estado } from "src/interfaces/enum/enum-entityes";
+import { ItemMenu } from "../../items-menu/entities/item-menu.entity";
 
 @Entity({
     name:'menus'
@@ -31,10 +31,17 @@ export class Menu extends ColumnsAlways{
     @OneToMany(()=>MenuToRole,(menuToRole)=>menuToRole.menu)
     menu:MenuToRole[];
     
-    @OneToMany(()=>ItemToMenu,(itemToMenu)=>itemToMenu.menu)
-    itemMenu:ItemToMenu[];
+    // @OneToMany(()=>ItemToMenu,(itemToMenu)=>itemToMenu.menu)
+    // itemMenu:ItemToMenu[];
+    @OneToMany(()=>ItemMenu,(itemMenu)=>itemMenu.menu)
+    itemMenu:ItemMenu[];
 
-
+    @Column({
+        type:'integer',
+        nullable:false,
+        default:1,
+    })
+    prioridad:number;
     @BeforeInsert()
     CrearNuevoMenu(){
         this.nombre=this.nombre.toLocaleLowerCase().trim();

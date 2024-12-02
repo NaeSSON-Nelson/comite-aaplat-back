@@ -1,10 +1,11 @@
 export enum ValidRole{
     root="root",
-    admin="admin",
+    // admin="admin",
     administrativo="administrativo",
-    contador="contador",
+    secretaria="secretaria",
     afiliado="afiliado",
-    user="user"
+    // contador="contador",
+    // user="user"
 }
 
 //VALID MENU
@@ -12,9 +13,15 @@ export enum ValidMenu{
     
     menus="menus",
     itemsMenu="items-menu",
-    roles="roles",
+
     perfiles="perfiles",
-    medidores="medidores-agua"
+    medidores="medidores-agua",
+    asociaciones="asociaciones",
+    roles="roles",
+    cobros="cobros-de-servicio-agua",
+    lecturas="lecturas",
+    consultar="user"
+    // multasRetrasoPago="multas-de-servicio"
     // afiliados="afiliados",
     //  usuarios="usuarios",
 }
@@ -23,19 +30,23 @@ export enum ValidMenu{
 export enum ValidItemMenu{
     //recursos de perfiles
     perfilRegister="perfil-register",
-    perfilUpdate="perfil-update",
+    perfilUpdate="perfiles-update",
     perfilUpdateStatus="perfil-update-status",
     perfilList="perfil-list",
     perfilDetails="perfil-details",
+
     //recursos de perfil usuarios
     perfilUserRegister="perfil-user-register",
     perfilUserUpdate="perfil-user-update",
     perfilUserUpdateStatus="perfil-user-update-status",
+    perfilUserDetails="perfil-user-details",
     //recursos de perfil afiliado
     perfilAfiliadoRegister="perfil-afiliado-register",
+    perfilAfiliadoDetails="perfil-afiliado-details",
     perfilAfiliadoUpdate="perfil-afiliado-update",
     perfilAfiliadoUpdateStatus="perfil-afiliado-update-status",
-    
+    perfilAfiliadoPagoRegister="perfil-afiliado-pago-register",
+    perfilAfiliadoPagoUpdate="perfil-afiliado-pago-update",
     //RECURSOS DE AFILIADOS
     // afiliadoRegister ="afiliado-register",
     // afiliadoUpdate ="afiliado-update",
@@ -53,19 +64,19 @@ export enum ValidItemMenu{
     menuRegister ="menu-register",
     menuUpdate ="menu-update",
     menuUpdateStatus ="menu-update-status",
-    menuList ="menu-list",
+    menuList ="menus-list",
     menuDetails ="menu-details",
     //RECURSOS DE GESTION DE LOS ITEMS MENU
-    itemMenuRegister ="item-menu-register",
-    itemMenuUpdate ="item-menu-update",
-    itemMenuUpdateStatus ="item-menu-update-status",
-    itemMenuList ="item-menu-list",
-    itemMenuDetails ="item-menu-details",
+    // itemMenuRegister ="item-menu-register",
+    // itemMenuUpdate ="item-menu-update",
+    // itemMenuUpdateStatus ="item-menu-update-status",
+    // itemMenuList ="item-menu-list",
+    // itemMenuDetails ="item-menu-details",
     //RECURSOS DE GESTION DE ROLES D
     rolRegister="rol-register",
     rolUpdate="rol-update",
     rolUpdateStatus="rol-update-status",
-    rolList="rol-list",
+    rolList="roles-list",
     rolDetails='rol-details',
     
 
@@ -73,6 +84,39 @@ export enum ValidItemMenu{
     medidorRegister="medidor-agua-register",
     medidorUpdate="medidor-agua-update",
     medidorUpdateStatus="medidor-agua-update-status",
-    medidorList="medidor-agua-list",
+    medidorList="medidores-de-agua-list",
     medidorDetails='medidor-agua-details',
+    medidorHistorialAsociaciones='medidor-agua-asociaciones-historial',
+    //ASOCIACIONES
+    asociacionList="asociaciones-list", 
+    asociacionesAfiliadoDetails ="asociaciones-afiliado-details",
+    asociacionRegister="asociacion-register",
+    asociacionUpdate="asociacion-update",
+    asociacionUpdateStatus="asociacion-update-status",
+    asociacionDetails="asociacion-details",
+    asociacionGestiones="asociacion-gestiones",
+    asociacionLecturas="asociacion-lecturas",
+    asociacionReportesGraficos="asociacion-graphic-reports",
+
+    //COBROS
+    cobrosListarAsociacionesAfiliados="afiliados-asociados-list",
+    cobrosDeudasPorPagarAsociacion="deudas-afiliados",
+    cobrosRegistrarPagoDeudas="registrar-deudas",
+    cobrosHistorialRegistroDeCobros="historial-deudas",
+    cobrosMultasActivas="multas-afiliado",
+    cobrosMultasRegistrarNuevo="registrar-multa",
+    cobrosRegistrarPagoMultasSelected="registrar-multas",
+    cobrosMultasHistorial="multas-afiliado-historial",
+    cobrosMultaDetails="multa-afiliado-details",
+
+
+    //MODULO DE REGISTRO DE LECTURAS
+    lecturasListarAfiliadosPlanillasLecturas="planillas-afiliados-lecturas",
+    lecturasRegistrarLecturasAfiliados="registrar-lecturas",
+
+
+    //FUNCIONES DE USUARIO AFILIADO
+
+    consultarConsultarMedidoresAgua="consultar-medidores-de-agua",
+    consultarDeudas="consultar-deudas"
 }

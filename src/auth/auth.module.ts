@@ -18,6 +18,7 @@ import { PerfilesService } from './modules/usuarios/perfiles.service';
 import { UsuarioController } from './modules/usuarios/usuario.controller';
 import { RefreshTokenJwtStrategy } from './strategies';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { UserService } from './modules/usuarios/usuario.service';
 
 @Module({
   controllers: [
@@ -28,6 +29,7 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
   providers: [
     AuthService,
     PerfilesService,
+    UserService,
     JwtStrategy,
     RefreshTokenJwtStrategy,
   ],

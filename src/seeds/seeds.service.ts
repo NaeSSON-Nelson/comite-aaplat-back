@@ -9,16 +9,16 @@ import { Role } from '../manager/roles/roles/entities/role.entity';
 import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
 import { Perfil, Usuario } from 'src/auth/modules/usuarios/entities';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
-import { ItemToMenu } from 'src/manager/menus/items-to-menu/entities/item-to-menu.entity';
 import { MenuToRole } from 'src/manager/roles/menu-to-role/entities/menuToRole.entity';
 import { RoleToUsuario } from 'src/auth/modules/usuarios/roles-to-usuario/entities/role-to-usuario.entity';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
-import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
+import { Estado, Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lectura.entity';
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
+import { ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 
 @Injectable()
 export class SeedsService {
@@ -40,8 +40,6 @@ export class SeedsService {
     private readonly usuarioRepository: Repository<Usuario>,
     @InjectRepository(Medidor)
     private readonly medidorRepository: Repository<Medidor>,
-    @InjectRepository(ItemToMenu)
-    private readonly itemToMenuRepository: Repository<ItemToMenu>,
     @InjectRepository(MenuToRole)
     private readonly menuToRoleRepository: Repository<MenuToRole>,
     @InjectRepository(RoleToUsuario)
@@ -69,10 +67,25 @@ export class SeedsService {
     try {
       // await this.deleteTables();
       //INSERT INTO TABLES
-      const itemsMenusSave = await this.insertItemsMenu();
-      await queryRunner.manager.save(itemsMenusSave);
+      // const itemsMenusSave = await this.insertItemsMenu();
+      // await queryRunner.manager.save(itemsMenusSave);
       const menusSave = await this.insertMenus();
-      await queryRunner.manager.save(menusSave);
+      const menusCreateds=await queryRunner.manager.save(menusSave);
+      const itemsSaved:ItemMenu[]=[];
+      for(const menC of menusCreateds){
+        const men = menusSave.find(men=>men.nombre === menC.nombre);
+        if(men){
+          for(const item of men.itemMenu){
+            itemsSaved.push(this.ItemMenuRepository.create({
+              ...item,
+              isActive:true,
+              menu:menC,
+              estado:Estado.ACTIVO,
+            }))
+          }
+        }
+      }
+      await queryRunner.manager.save(itemsSaved);
       const rolesSave = await this.insertRoles();
       await queryRunner.manager.save(rolesSave);
 
@@ -112,37 +125,7 @@ export class SeedsService {
       await queryRunner.release();
     }
   }
-  private async deleteTables() {
-    const AfiliadosList = await this.afiliadoRepository.find();
-    const ItemsMenuList = await this.ItemMenuRepository.find();
-    const MenusList = await this.menuRepository.find();
-    const RolesList = await this.roleRepository.find();
-    const UsuariosList = await this.usuarioRepository.find();
-    const medidoresList = await this.medidorRepository.find();
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      // console.log('hola delete:3');
-      // console.log(queryRunner);
-      // console.log('hola delete afiliados :3');
-      for(let val of ItemsMenuList)await queryRunner.manager.delete(ItemMenu,{id:val.id});
-      for(let val of MenusList)await queryRunner.manager.delete(Menu,{id:val.id});
-      for(let val of RolesList)await queryRunner.manager.delete(Role,{id:val.id});
-      for(let val of UsuariosList)await queryRunner.manager.delete(Usuario,{id:val.id});
-      for(let val of medidoresList)await queryRunner.manager.delete(Medidor,{id:val.id});
-      for(let val of AfiliadosList){ console.log('val',val);await queryRunner.manager.delete(Afiliado,{id:val.id});}
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      console.log('hola delete error 500 :3');
-      await queryRunner.rollbackTransaction();
-      await queryRunner.release()
-      this.commonService.handbleDbErrors(error);
-    } finally{
-      await queryRunner.release();
-    }
-  }
+  
   private async insertPerfiles(){
     const seedPerfiles = initialData.perfiles;
     const perfiles:Perfil[]=[];
@@ -160,20 +143,14 @@ export class SeedsService {
     });
     return afiliados;
   }
-  private async insertItemsMenu() {
-    const seedItemsMenu = initialData.itemsMenu;
-    const itemsMenus: ItemMenu[] = [];
-    seedItemsMenu.forEach((item) => {
-      itemsMenus.push(this.ItemMenuRepository.create(item));
-    });
-    return itemsMenus;
-  }
   private async insertMenus() {
     const seedMenus = initialData.menus;
+    // console.log('seed menus',seedMenus);
     const menus: Menu[] = [];
     seedMenus.forEach((menu) => {
-      menus.push(this.menuRepository.create(menu));
+      menus.push(this.menuRepository.create({...menu,itemMenu:menu.items}));
     });
+
     return menus;
   }
   private async insertRoles() {
@@ -448,154 +425,154 @@ export class SeedsService {
     });
     return medidores;
   }
-  private async insertFunctionsAll(menuName:string){
-    const itemsMenus = await this.ItemMenuRepository.find(
-      {where:
-        [
-        {linkMenu:'list'   },
-        {linkMenu:'form'   },
-        {linkMenu:'details'},
-        {linkMenu:'edit'   },
-        ]});
-        // console.log(itemsMenus);
-    const menu = await this.menuRepository.findOne({
-      where:{linkMenu:ILike(`${menuName}%`)}
-    });
-    // console.log(menu);
-    const itemMenuToMenu:ItemToMenu[]=[];
-    itemsMenus.forEach(itemMenu=>{
-      itemMenuToMenu.push(this.itemToMenuRepository.create({
-        itemMenu,
-        menu,
-        nombre:
-          itemMenu.linkMenu=='list'?`${menuName}`:
-          itemMenu.linkMenu=='form'?`registrar ${menuName}`:
-          itemMenu.linkMenu=='details'?`detalles ${menuName}`:
-          itemMenu.linkMenu=='edit'?`editar ${menuName}`:'SIN NOMBRE DE LINK',
-        visible: itemMenu.linkMenu === 'list'?true:false,
-      }))
-    })
-    return itemMenuToMenu;
-  }
-  private async insertFuncionesLecturas(){
-    const itemsMenu = await this.ItemMenuRepository.find({
-      where:[{
-        linkMenu:'list'
-      },{
-        linkMenu:'form'
-      },{
-        linkMenu:'details'
-      }]});
-    const menu = await this.menuRepository.findOneBy({
-      linkMenu:'lecturas'
-    });
-    const items:ItemToMenu[]=[];
-    for(let i=0;i<itemsMenu.length;i++){
-      switch (i) {
-        case 0:
-          items.push(this.itemToMenuRepository.create({
-            visible:true,
-            itemMenu:itemsMenu[i],
-            menu,
-            nombre:'Registrar nuevas lecturas',
-          }))
-          break;
-          case 1:
-          items.push(this.itemToMenuRepository.create({
-            visible:false,
-            itemMenu:itemsMenu[i],
-            menu,
-            nombre:'Formulario de registro de lectura',
-          }))
-          break;
-          case 2:
-          items.push(this.itemToMenuRepository.create({
-            visible:false,
-            itemMenu:itemsMenu[i],
-            menu,
-            nombre:'detalles de registro de lectura',
-          }))
-          break;
-        default:
-          break;
-      }
-    }
-    return items;
-  }
-  private async insertFuncionesCobros(){
-    const itemsMenu = await this.ItemMenuRepository.find({
-      where:[{
-        linkMenu:'list'
-      },{
-        linkMenu:'details'
-      },{
-        linkMenu:'cobrar'
-      }]
-  });
-  const menu = await this.menuRepository.findOneBy({linkMenu:'cobros'});
-  const items:ItemToMenu[]=[];
-  for(let i=0;i<itemsMenu.length;i++){
-    switch (i) {
-      case 0:
-        items.push(this.itemToMenuRepository.create({
-          visible:true,
-          itemMenu:itemsMenu[i],
-          menu,
-          nombre:'cobros de servicio',
-        }))
-        break;
-        case 1:
-        items.push(this.itemToMenuRepository.create({
-          visible:false,
-          itemMenu:itemsMenu[i],
-          menu,
-          nombre:'detalles de cobros de servicio',
-        }))
-        break;
-        case 2:
-        items.push(this.itemToMenuRepository.create({
-          visible:false,
-          itemMenu:itemsMenu[i],
-          menu,
-          nombre:'cobro de servicio',
-        }))
-        break;
-      default:
-        break;
-    }
-  }
-  return items;
-  }
+  // private async insertFunctionsAll(menuName:string){
+  //   const itemsMenus = await this.ItemMenuRepository.find(
+  //     {where:
+  //       [
+  //       {linkMenu:'list'   },
+  //       {linkMenu:'form'   },
+  //       {linkMenu:'details'},
+  //       {linkMenu:'edit'   },
+  //       ]});
+  //       // console.log(itemsMenus);
+  //   const menu = await this.menuRepository.findOne({
+  //     where:{linkMenu:ILike(`${menuName}%`)}
+  //   });
+  //   // console.log(menu);
+  //   const itemMenuToMenu:ItemToMenu[]=[];
+  //   itemsMenus.forEach(itemMenu=>{
+  //     itemMenuToMenu.push(this.itemToMenuRepository.create({
+  //       itemMenu,
+  //       menu,
+  //       nombre:
+  //         itemMenu.linkMenu=='list'?`${menuName}`:
+  //         itemMenu.linkMenu=='form'?`registrar ${menuName}`:
+  //         itemMenu.linkMenu=='details'?`detalles ${menuName}`:
+  //         itemMenu.linkMenu=='edit'?`editar ${menuName}`:'SIN NOMBRE DE LINK',
+  //       visible: itemMenu.linkMenu === 'list'?true:false,
+  //     }))
+  //   })
+  //   return itemMenuToMenu;
+  // }
+  // private async insertFuncionesLecturas(){
+  //   const itemsMenu = await this.ItemMenuRepository.find({
+  //     where:[{
+  //       linkMenu:'list'
+  //     },{
+  //       linkMenu:'form'
+  //     },{
+  //       linkMenu:'details'
+  //     }]});
+  //   const menu = await this.menuRepository.findOneBy({
+  //     linkMenu:'lecturas'
+  //   });
+  //   const items:ItemToMenu[]=[];
+  //   for(let i=0;i<itemsMenu.length;i++){
+  //     switch (i) {
+  //       case 0:
+  //         items.push(this.itemToMenuRepository.create({
+  //           visible:true,
+  //           itemMenu:itemsMenu[i],
+  //           menu,
+  //           nombre:'Registrar nuevas lecturas',
+  //         }))
+  //         break;
+  //         case 1:
+  //         items.push(this.itemToMenuRepository.create({
+  //           visible:false,
+  //           itemMenu:itemsMenu[i],
+  //           menu,
+  //           nombre:'Formulario de registro de lectura',
+  //         }))
+  //         break;
+  //         case 2:
+  //         items.push(this.itemToMenuRepository.create({
+  //           visible:false,
+  //           itemMenu:itemsMenu[i],
+  //           menu,
+  //           nombre:'detalles de registro de lectura',
+  //         }))
+  //         break;
+  //       default:
+  //         break;
+  //     }
+  //   }
+  //   return items;
+  // }
+  // private async insertFuncionesCobros(){
+  //   const itemsMenu = await this.ItemMenuRepository.find({
+  //     where:[{
+  //       linkMenu:'list'
+  //     },{
+  //       linkMenu:'details'
+  //     },{
+  //       linkMenu:'cobrar'
+  //     }]
+  // });
+  // const menu = await this.menuRepository.findOneBy({linkMenu:'cobros'});
+  // const items:ItemToMenu[]=[];
+  // for(let i=0;i<itemsMenu.length;i++){
+  //   switch (i) {
+  //     case 0:
+  //       items.push(this.itemToMenuRepository.create({
+  //         visible:true,
+  //         itemMenu:itemsMenu[i],
+  //         menu,
+  //         nombre:'cobros de servicio',
+  //       }))
+  //       break;
+  //       case 1:
+  //       items.push(this.itemToMenuRepository.create({
+  //         visible:false,
+  //         itemMenu:itemsMenu[i],
+  //         menu,
+  //         nombre:'detalles de cobros de servicio',
+  //       }))
+  //       break;
+  //       case 2:
+  //       items.push(this.itemToMenuRepository.create({
+  //         visible:false,
+  //         itemMenu:itemsMenu[i],
+  //         menu,
+  //         nombre:'cobro de servicio',
+  //       }))
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  // }
+  // return items;
+  // }
 
-  private async insertItemsFuncionesUsuario(){
-    const itemMenuMedidor = await this.ItemMenuRepository.findOneBy({
-        linkMenu:'medidores'
-    });
-    const itemMenuDeudas = await this.ItemMenuRepository.findOneBy({
-        linkMenu:'deudas'
-    });
-    if(!itemMenuMedidor) console.log('NO HAY ITEM CONSULTAR');
-    if(!itemMenuDeudas) console.log('NO HAY ITEM CONSULTAR');
-    const menu = await this.menuRepository.findOneBy({
-    linkMenu:'user'
-    });
-    if(!menu) console.log('NO HAY MENU CONSULTAR');
+  // private async insertItemsFuncionesUsuario(){
+  //   const itemMenuMedidor = await this.ItemMenuRepository.findOneBy({
+  //       linkMenu:'medidores'
+  //   });
+  //   const itemMenuDeudas = await this.ItemMenuRepository.findOneBy({
+  //       linkMenu:'deudas'
+  //   });
+  //   if(!itemMenuMedidor) console.log('NO HAY ITEM CONSULTAR');
+  //   if(!itemMenuDeudas) console.log('NO HAY ITEM CONSULTAR');
+  //   const menu = await this.menuRepository.findOneBy({
+  //   linkMenu:'user'
+  //   });
+  //   if(!menu) console.log('NO HAY MENU CONSULTAR');
 
-    const items:ItemToMenu[]=[];
-    items.push(this.itemToMenuRepository.create({
-      itemMenu:itemMenuMedidor,
-      menu,
-      nombre:'Consultar medidores',
-      visible:true,
-    }))
-    items.push(this.itemToMenuRepository.create({
-      itemMenu:itemMenuDeudas,
-      menu,
-      nombre:'Consultar deudas',
-      visible:true,
-    }))
-    return items
-  }
+  //   const items:ItemToMenu[]=[];
+  //   items.push(this.itemToMenuRepository.create({
+  //     itemMenu:itemMenuMedidor,
+  //     menu,
+  //     nombre:'Consultar medidores',
+  //     visible:true,
+  //   }))
+  //   items.push(this.itemToMenuRepository.create({
+  //     itemMenu:itemMenuDeudas,
+  //     menu,
+  //     nombre:'Consultar deudas',
+  //     visible:true,
+  //   }))
+  //   return items
+  // }
   private async insertRelationsMenuToRole(menuName:string[],roleName:string){
     const menus:Menu[]=[]; 
     for(let i =0 ;i<menuName.length;i++){
@@ -614,7 +591,7 @@ export class SeedsService {
     return menuToRole;
   }
   //TODO: REPARAR
-  private async insertRolesToUsuario(roles:string[],username:string){
+  private async insertRolesToUsuario(roles:ValidRole[],username:string){
     const rolesExist:Role[]=[];
     for(const rol of roles){
       const role = await this.roleRepository.findOne({where:{nombre:rol}});
@@ -676,25 +653,25 @@ export class SeedsService {
       //INSERT INTO RELATIONS TABLES
       // const datita = new Date();
       //INSERT INTO RELATIONS ITEMS TO MENU 
-      const itemToMenuRelationsPerfil = await this.insertFunctionsAll('perfiles')
-      await queryRunner.manager.save(itemToMenuRelationsPerfil);
-      const itemToMenuRelationsMedidores = await this.insertFunctionsAll('medidores')
-      await queryRunner.manager.save(itemToMenuRelationsMedidores);
-      const itemToMenuRelationsAsociaciones = await this.insertFunctionsAll('asociaciones')
-      await queryRunner.manager.save(itemToMenuRelationsAsociaciones);
-      const itemToMenuRelationsItemsMenu = await this.insertFunctionsAll('items-menu')
-      await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
-      const itemToMenuRelationsMenu = await this.insertFunctionsAll('menus')
-      await queryRunner.manager.save(itemToMenuRelationsMenu);
-      const itemToMenuRelationsRoles = await this.insertFunctionsAll('roles')
-      await queryRunner.manager.save(itemToMenuRelationsRoles);
+      // const itemToMenuRelationsPerfil = await this.insertFunctionsAll('perfiles')
+      // await queryRunner.manager.save(itemToMenuRelationsPerfil);
+      // const itemToMenuRelationsMedidores = await this.insertFunctionsAll('medidores')
+      // await queryRunner.manager.save(itemToMenuRelationsMedidores);
+      // const itemToMenuRelationsAsociaciones = await this.insertFunctionsAll('asociaciones')
+      // await queryRunner.manager.save(itemToMenuRelationsAsociaciones);
+      // const itemToMenuRelationsItemsMenu = await this.insertFunctionsAll('items-menu')
+      // await queryRunner.manager.save(itemToMenuRelationsItemsMenu);
+      // const itemToMenuRelationsMenu = await this.insertFunctionsAll('menus')
+      // await queryRunner.manager.save(itemToMenuRelationsMenu);
+      // const itemToMenuRelationsRoles = await this.insertFunctionsAll('roles')
+      // await queryRunner.manager.save(itemToMenuRelationsRoles);
 
-      const consultasAF= await this.insertItemsFuncionesUsuario();
-      await queryRunner.manager.save(consultasAF)
-      const itemsCOBRRAR = await this.insertFuncionesCobros();
-      await queryRunner.manager.save(itemsCOBRRAR);
-      const lecturasDM = await this.insertFuncionesLecturas();
-      await queryRunner.manager.save(lecturasDM);
+      // const consultasAF= await this.insertItemsFuncionesUsuario();
+      // await queryRunner.manager.save(consultasAF)
+      // const itemsCOBRRAR = await this.insertFuncionesCobros();
+      // await queryRunner.manager.save(itemsCOBRRAR);
+      // const lecturasDM = await this.insertFuncionesLecturas();
+      // await queryRunner.manager.save(lecturasDM);
       // const itemToMenuRelationsCobros = await this.insertFunctionsAll('cobros')
       // await queryRunner.manager.save(itemToMenuRelationsCobros);
       // const itemToMenuRelationsUser = await this.insertFunctionsAll('user')
@@ -702,42 +679,42 @@ export class SeedsService {
      
       //INSERT INTO RELATIONS MENU TO ROLE
       
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles','medidores-agua','asociaciones','cobros','lecturas'],'root');
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.consultar],ValidRole.root);
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
-      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole(['perfiles','menus','items-menu','roles'],'admin');
+      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas],ValidRole.administrativo);
       await queryRunner.manager.save(menuToRoleRelationsAdmin);
       
-      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole(['perfiles','medidores-agua','cobros','asociaciones','lecturas'],'secretaria');
+      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas],ValidRole.secretaria);
       await queryRunner.manager.save(menuToRoleRelationsContador);
 
-      const menuToRoleRelationsLecturador = await this.insertRelationsMenuToRole(['medidores-agua','asociaciones','lecturas'],'lecturador');
-      await queryRunner.manager.save(menuToRoleRelationsLecturador);
+      // const menuToRoleRelationsLecturador = await this.insertRelationsMenuToRole(['medidores-agua','asociaciones','lecturas'],'lecturador');
+      // await queryRunner.manager.save(menuToRoleRelationsLecturador);
       
-      const menuToRoleRelationsUser = await this.insertRelationsMenuToRole(['user'],'user');
+      const menuToRoleRelationsUser = await this.insertRelationsMenuToRole([ValidRole.afiliado],ValidRole.root);
       await queryRunner.manager.save(menuToRoleRelationsUser);
       
 
       //ADD ROLES TO USUARIO
-      const roleToUsuarioAdmin = await this.insertRolesToUsuario(['root','admin'],'admin');
+      const roleToUsuarioAdmin = await this.insertRolesToUsuario([ValidRole.root,ValidRole.administrativo],'admin');
       await queryRunner.manager.save(roleToUsuarioAdmin);
 
-      const roleToUsuarioAdministrativo = await this.insertRolesToUsuario(['administrativo'],'administrativo');
+      const roleToUsuarioAdministrativo = await this.insertRolesToUsuario([ValidRole.administrativo],'administrativo');
       await queryRunner.manager.save(roleToUsuarioAdministrativo);
 
-      const roleToUsuarioAdministrativoSecretaria = await this.insertRolesToUsuario(['secretaria','lecturador','user'],'secretaria');
+      const roleToUsuarioAdministrativoSecretaria = await this.insertRolesToUsuario([ValidRole.secretaria],'secretaria');
       await queryRunner.manager.save(roleToUsuarioAdministrativoSecretaria);
 
-      const roleToUsuarioAdministrativoLecturador = await this.insertRolesToUsuario(['lecturador','user'],'lecturador');
-      await queryRunner.manager.save(roleToUsuarioAdministrativoLecturador);
+      // const roleToUsuarioAdministrativoLecturador = await this.insertRolesToUsuario(['lecturador','user'],'lecturador');
+      // await queryRunner.manager.save(roleToUsuarioAdministrativoLecturador);
 
-      const roleToUsuarioContador = await this.insertRolesToUsuario(['user'],'afiliado2');
+      const roleToUsuarioContador = await this.insertRolesToUsuario([ValidRole.afiliado],'afiliado2');
       await queryRunner.manager.save(roleToUsuarioContador);
 
-      const roleToUsuarioAfiliadoUser1 = await this.insertRolesToUsuario(['afiliado','user'],'user');
+      const roleToUsuarioAfiliadoUser1 = await this.insertRolesToUsuario([ValidRole.afiliado],'user');
       await queryRunner.manager.save(roleToUsuarioAfiliadoUser1);
 
-      const roleToUsuarioAfiliadoUser2 = await this.insertRolesToUsuario(['afiliado','user'],'afiliado');
+      const roleToUsuarioAfiliadoUser2 = await this.insertRolesToUsuario([ValidRole.afiliado],'afiliado');
       await queryRunner.manager.save(roleToUsuarioAfiliadoUser2);
 
       await queryRunner.commitTransaction();

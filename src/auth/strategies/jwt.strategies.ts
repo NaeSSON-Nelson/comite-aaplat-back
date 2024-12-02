@@ -21,14 +21,30 @@ export class JwtStrategy extends PassportStrategy(Strategy,'jwt'){
         })
     }
     async validate(payload:JwtPayload):Promise<Usuario>{
-        console.log('paso la estrategia jwt');
+       
         const {sub,username} =payload; 
 
-        const usuario = await this.usuarioRepository.findOne({where:{username},relations:{roleToUsuario:{role:{menuToRole:{menu:true}}}}});
+        // const usuario = await this.usuarioRepository.findOne({where:{username},relations:{roleToUsuario:{role:{menuToRole:{menu:{itemMenu:true}}}}}});
+        const usuario = await this.usuarioRepository.createQueryBuilder('usuario')
+                            .leftJoinAndSelect('usuario.roleToUsuario', 'to_usuario', 'to_usuario."usuarioId" = usuario.id',)
+                            .leftJoinAndSelect('to_usuario.role',    'roles',      'roles.id = to_usuario."roleId"')
+                            .leftJoinAndSelect('roles.menuToRole',   'to_role',    'to_role."roleId" = roles.id')
+                            .leftJoinAndSelect('to_role.menu',       'menus',      'menus.id = to_role."menuId"')
+                            .leftJoinAndSelect('menus.itemMenu',     'items',    'menus.id = items."menuId"',)
+                            // .leftJoinAndSelect('to_menu.itemMenu',   'items',      'items.id = to_menu.itemMenuId AND items.visible = true',)
+                            .where('usuario.username = :username', { username })
+                            // .orderBy('roles.nivel','DESC')
+                            .orderBy({
+                                ['roles.nivel']:'DESC',
+                                ['menus.prioridad']:'DESC',
+                            })
+                            // .addOrderBy('roles.nivel','DESC')
+                            // .addOrderBy('menu.prioridad','DESC')
+                            .getOne();
+        console.log('usuario en strategy',usuario);
         if(!usuario) throw new UnauthorizedException(`Token not valid`);
         //TODO: MEJORAR LOS ESTADOS DEL USUARIO
-        // console.log(usuario);
-        if(!usuario.isActive) throw new UnauthorizedException(`The usuario is block, please talk with admin server`);
+        if(!usuario.isActive) throw new UnauthorizedException(`El usuario actualmente se encuentra bloqueado`);
         return usuario;
     }
 }

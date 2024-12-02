@@ -16,12 +16,4 @@ export const MenusProtected = (...args: ValidMenu[]) => {
 export const ItemMenuProtected = (...args: ValidItemMenu[]) => {
   return SetMetadata(META_ITEMSMENU, args);
 };
-// export const AfiliadosProtected = (...args: ValidRole[]) => {
-//   return SetMetadata(META_ROLES, args);
-// };
-// export const RoleProtected = (...args: ValidRole[]) => {
-//   return SetMetadata(META_ROLES, args);
-// };
-// export const RoleProtected = (...args: ValidRole[]) => {
-//   return SetMetadata(META_ROLES, args);
-// };
+

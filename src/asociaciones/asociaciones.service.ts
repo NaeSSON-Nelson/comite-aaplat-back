@@ -14,6 +14,8 @@ import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.
 import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lectura.entity';
 import { CreateGestionMedidorAsociadoDto } from './dto/create-gestion-medidor-asociacion.dto';
 import { UpdateStatusGestion } from './dto/update-status-planilla.dto';
+import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
+import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
 
 @Injectable()
 export class AsociacionesService {
@@ -65,6 +67,7 @@ export class AsociacionesService {
     const {afiliado,estado,medidor,...data}=dataUpdate
     const asociacion = await this.medidorAsociadoRepository.preload({id:idAsociacion,...data});
     if(!asociacion) throw new NotFoundException(`ASOCIACION ${idAsociacion} NOT FOUND`);
+    if(!asociacion.isActive) throw new BadRequestException(`No se puede modificar los datos de una asociacion deshabilitada`)
     try {
       await this.medidorAsociadoRepository.save(asociacion);
       return {
@@ -80,34 +83,28 @@ export class AsociacionesService {
   async updateStatus(idAsociacion:number,updateMedidorAsociadoDto:UpdateMedidorAsociadoDto){
     const {estado} =updateMedidorAsociadoDto;
     if(estado === null || estado === undefined) throw new BadRequestException(`Debe Enviar un estado!`);
+    if(estado !== Estado.DESHABILITADO) throw new BadRequestException(`Solamente se puede deshabilitar la asociación`);
 
-    const asociacion = await this.medidorAsociadoRepository.findOne({where:{id:idAsociacion},relations:{medidor:true,}});
+    const asociacion = await this.medidorAsociadoRepository.findOne({where:{id:idAsociacion},relations:{medidor:true,planillas:{lecturas:{pagar:true,multa:true}}}});
     if(!asociacion) throw new NotFoundException(`Asociacion ${idAsociacion} not found`);
-    if(!asociacion.medidor.isActive) throw new BadRequestException(`El medidor ${asociacion.medidor.nroMedidor} no se encuentra disponible`);
-    
-    if(estado === Estado.ACTIVO){
-      if(asociacion.isActive) throw new BadRequestException(`La asociacion ya se encuentra activa`)
-      else{
-        if(await this.medidorAsociadoRepository.exist({where:{isActive:true,medidor:{id:asociacion.medidor.id}}})) throw new BadRequestException(`El medidor ${asociacion.medidor.nroMedidor} se encuentra asociado con un afiliado`)
-        else{
-          asociacion.isActive=true;
-          asociacion.estado=Estado.ACTIVO
-        } 
+    for(const planilla of asociacion.planillas){
+      for(const lectura of planilla.lecturas){
+        if(lectura.pagar){
+          if(!lectura.pagar.pagado) throw new BadRequestException(`La asociación tiene deudas pendientes por pagar, no se puede deshabilitar`);
+        }
+        if(lectura.multa){
+          if(!lectura.multa.pagado) throw new BadRequestException(`La asociación tienes lecturas con multas por pagar, no se puede deshabilitar`);
+          
+        }
       }
-    }else{
-      if(!asociacion.isActive) throw new BadRequestException(`La asociacion ya se encentra desactiva`);
-      else{
-          asociacion.isActive=false;
-          asociacion.estado=Estado.DESHABILITADO;
-      }
-
     }
+
     try {
-      await this.medidorAsociadoRepository.save(asociacion);
+      await this.medidorAsociadoRepository.update(asociacion.id,{isActive:false,estado,estadoMedidorAsociado:'Asociación cerrada'});
       return {
         OK:true,
-        message:'cambio con exito!',
-        data:await this.findAfiliadoByAsociacion(asociacion.id),
+        message:'Se ha deshabilitado el estado de asocición entre medidor de agua y el afiliado',
+        data:await this.findAsociacionnAfiliado(asociacion.id),
       }
     } catch (error) {
       this.commonService.handbleDbErrors(error)
@@ -275,11 +272,11 @@ export class AsociacionesService {
       select:{
         id:true,isActive:true,estado:true,
         estadoMedidorAsociado:true,fechaInstalacion:true,lecturaInicial:true,lecturaSeguimiento:true,
-        registrable:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true},
+        registrable:true,ubicacion:{barrio:true,manzano:true,nroLote:true,numeroManzano:true,latitud:true,longitud:true,numeroVivienda:true},
         medidor:{id:true,estado:true,marca:true,medicion:true,nroMedidor:true,isActive:true},
         afiliado:{
           id:true,isActive:true,estado:true,
-          perfil:{apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,urlImage:true,id:true,isActive:true,estado:true,nombrePrimero:true,nombreSegundo:true}
+          perfil:{apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,urlImage:true,id:true,isActive:true,estado:true,nombrePrimero:true,nombreSegundo:true,defaultClientImage:true,}
         }
       },
       relations:{
@@ -302,20 +299,13 @@ export class AsociacionesService {
         nombrePrimero:true,nombreSegundo:true,
         apellidoPrimero:true,apellidoSegundo:true,
         CI:true,estado:true,id:true,isActive:true,
-        profesion:true,urlImage:true,profileImageUri:true,
+        contacto:true,urlImage:true,profileImageUri:true,
         afiliado:{
-          id:true,isActive:true,
-          medidorAsociado:{
-            id:true,estadoMedidorAsociado:true,estado:true,isActive:true,lecturaSeguimiento:true,
-          }
+          id:true,isActive:true,estado:true,
         }
       },
       relations:{
-        afiliado:{
-          medidorAsociado:{
-            medidor:true,
-          }
-        }
+        afiliado:true
       }
     })
     if(!data) throw new BadRequestException(`perfil id: ${id} not found`);
@@ -387,17 +377,23 @@ export class AsociacionesService {
    },
  };
 }
-  private async findAfiliadoByAsociacion(id: number) {
-    return await this.dataSource.getRepository(Perfil).findOne({
-      where: {
-        afiliado: {
-          medidorAsociado:{
-            id
-          }
-        },
+  private async findAsociacionnAfiliado(id: number) {
+    
+    const asociacion = await this.medidorAsociadoRepository.findOne({
+      where:{id},
+      select:{
+        id:true,isActive:true,estado:true,estadoMedidorAsociado:true,fechaInstalacion:true,
+        lecturaInicial:true,lecturaSeguimiento:true,registrable:true,ubicacion:
+        {barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true},
+        medidor:{id:true,isActive:true,estado:true,nroMedidor:true},
+        afiliado:{id:true,isActive:true,estado:true,
+          perfil:{id:true,isActive:true,estado:true,apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,contacto:true,defaultClientImage:true,profileImageUri:true,urlImage:true,}
+        }
+      
       },
-      relations: { afiliado: {medidorAsociado:{ medidor: true} } },
-    });
+      relations:{afiliado:{perfil:true},medidor:true}
+    })
+    return asociacion;
   }
   async verificarGestion(idAsociacion:number){
     const gestion = new Date().getFullYear();
@@ -475,6 +471,31 @@ export class AsociacionesService {
       data:gestionCreate
     }
   }
+  
+  async findAllMedidorOneAfiliado(id: number) {
+   
+    const afiliadoWithMedidores = await this.dataSource.getRepository(Perfil).findOne({
+      where: { id },
+      select:{
+        id:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,defaultClientImage:true,direccion:true,estado:true,isActive:true,isAfiliado:true,nombrePrimero:true,nombreSegundo:true,profileImageUri:true,urlImage:true,
+        afiliado:{
+          id:true,estado:true,isActive:true,
+        }
+      },
+      relations: { afiliado: true },
+      // select: {},
+    });
+    if (!afiliadoWithMedidores)
+      throw new NotFoundException(
+        `Perfil de afiliado with Id: ${id} not found`,
+      );
+    if(!afiliadoWithMedidores.afiliado) throw new BadRequestException(`El perfil solicitado no tiene afiliación`);
+    return {
+      OK: true,
+      message: 'afiliado encontrado',
+      data: afiliadoWithMedidores,
+    };
+  }
   async findGestiones(idAsociacion:number,paginationDto: PaginationDto){
     const gestion = new Date().getFullYear();
     const {limit=10,offset=0} = paginationDto;
@@ -526,5 +547,144 @@ export class AsociacionesService {
       message:'REGISTRABLE ACTUALIZADO!',
       data:planilla
     }
+  }
+
+
+  async getAsociacionesAfiliado(idPerfil:number){
+    const asociados = await this.dataSource.getRepository(MedidorAsociado).find({
+      where:{
+        afiliado:{
+          perfil:{
+            id:idPerfil
+          }
+        }
+      },
+      select:{
+        id:true,estado:true,estadoMedidorAsociado:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,lecturaSeguimiento:true,registrable:true,ubicacion:{barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true,},
+        medidor:{id:true,estado:true,isActive:true,funcionamiento:true,nroMedidor:true,medicion:true,}
+      },
+      relations:{
+        medidor:true
+      },
+      order:{
+        isActive:'DESC',
+      }
+    })
+    return {
+      OK:true,
+      message:'asocciones de perfil',
+      data:asociados,
+    }
+  }
+
+  //TODO: PLANILLAS DE REGISTROS DE LECTURAS DE MEDIDOR
+  async createPlanillaMedidor(
+    createPlanillaMedidorDto: CreatePlanillaMedidorDto,
+  ) {
+    const { medidor, gestion, ...dataPlanilla } = createPlanillaMedidorDto;
+
+    const medidorDb = await this.dataSource.getRepository(MedidorAsociado).findOne({
+      where: { id: medidor.id },
+      relations: { planillas: true,medidor:true },
+    });
+
+    if (!medidorDb)
+      throw new BadRequestException(
+        `Medidor de agua width id: ${createPlanillaMedidorDto.medidor.id} not found`,
+      );
+    if (medidorDb.planillas.find((reg) => reg.gestion === gestion))
+      throw new BadRequestException(
+        `Ya existe la gestion ${gestion} registrada para el asociado de id ${medidor.id} con numero:${medidorDb.medidor.nroMedidor}`,
+      );
+
+    const planilla = this.dataSource.getRepository(PlanillaLecturas).create({
+      ...dataPlanilla,
+      gestion,
+      medidor: medidorDb,
+    });
+    try {
+      await this.dataSource.getRepository(PlanillaLecturas).save(planilla);
+      return {
+        OK: true,
+        message: 'Planilla de medidor asociado regitrada',
+        data: planilla,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+
+  
+  
+  async updatePlanillaMedidor(
+    idPlanilla: number,
+    updatePlanillaMedidorDto: UpdatePlanillaMedidorDto,
+  ) {
+    const { medidor, gestion, ...dataPlanilla } = updatePlanillaMedidorDto;
+    const planilla = await this.dataSource.getRepository(PlanillaLecturas).preload({
+      id: idPlanilla,
+      ...dataPlanilla,
+    });
+    if (!planilla)
+      throw new BadRequestException(
+        `Planilla con id ${idPlanilla} no encontrada`,
+      );
+
+    try {
+      await this.dataSource.getRepository(PlanillaLecturas).save(planilla);
+      return {
+        OK: true,
+        message: 'planilla actualizada',
+        data: planilla,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async updateStatusPlanillaMedidor(
+    idPlanilla: number,
+    updatePlanillaMedidorDto: UpdatePlanillaMedidorDto,
+  ) {
+    const { estado } = updatePlanillaMedidorDto;
+    const planilla = await this.dataSource.getRepository(PlanillaLecturas).preload({
+      id: idPlanilla,
+      estado,
+    });
+    if (!planilla)
+      throw new BadRequestException(
+        `Planilla con id ${idPlanilla} no encontrada`,
+      );
+
+    try {
+      await this.dataSource.getRepository(PlanillaLecturas).save(planilla);
+      return {
+        OK: true,
+        message: 'estado de planilla actualizada',
+        data: planilla,
+      };
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async ComprobanteDetalles(idLectura: number) {
+    const lecturaPorPagar = await this.dataSource.getRepository(PlanillaMesLectura).findOne({
+      where: { id:idLectura},
+      relations: { pagar:{comprobante:true} },
+      select:{
+        consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,estado:true,medicion:true,
+        pagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,fechaLimitePago:true,motivo:true,pagado:true,
+          comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,moneda:true,},
+        },
+      }
+    });
+    if (!lecturaPorPagar)
+      throw new BadRequestException(
+        `la lectura: ${idLectura} no fue encontrada`,
+      );
+    return {
+      OK: true,
+      message: 'lectura con comprobante de pago ',
+      data: lecturaPorPagar,
+    };
   }
 }

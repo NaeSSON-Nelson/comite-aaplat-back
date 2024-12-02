@@ -16,46 +16,46 @@ export class ItemsMenuController {
 
   constructor(private readonly itemsMenuService: ItemsMenuService) {}
   
-  @Post()
   // @MenusProtected(ValidMenu.itemsMenu)
   // @ItemMenuProtected(ValidItemMenu.itemMenuRegister)
-  createItemMenu(@Body() createItemMenuDto: CreateItemMenuDto) {
-    return this.itemsMenuService.create(createItemMenuDto);
-  }
-  @Get()
+  // @Post()
+  // createItemMenu(@Body() createItemMenuDto: CreateItemMenuDto) {
+  //   return this.itemsMenuService.create(createItemMenuDto);
+  // }
   // @MenusProtected(ValidMenu.itemsMenu)
   // @ItemMenuProtected(ValidItemMenu.itemMenuList)
-  findAll(@Query() paginationDto:PaginationDto) {
-    return this.itemsMenuService.findAll(paginationDto);
-  }
-  @Get('link/:term')
+  // @Get()
+  // findAll(@Query() paginationDto:PaginationDto) {
+  //   return this.itemsMenuService.findAll(paginationDto);
+  // }
   // @MenusProtected(ValidMenu.itemsMenu)
   // @ItemMenuProtected(ValidItemMenu.itemMenuRegister)
-  findOneByLink(@Param('term') term:string) {
-    return this.itemsMenuService.findOneByLink(term);
-  }
-  @Get(':id')
+  // @Get('link/:term')
+  // findOneByLink(@Param('term') term:string) {
+  //   return this.itemsMenuService.findOneByLink(term);
+  // }
   // @MenusProtected(ValidMenu.itemsMenu)
   // @ItemMenuProtected(ValidItemMenu.itemMenuDetails)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.itemsMenuService.findOne(id);
-  }
-  @Patch(':id')
+  // @Get(':id')
+  // findOne(@Param('id', ParseIntPipe) id: number) {
+  //   return this.itemsMenuService.findOne(id);
+  // }
   // @MenusProtected(ValidMenu.itemsMenu)
   // @ItemMenuProtected(ValidItemMenu.itemMenuUpdate)
-  updateItemMenu(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateItemMenuDto: UpdateItemMenuDto,
-  ) {
-    return this.itemsMenuService.update(id, updateItemMenuDto);
-  }
-  @Patch('status/:id')
+  // @Patch(':id')
+  // updateItemMenu(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() updateItemMenuDto: UpdateItemMenuDto,
+  // ) {
+  //   return this.itemsMenuService.update(id, updateItemMenuDto);
+  // }
   // @MenusProtected(ValidMenu.itemsMenu)
   // @ItemMenuProtected(ValidItemMenu.itemMenuStatus)
-  updateItemMenuStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateItemMenuDto: UpdateItemMenuDto,
-  ) {
-    return this.itemsMenuService.updateStatus(id, updateItemMenuDto);
-  }
+  // @Patch('status/:id')
+  // updateItemMenuStatus(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() updateItemMenuDto: UpdateItemMenuDto,
+  // ) {
+  //   return this.itemsMenuService.updateStatus(id, updateItemMenuDto);
+  // }
 }

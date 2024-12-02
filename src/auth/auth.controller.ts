@@ -33,9 +33,15 @@ export class AuthController {
       data:{
         username,
         roles:roleToUsuario.map(toUsuario=>{
-          const {role:{id,nombre,nivel}} = toUsuario;
-          return {
-            id,nombre,nivel
+          const {menuToRole,roleToUsuario,updated_at,created_at,...dataRole}=toUsuario.role;
+          return{
+            ...dataRole,
+            menus:menuToRole.map(toRole=>{
+              const {created_at,updated_at,...dataMenu}=toRole.menu
+              return{
+                ...dataMenu
+              }
+            })
           }
         })
       }

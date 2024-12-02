@@ -19,8 +19,7 @@ import {
 import { Type } from 'class-transformer';
 import { MenuItemsC } from 'src/interfaces/menuItems-c.interface';
 import { Estado } from 'src/interfaces/enum/enum-entityes';
-import { ItemToMenu } from '../../items-to-menu/entities/item-to-menu.entity';
-class itemToMenuForm{
+class itemMenuForm{
   @IsNumber()
   @Min(1)
   itemMenuId:number;
@@ -49,6 +48,6 @@ export class CreateMenuDto {
   @IsArray()
   @IsOptional()
   @ValidateNested()
-  @Type(()=>itemToMenuForm)
-  itemsMenu?: itemToMenuForm[];
+  @Type(()=>itemMenuForm)
+  itemsMenu?: itemMenuForm[];
 }
