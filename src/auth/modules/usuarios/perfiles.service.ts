@@ -174,12 +174,13 @@ export class PerfilesService {
       throw new BadRequestException(
         `El perfil con id: ${idPerfil} ya tiene asignado un afiliado!`,
       );
-    const { estado,moneda,monto, ...dataUbicacion } = createAfiliadoDto;
+    const { estado,monedaAfiliacion,montoAfiliacion, ...dataUbicacion } = createAfiliadoDto;
     const afiliado = this.afiliadoRepository.create({
       ubicacion: { ...dataUbicacion },
       estado,
-      moneda,monto,
       perfil,
+      monedaAfiliacion,
+      montoAfiliacion
     });
     perfil.afiliado = afiliado;
     try {
@@ -371,8 +372,8 @@ export class PerfilesService {
       where: { id },
       select:{
         id:true,estado:true,accessAcount:true,apellidoPrimero:true,isAfiliado:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
-        afiliado:{id:true,estado:true,entidad:true,fechaPago:true,metodoPago:true,moneda:true,monedaRecibido:true,montoRecibido:true,monto:true,nroCuenta:true,nroRecibo:true,remitente:true,
-          isActive:true,pagado:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
+        afiliado:{id:true,estado:true,monedaAfiliacion:true,montoAfiliacion:true,
+          isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
         usuario:{id:true,estado:true,correo:true,username:true,correoVerify:true,roleToUsuario:{id:true,estado:true,role:{id:true,estado:true,nombre:true,nivel:true}},isActive:true,}
       },
       relations: { afiliado: true, usuario: {roleToUsuario:{role:true}} },
@@ -422,7 +423,7 @@ export class PerfilesService {
         id:true,isActive:true,estado:true,
         nombrePrimero:true,nombreSegundo:true,accessAcount:true,apellidoPrimero:true,apellidoSegundo:true,
         afiliado:{
-          id:true,isActive:true,estado:true,ubicacion:{barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true},
+          id:true,isActive:true,estado:true,montoAfiliacion:true,monedaAfiliacion:true,ubicacion:{barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true},
         }
       },
       relations: { afiliado: true },
@@ -592,12 +593,16 @@ export class PerfilesService {
       manzano,
       nroLote,
       numeroManzano,
+      monedaAfiliacion,
+      montoAfiliacion,
      //en otro modulo
       //en otro modulo
       ...dataNoActualizadaForm
     } = updateAfiliadoDto;
     const afiliado = await this.afiliadoRepository.preload({
         id: perfil.afiliado.id,
+        monedaAfiliacion,
+        montoAfiliacion,
         ubicacion: { barrio, latitud, longitud, numeroVivienda,manzano,nroLote,numeroManzano, },
         // estado,
         
@@ -614,26 +619,26 @@ export class PerfilesService {
       this.commonService.handbleDbErrors(error);
     }
   }
-   async updatePagarAfiliado(perfilId:number,updatePagarAfiliado:UpdatePagoAfiliacionDto){
-    const perfil = await this.perfilRepository.findOne({
-      where:{id:perfilId},
-      relations:{afiliado:true}
-    });
-    if(!perfil) throw new NotFoundException(`Perfil ${perfilId} not found`);
-    if(!perfil.afiliado) throw new BadRequestException(`Perfil ${perfilId} no tiene afiliacion`);
-    if(perfil.afiliado.pagado) throw new BadRequestException(`No se pue de modificar el monto de pago una vez pagado`);
-    const {moneda,monto}=updatePagarAfiliado;
-    const afi = await this.afiliadoRepository.preload({id:perfil.afiliado.id,moneda,monto});
-    try {
-      await this.afiliadoRepository.save(afi);
-      return {
-        OK:true,
-        message:'Pago de afiliacion actualiza con exito!',
-      }
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-   }
+  //  async updatePagarAfiliado(perfilId:number,updatePagarAfiliado:UpdatePagoAfiliacionDto){
+  //   const perfil = await this.perfilRepository.findOne({
+  //     where:{id:perfilId},
+  //     relations:{afiliado:true}
+  //   });
+  //   if(!perfil) throw new NotFoundException(`Perfil ${perfilId} not found`);
+  //   if(!perfil.afiliado) throw new BadRequestException(`Perfil ${perfilId} no tiene afiliacion`);
+  //   if(perfil.afiliado.pagado) throw new BadRequestException(`No se pue de modificar el monto de pago una vez pagado`);
+  //   const {moneda,monto}=updatePagarAfiliado;
+  //   const afi = await this.afiliadoRepository.preload({id:perfil.afiliado.id,moneda,monto});
+  //   try {
+  //     await this.afiliadoRepository.save(afi);
+  //     return {
+  //       OK:true,
+  //       message:'Pago de afiliacion actualiza con exito!',
+  //     }
+  //   } catch (error) {
+  //     this.commonService.handbleDbErrors(error);
+  //   }
+  //  }
   async updateUsuario(idPerfil: number, updateUsuarioDto: UpdateUsuarioDto) {
     const perfil = await this.perfilRepository.findOne({
       where: { id: idPerfil },
@@ -826,13 +831,22 @@ export class PerfilesService {
       where:{id:perfilId},
       select:{
         id:true,estado:true,accessAcount:true,apellidoPrimero:true,isAfiliado:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,nombrePrimero:true,nombreSegundo:true,profesion:true,tipoPerfil:true,defaultClientImage:true,profileImageUri:true,urlImage:true,isActive:true,
-        afiliado:{id:true,estado:true,entidad:true,fechaPago:true,metodoPago:true,moneda:true,monedaRecibido:true,montoRecibido:true,monto:true,nroCuenta:true,nroRecibo:true,remitente:true,
-          isActive:true,pagado:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
+        afiliado:{id:true,estado:true,monedaAfiliacion:true,montoAfiliacion:true,
+          isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true,numeroVivienda:true,manzano:true,nroLote:true,numeroManzano:true}},
         usuario:{id:true,estado:true,correo:true,username:true,correoVerify:true,roleToUsuario:{id:true,estado:true,role:{id:true,estado:true,nombre:true,nivel:true}},isActive:true,}
       },
-      relations:{afiliado:true,usuario:true},
+      relations:{afiliado:true,usuario:{roleToUsuario:{role:true}}},
     })
-    return data;
+    const {usuario,...resData}=data;
+    const{roleToUsuario,...datausuario} = usuario;
+    console.log(roleToUsuario);
+    return {
+      ...resData,
+      usuario:{
+        ...datausuario,
+        roles:roleToUsuario.map(toUsuario=>toUsuario.role.nombre)
+      }
+    };
   }
   async exportPerfiles(query:QueryExportPerfil){
     const {
@@ -894,116 +908,116 @@ export class PerfilesService {
     }
   }
 
-  async registrarPagoAfiliacionPresencial(registrarPago:RegistrarPagoAfiliacionPresencialDto){
-    const {perfilId,...dataRegistrarPagoAfiliacion} =registrarPago;
-    if(dataRegistrarPagoAfiliacion.metodoPago !== MetodoPago.presencial) throw new BadRequestException(`El tipo de pago debe ser Presencial`);
-    const perfil = await this.perfilRepository.findOne({
-      where:{
-        id:perfilId
-      },
-      relations:{afiliado:true}
-    });
-    if(!perfil) throw new NotFoundException(`Perfil con Id ${perfilId} not found`);
-    else if(!perfil.isActive) throw new BadRequestException(`El Perfil ${perfilId} no se encuentra disponible`);
-    else if(!perfil.afiliado) throw new BadRequestException(`El perfil Id ${perfilId} no disponible con afiliacion creada`);
-    else if(!perfil.afiliado.isActive) throw new BadRequestException(`La Afiliacion con el perfil ${perfil} not esta disponible`);
-    else if(perfil.afiliado.pagado) throw new BadRequestException(`La Afiliacion del perfil ${perfilId} ya tiene pagado el coste de afiliacion`);
-    else if(dataRegistrarPagoAfiliacion.montoRecibido !==perfil.afiliado.monto) throw new BadRequestException(`El monto por pagar y el monto recibido no coinciden`);
-    else if(dataRegistrarPagoAfiliacion.monedaRecibido !==perfil.afiliado.moneda) throw new BadRequestException(`La moneda de pago recibido no coinciden con la moneda de afiliacion de pago`)
-    const afi = await this.afiliadoRepository.preload({id:perfil.afiliado.id,
-      metodoPago:dataRegistrarPagoAfiliacion.metodoPago,
-      montoRecibido:dataRegistrarPagoAfiliacion.montoRecibido,
-      monedaRecibido:dataRegistrarPagoAfiliacion.monedaRecibido,
-      fechaPago:new Date(),
-      pagado:true,
-    });
-    try {
-      await this.afiliadoRepository.save(afi);
-      return {
-        OK:true,
-        message:`Monto de pago de afiliacion del perfil ${perfilId} realiza con exito!`,
-        data: await this.perfilRepository.findOne({
-          where:{id:perfilId},
-          select:{
-            nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,id:true,isActive:true,estado:true,
-            afiliado:{
-              id:true,isActive:true,estado:true,fechaPago:true,montoRecibido:true,monedaRecibido:true,pagado:true,metodoPago:true,
-            }
-          },
-          relations:{
-            afiliado:true
-          }
-        })
-      }
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-  }
-  async registrarPagoAfiliacionDeposito(registrarPago:RegistrarPagoAfiliacionDepositoDto){
-    const {perfilId,...dataRegistrarPagoAfiliacion} =registrarPago;
-    if(dataRegistrarPagoAfiliacion.metodoPago !== MetodoPago.deposito) throw new BadRequestException(`El tipo de pago debe ser Presencial`);
-    const perfil = await this.perfilRepository.findOne({
-      where:{
-        id:perfilId
-      },
-      relations:{afiliado:true}
-    });
-    if(!perfil) throw new NotFoundException(`Perfil con Id ${perfilId} not found`);
-    else if(!perfil.isActive) throw new BadRequestException(`El Perfil ${perfilId} no se encuentra disponible`);
-    else if(!perfil.afiliado) throw new BadRequestException(`El perfil Id ${perfilId} no disponible con afiliacion creada`);
-    else if(!perfil.afiliado.isActive) throw new BadRequestException(`La Afiliacion con el perfil ${perfil} not esta disponible`);
-    else if(perfil.afiliado.pagado) throw new BadRequestException(`La Afiliacion del perfil ${perfilId} ya tiene pagado el coste de afiliacion`);
-    else if(dataRegistrarPagoAfiliacion.montoRecibido !==perfil.afiliado.monto) throw new BadRequestException(`El monto por pagar y el monto recibido no coinciden`);
-    else if(dataRegistrarPagoAfiliacion.monedaRecibido !==perfil.afiliado.moneda) throw new BadRequestException(`La moneda de pago recibido no coinciden con la moneda de afiliacion de pago`)
+  // async registrarPagoAfiliacionPresencial(registrarPago:RegistrarPagoAfiliacionPresencialDto){
+  //   const {perfilId,...dataRegistrarPagoAfiliacion} =registrarPago;
+  //   if(dataRegistrarPagoAfiliacion.metodoPago !== MetodoPago.presencial) throw new BadRequestException(`El tipo de pago debe ser Presencial`);
+  //   const perfil = await this.perfilRepository.findOne({
+  //     where:{
+  //       id:perfilId
+  //     },
+  //     relations:{afiliado:true}
+  //   });
+  //   if(!perfil) throw new NotFoundException(`Perfil con Id ${perfilId} not found`);
+  //   else if(!perfil.isActive) throw new BadRequestException(`El Perfil ${perfilId} no se encuentra disponible`);
+  //   else if(!perfil.afiliado) throw new BadRequestException(`El perfil Id ${perfilId} no disponible con afiliacion creada`);
+  //   else if(!perfil.afiliado.isActive) throw new BadRequestException(`La Afiliacion con el perfil ${perfil} not esta disponible`);
+  //   else if(perfil.afiliado.pagado) throw new BadRequestException(`La Afiliacion del perfil ${perfilId} ya tiene pagado el coste de afiliacion`);
+  //   else if(dataRegistrarPagoAfiliacion.montoRecibido !==perfil.afiliado.monto) throw new BadRequestException(`El monto por pagar y el monto recibido no coinciden`);
+  //   else if(dataRegistrarPagoAfiliacion.monedaRecibido !==perfil.afiliado.moneda) throw new BadRequestException(`La moneda de pago recibido no coinciden con la moneda de afiliacion de pago`)
+  //   const afi = await this.afiliadoRepository.preload({id:perfil.afiliado.id,
+  //     metodoPago:dataRegistrarPagoAfiliacion.metodoPago,
+  //     montoRecibido:dataRegistrarPagoAfiliacion.montoRecibido,
+  //     monedaRecibido:dataRegistrarPagoAfiliacion.monedaRecibido,
+  //     fechaPago:new Date(),
+  //     pagado:true,
+  //   });
+  //   try {
+  //     await this.afiliadoRepository.save(afi);
+  //     return {
+  //       OK:true,
+  //       message:`Monto de pago de afiliacion del perfil ${perfilId} realiza con exito!`,
+  //       data: await this.perfilRepository.findOne({
+  //         where:{id:perfilId},
+  //         select:{
+  //           nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,id:true,isActive:true,estado:true,
+  //           afiliado:{
+  //             id:true,isActive:true,estado:true,fechaPago:true,montoRecibido:true,monedaRecibido:true,pagado:true,metodoPago:true,
+  //           }
+  //         },
+  //         relations:{
+  //           afiliado:true
+  //         }
+  //       })
+  //     }
+  //   } catch (error) {
+  //     this.commonService.handbleDbErrors(error);
+  //   }
+  // }
+  // async registrarPagoAfiliacionDeposito(registrarPago:RegistrarPagoAfiliacionDepositoDto){
+  //   const {perfilId,...dataRegistrarPagoAfiliacion} =registrarPago;
+  //   if(dataRegistrarPagoAfiliacion.metodoPago !== MetodoPago.deposito) throw new BadRequestException(`El tipo de pago debe ser Presencial`);
+  //   const perfil = await this.perfilRepository.findOne({
+  //     where:{
+  //       id:perfilId
+  //     },
+  //     relations:{afiliado:true}
+  //   });
+  //   if(!perfil) throw new NotFoundException(`Perfil con Id ${perfilId} not found`);
+  //   else if(!perfil.isActive) throw new BadRequestException(`El Perfil ${perfilId} no se encuentra disponible`);
+  //   else if(!perfil.afiliado) throw new BadRequestException(`El perfil Id ${perfilId} no disponible con afiliacion creada`);
+  //   else if(!perfil.afiliado.isActive) throw new BadRequestException(`La Afiliacion con el perfil ${perfil} not esta disponible`);
+  //   else if(perfil.afiliado.pagado) throw new BadRequestException(`La Afiliacion del perfil ${perfilId} ya tiene pagado el coste de afiliacion`);
+  //   else if(dataRegistrarPagoAfiliacion.montoRecibido !==perfil.afiliado.monto) throw new BadRequestException(`El monto por pagar y el monto recibido no coinciden`);
+  //   else if(dataRegistrarPagoAfiliacion.monedaRecibido !==perfil.afiliado.moneda) throw new BadRequestException(`La moneda de pago recibido no coinciden con la moneda de afiliacion de pago`)
     
-    const afi = await this.afiliadoRepository.preload({id:perfil.afiliado.id,
-      // metodoPago:dataRegistrarPagoAfiliacion.metodoPago,
-      // montoRecibido:dataRegistrarPagoAfiliacion.montoRecibido,
-      // monedaRecibido:dataRegistrarPagoAfiliacion.monedaRecibido,
-      // entidad:dataRegistrarPagoAfiliacion.entidad,
-      // nroRecibo:dataRegistrarPagoAfiliacion.nroRecibo,
-      // remitente:dataRegistrarPagoAfiliacion.remitente,
-      ...dataRegistrarPagoAfiliacion,
-      pagado:true,
-      fechaPago:new Date(),
-    });
-    try {
-      await this.afiliadoRepository.save(afi);
-      return {
-        OK:true,
-        message:`Registro de deposito de pago de afiliacion del perfil ${perfilId} realiza con exito!`,
-        // data: await this.perfilRepository.findOne({
-        //   where:{id:perfilId},
-        //   select:{
-        //     nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,id:true,isActive:true,estado:true,
-        //     afiliado:{
-        //       id:true,isActive:true,estado:true,fechaPago:true,montoRecibido:true,monedaRecibido:true,pagado:true,metodoPago:true,
-        //     }
-        //   },
-        //   relations:{
-        //     afiliado:true
-        //   }
-        // })
-      }
-    } catch (error) {
-      this.commonService.handbleDbErrors(error);
-    }
-  }
+  //   const afi = await this.afiliadoRepository.preload({id:perfil.afiliado.id,
+  //     // metodoPago:dataRegistrarPagoAfiliacion.metodoPago,
+  //     // montoRecibido:dataRegistrarPagoAfiliacion.montoRecibido,
+  //     // monedaRecibido:dataRegistrarPagoAfiliacion.monedaRecibido,
+  //     // entidad:dataRegistrarPagoAfiliacion.entidad,
+  //     // nroRecibo:dataRegistrarPagoAfiliacion.nroRecibo,
+  //     // remitente:dataRegistrarPagoAfiliacion.remitente,
+  //     ...dataRegistrarPagoAfiliacion,
+  //     pagado:true,
+  //     fechaPago:new Date(),
+  //   });
+  //   try {
+  //     await this.afiliadoRepository.save(afi);
+  //     return {
+  //       OK:true,
+  //       message:`Registro de deposito de pago de afiliacion del perfil ${perfilId} realiza con exito!`,
+  //       // data: await this.perfilRepository.findOne({
+  //       //   where:{id:perfilId},
+  //       //   select:{
+  //       //     nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,id:true,isActive:true,estado:true,
+  //       //     afiliado:{
+  //       //       id:true,isActive:true,estado:true,fechaPago:true,montoRecibido:true,monedaRecibido:true,pagado:true,metodoPago:true,
+  //       //     }
+  //       //   },
+  //       //   relations:{
+  //       //     afiliado:true
+  //       //   }
+  //       // })
+  //     }
+  //   } catch (error) {
+  //     this.commonService.handbleDbErrors(error);
+  //   }
+  // }
 
-  async findPagoAfiliacion(perfilId:number){
-    const afiliado = await this.afiliadoRepository.findOne({
-      where:{
-        perfil:{id:perfilId},
-      },
-      select:{
-        id:true,fechaPago:true,metodoPago:true,pagado:true,entidad:true,monto:true,moneda:true,monedaRecibido:true,montoRecibido:true,nroRecibo:true,remitente:true,
-      }
-    });
-    if(!afiliado) throw new NotFoundException(`Perfil not found or perfil no tiene afiliacion`);
-    return {
-      OK:true,
-      message:'pago de afiliacion',
-      data:afiliado
-    }
-  }
+  // async findPagoAfiliacion(perfilId:number){
+  //   const afiliado = await this.afiliadoRepository.findOne({
+  //     where:{
+  //       perfil:{id:perfilId},
+  //     },
+  //     select:{
+  //       id:true,fechaPago:true,metodoPago:true,pagado:true,entidad:true,monto:true,moneda:true,monedaRecibido:true,montoRecibido:true,nroRecibo:true,remitente:true,
+  //     }
+  //   });
+  //   if(!afiliado) throw new NotFoundException(`Perfil not found or perfil no tiene afiliacion`);
+  //   return {
+  //     OK:true,
+  //     message:'pago de afiliacion',
+  //     data:afiliado
+  //   }
+  // }
 }

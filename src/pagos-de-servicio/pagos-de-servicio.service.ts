@@ -3,11 +3,11 @@ import { BadRequestException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ComprobanteDePagoDeMultas, ComprobantePago, ComprobantePorPago, MultaServicio } from './entities';
-import { DataSource, FindOptionsOrder, FindOptionsWhere, ILike, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository, OrderByCondition } from 'typeorm';
+import { DataSource, FindOptionsOrder, FindOptionsWhere, ILike, In, IsNull, LessThanOrEqual, Like, MoreThanOrEqual, Repository, OrderByCondition, Brackets} from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
-import { Mes, Monedas } from 'src/interfaces/enum/enum-entityes';
+import { Mes, Monedas, RetrasoTipo } from 'src/interfaces/enum/enum-entityes';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { Afiliado, Perfil } from 'src/auth/modules/usuarios/entities';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
@@ -15,6 +15,8 @@ import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lec
 import { PagosServicesDto } from './dto/pagos-services.dto';
 import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
+import { FechasParametrosDto } from './dto/fechas-parametros.dto';
+import { RetrasosPagosDto } from './dto/retrasos-pagos.dto';
 
 @Injectable()
 export class PagosDeServicioService {
@@ -638,5 +640,279 @@ export class PagosDeServicioService {
       multasPagadas,
       planillasPagadas
     }
+  }
+
+
+  async reportePagosDeServicio(parametros:FechasParametrosDto){
+    const {fechaFin,fechaInicio} = parametros;
+    console.log('fecha inicio query',fechaInicio);
+    console.log('fecha fin query',fechaFin);
+    const fechaInicioFn = new Date(fechaInicio);
+    const fechaFinFn = new Date(fechaFin);
+    console.log('fecha inicio',fechaInicio);
+    console.log('fecha fin',fechaFin);
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    const perfil = await qb .select([
+                            'perfil.id',
+                            'perfil.nombrePrimero',
+                            'perfil.nombreSegundo',
+                            'perfil.apellidoPrimero',
+                            'perfil.apellidoSegundo',
+                            'perfil.CI',
+                            'afiliado.id',
+                            'asociado.id',
+                            'medidor.id',
+                            'medidor.nroMedidor',
+                            'planilla.id',
+                            'planilla.gestion',
+                            'lectura.id',
+                            'multas.id',
+                            'multas.pagado',
+                            'multa_comprobante.id',
+                            'multa_comprobante.montoPagado',
+                            'multa_comprobante.moneda',
+                            'multa_comprobante.fechaEmitida',
+                            'pagar.id',
+                            'pagar.pagado',
+                            'comprobante.id',
+                            'comprobante.montoPagado',
+                            'comprobante.moneda',
+                            'comprobante.fechaEmitida',
+                            ])
+                            .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
+                            .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
+                            .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
+                            .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
+                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id')
+                            .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = true')
+                            .leftJoin('pagar.comprobante','comprobante','comprobante."comprobantePorPagarId" = pagar.id')
+                            .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = true')
+                            .leftJoin('multas.comprobante','multa_comprobante','multa_comprobante."multaServicioId" = multas.id')
+                            // .where('comprobante."fechaEmitida" < :fechaInicio',{fechaInicio:new Date()})
+                            //PAGOS DE LECTURAS
+                            .where(new Brackets((qb)=>{
+                              qb.where('comprobante."fechaEmitida"  >=:fechaInicioFn',{fechaInicioFn})
+                              .andWhere('comprobante."fechaEmitida" <=:fechaFin',{fechaFin})
+                              // .andWhere(`pagar.pagado = 'true'`)
+                            }))
+                            //PAGOS DE MULTAS
+                            .orWhere(new Brackets((qb)=>{
+                              qb.where('multa_comprobante."fechaEmitida"  >=:fechaInicioFn',{fechaInicioFn})
+                              .andWhere('multa_comprobante."fechaEmitida" <=:fechaFinFn',{fechaFinFn})
+                              // .andWhere(`multas.pagado = 'true'`)
+                            })).getMany();
+                          // console.log(perfil);
+    return {
+      OK:true,
+      message:'perfiles pagos',
+      data:perfil
+    }
+  }
+
+  RETRASO_90_DIAS_MILISEGUNDOS:number=7776000000;
+  DIA_LIMITE_PAGO:number=28;
+
+  async reportAfiliadosConRetrasoPago(retrasoTipo:RetrasosPagosDto){
+    // const fechaRq =  retrasoTipo.tipo === RetrasoTipo.mensual?1
+    //                 :retrasoTipo.tipo === RetrasoTipo.bimestral?2
+    //                 :retrasoTipo.tipo === RetrasoTipo.trimestral?2
+    //                 :retrasoTipo.tipo === RetrasoTipo.demas?2
+    //                 :0
+    let fechaInit:Date;
+    const dateActual = new Date();
+    switch (retrasoTipo.tipo) {
+      case RetrasoTipo.mensual:
+        // 1 MES
+        if(dateActual.getDate()<=this.DIA_LIMITE_PAGO){
+          if(dateActual.getMonth()===0){
+            fechaInit= new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+          }else{
+            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-1,1,0,0,0,0);
+          }
+        }else{
+          fechaInit = new Date(dateActual.getFullYear(),dateActual.getMonth(),1,0,0,0,0);
+        }
+        break;
+      case RetrasoTipo.bimestral:
+        //2 MESES
+        if(dateActual.getDate()<=this.DIA_LIMITE_PAGO){
+          if(dateActual.getMonth()===0){
+            fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
+          }else if(dateActual.getMonth() ===1){
+            fechaInit= new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+          }
+          else{
+            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-2,1,0,0,0,0);
+          }
+        }else{
+          if(dateActual.getMonth() === 0){
+            fechaInit= new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+          }else{
+            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-2,1,0,0,0,0);
+            
+          }
+        }
+        break;
+      case RetrasoTipo.trimestral:
+        // 3 MESES
+        if(dateActual.getDate()<=this.DIA_LIMITE_PAGO){
+          if(dateActual.getMonth()===0){
+            fechaInit= new Date(dateActual.getFullYear()-1,9,1,0,0,0,0);
+          }else if(dateActual.getMonth() ===1){
+            fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
+          }else if(dateActual.getMonth() === 2){
+            fechaInit = new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+          }
+          else{
+            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-3,1,0,0,0,0);
+          }
+        }else{
+          if(dateActual.getMonth() === 0){
+            fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
+          }else if(dateActual.getMonth()===1){
+            fechaInit= new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+          }else{
+            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-3,1,0,0,0,0);
+          }
+        }
+        break;
+      case RetrasoTipo.demas:
+        // TODOS: TODOSPUES
+
+        const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+        const perfil = await qb 
+                          .select([
+                            'perfil.id',
+                            'perfil.nombrePrimero',
+                            'perfil.nombreSegundo',
+                            'perfil.apellidoPrimero',
+                            'perfil.apellidoSegundo',
+                            'perfil.CI',
+                            'afiliado.id',
+                            'afiliado.ubicacion.barrio',
+                            'afiliado.ubicacion.numeroVivienda',
+                            'afiliado.ubicacion.manzano',
+                            'afiliado.ubicacion.numeroManzano',
+                            'afiliado.ubicacion.nroLote',
+                            'asociado.id',
+                            'asociado.ubicacion.barrio',
+                            'asociado.ubicacion.numeroVivienda',
+                            'asociado.ubicacion.manzano',
+                            'asociado.ubicacion.numeroManzano',
+                            'asociado.ubicacion.nroLote',
+                            'medidor.id',
+                            'medidor.nroMedidor',
+                            'planilla.id',
+                            'planilla.gestion',
+                            'lectura.id',
+                            'lectura.PlanillaMesLecturar',
+                            'pagar.id',
+                            'pagar.pagado',
+                            'pagar.monto',
+                            'pagar.moneda',
+                            'pagar.fechaLimitePago',
+                            'multas.id',
+                            'multas.pagado',
+                            'multas.monto',
+                            'multas.moneda',
+                            'multadas.id',
+                            'multadas.PlanillaMesLecturar',
+                            'gestion_multadas.id',
+                            'gestion_multadas.gestion',
+                            ])
+                            .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
+                            .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
+                            .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
+                            .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
+                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id')
+                            .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
+                            .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = false')
+                            .leftJoin('multas.lecturasMultadas','multadas','multadas."multaId" = multas.id')
+                            .leftJoin('multadas.planilla','gestion_multadas','gestion_multadas.id = multadas."planillaId"')
+                            // .where('pagar.fechaLimitePago BETWEEN :fechaInit AND :dateActual',{fechaInit,dateActual})
+                            .orderBy({
+                              'afiliado.ubicacion.manzano':'ASC',
+                              'afiliado.ubicacion.numeroManzano':'ASC',
+                              'afiliado.ubicacion.nroLote':'ASC',
+                              'planilla.gestion':'ASC',
+                              'lectura.id':'ASC',
+                              'multadas.id':'ASC',
+                            })
+                            .getMany();
+                            return{
+                              OK:true,
+                              message:`LISTADO DE PERFILES CON TODOS LOS RETRASOS DE PAGOS`,
+                              data:perfil
+                            }            
+      default:
+        throw new BadRequestException(`Tipo no valido`);
+    }
+    // const date90Retraso = new Date(dateActual.getTime()-this.RETRASO_90_DIAS_MILISEGUNDOS);
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    const perfil = await qb 
+                          .select([
+                            'perfil.id',
+                            'perfil.nombrePrimero',
+                            'perfil.nombreSegundo',
+                            'perfil.apellidoPrimero',
+                            'perfil.apellidoSegundo',
+                            'perfil.CI',
+                            'afiliado.id',
+                            'afiliado.ubicacion.barrio',
+                            'afiliado.ubicacion.numeroVivienda',
+                            'afiliado.ubicacion.manzano',
+                            'afiliado.ubicacion.numeroManzano',
+                            'afiliado.ubicacion.nroLote',
+                            'asociado.id',
+                            'asociado.ubicacion.barrio',
+                            'asociado.ubicacion.numeroVivienda',
+                            'asociado.ubicacion.manzano',
+                            'asociado.ubicacion.numeroManzano',
+                            'asociado.ubicacion.nroLote',
+                            'medidor.id',
+                            'medidor.nroMedidor',
+                            'planilla.id',
+                            'planilla.gestion',
+                            'lectura.id',
+                            'lectura.PlanillaMesLecturar',
+                            'pagar.id',
+                            'pagar.pagado',
+                            'pagar.monto',
+                            'pagar.moneda',
+                            'pagar.fechaLimitePago',
+                            'multas.id',
+                            'multas.pagado',
+                            'multas.monto',
+                            'multas.moneda',
+                            'multadas.id',
+                            'multadas.PlanillaMesLecturar',
+                            'gestion_multadas.id',
+                            'gestion_multadas.gestion',
+                            ])
+                            .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
+                            .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
+                            .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
+                            .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
+                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id')
+                            .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
+                            .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = false')
+                            .leftJoin('multas.lecturasMultadas','multadas','multadas."multaId" = multas.id')
+                            .leftJoin('multadas.planilla','gestion_multadas','gestion_multadas.id = multadas."planillaId"')
+                           
+                            .where('pagar.fechaLimitePago BETWEEN :fechaInit AND :dateActual',{fechaInit,dateActual})
+                            .orderBy({
+                              'afiliado.ubicacion.manzano':'ASC',
+                              'afiliado.ubicacion.numeroManzano':'ASC',
+                              'afiliado.ubicacion.nroLote':'ASC',
+                              'planilla.gestion':'ASC',
+                              'lectura.id':'ASC',
+                              'multadas.id':'ASC',
+                            })
+                            .getMany();
+  return{
+    OK:true,
+    message:`LISTADO DE PERFILES CON RETRASO DE PAGOS ${retrasoTipo.tipo}`,
+    data:perfil
+  }
   }
 }

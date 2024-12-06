@@ -26,9 +26,10 @@ export class CreateAfiliadoDto {
   
   @IsNumber()
   @Min(0)
-  monto:number;
+  montoAfiliacion:number;
   @IsEnum(Monedas)
-  moneda:Monedas;
+  monedaAfiliacion:Monedas;
+
   @IsString()
   manzano:string;
   @IsNumber()

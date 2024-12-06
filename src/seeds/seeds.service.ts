@@ -679,19 +679,19 @@ export class SeedsService {
      
       //INSERT INTO RELATIONS MENU TO ROLE
       
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.consultar],ValidRole.root);
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.consultar,ValidMenu.reportes],ValidRole.root);
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
-      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas],ValidRole.administrativo);
+      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.reportes],ValidRole.administrativo);
       await queryRunner.manager.save(menuToRoleRelationsAdmin);
       
-      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas],ValidRole.secretaria);
+      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.reportes],ValidRole.secretaria);
       await queryRunner.manager.save(menuToRoleRelationsContador);
 
       // const menuToRoleRelationsLecturador = await this.insertRelationsMenuToRole(['medidores-agua','asociaciones','lecturas'],'lecturador');
       // await queryRunner.manager.save(menuToRoleRelationsLecturador);
       
-      const menuToRoleRelationsUser = await this.insertRelationsMenuToRole([ValidRole.afiliado],ValidRole.root);
+      const menuToRoleRelationsUser = await this.insertRelationsMenuToRole([ValidRole.afiliado],ValidRole.afiliado);
       await queryRunner.manager.save(menuToRoleRelationsUser);
       
 
@@ -705,7 +705,7 @@ export class SeedsService {
       const roleToUsuarioAdministrativoSecretaria = await this.insertRolesToUsuario([ValidRole.secretaria],'secretaria');
       await queryRunner.manager.save(roleToUsuarioAdministrativoSecretaria);
 
-      // const roleToUsuarioAdministrativoLecturador = await this.insertRolesToUsuario(['lecturador','user'],'lecturador');
+      // const roleToUsuarioAdministrativoLecturador = await this.insertRolesToUsuario([ValidRole.afiliado],'lecturador');
       // await queryRunner.manager.save(roleToUsuarioAdministrativoLecturador);
 
       const roleToUsuarioContador = await this.insertRolesToUsuario([ValidRole.afiliado],'afiliado2');

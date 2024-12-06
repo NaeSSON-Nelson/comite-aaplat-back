@@ -20,7 +20,8 @@ export enum ValidMenu{
     roles="roles",
     cobros="cobros-de-servicio-agua",
     lecturas="lecturas",
-    consultar="user"
+    consultar="user",
+    reportes="reportes",
     // multasRetrasoPago="multas-de-servicio"
     // afiliados="afiliados",
     //  usuarios="usuarios",
@@ -114,6 +115,11 @@ export enum ValidItemMenu{
     lecturasListarAfiliadosPlanillasLecturas="planillas-afiliados-lecturas",
     lecturasRegistrarLecturasAfiliados="registrar-lecturas",
 
+    //REPORTES
+
+    
+    reportesPagosService="reportes-pagos",
+    reportesDeudores="reportes-deudores",
 
     //FUNCIONES DE USUARIO AFILIADO
 

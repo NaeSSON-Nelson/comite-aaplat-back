@@ -26,66 +26,66 @@ export class Afiliado extends ColumnsAlways {
     scale:2,
     transformer: new ColumnNumericTransformer(),
   })
-  monto:number;
+  montoAfiliacion:number;
   @Column({
     type:'enum',
     enum:Monedas,
   })
-  moneda:Monedas;
-  @Column({
-    type:'bool',
-    default:false,
-  })
-  pagado:boolean;
-  @Column({
-    type:'enum',
-    enum:MetodoPago,
-    nullable:true,
-  })
-  metodoPago:MetodoPago;
-  @Column({
-    type:'varchar',
-    length:100,
-    nullable:true
-  })
-  entidad:string;
-  @Column({
-    type:'varchar',
-    length:100,
-    nullable:true
-  })
-  nroRecibo:string;
-  @Column({
-    type:'varchar',
-    length:100,
-    nullable:true
-  })
-  remitente:string;
-  @Column({
-    type:'varchar',
-    length:100,
-    nullable:true
-  })
-  nroCuenta:string;
-  @Column('numeric',{
-    precision:8,
-    scale:2,
-    transformer: new ColumnNumericTransformer(),
-    nullable:true,
-  })
-  montoRecibido:number;
-  @Column({
-    type:'enum',
-    enum:Monedas,
-    nullable:true,
-  })
-  monedaRecibido:Monedas;
+  monedaAfiliacion:Monedas;
+  // @Column({
+  //   type:'bool',
+  //   default:false,
+  // })
+  // pagado:boolean;
+  // @Column({
+  //   type:'enum',
+  //   enum:MetodoPago,
+  //   nullable:true,
+  // })
+  // metodoPago:MetodoPago;
+  // @Column({
+  //   type:'varchar',
+  //   length:100,
+  //   nullable:true
+  // })
+  // entidad:string;
+  // @Column({
+  //   type:'varchar',
+  //   length:100,
+  //   nullable:true
+  // })
+  // nroRecibo:string;
+  // @Column({
+  //   type:'varchar',
+  //   length:100,
+  //   nullable:true
+  // })
+  // remitente:string;
+  // @Column({
+  //   type:'varchar',
+  //   length:100,
+  //   nullable:true
+  // })
+  // nroCuenta:string;
+  // @Column('numeric',{
+  //   precision:8,
+  //   scale:2,
+  //   transformer: new ColumnNumericTransformer(),
+  //   nullable:true,
+  // })
+  // montoRecibido:number;
+  // @Column({
+  //   type:'enum',
+  //   enum:Monedas,
+  //   nullable:true,
+  // })
+  // monedaRecibido:Monedas;
 
-  @Column({
-    type:'text',
-    nullable:true
-  })
-  fechaPago:Date;
+  // @Column({
+  //   type:'text',
+  //   nullable:true
+  // })
+  // fechaPago:Date;
 
   @Column(() => Ubicacion)
   ubicacion:Ubicacion;

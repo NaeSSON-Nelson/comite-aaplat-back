@@ -72,19 +72,19 @@ export class PerfilController {
     return this.perfilService.createUsuario(id,createUsuarioDto);
   }
 
-  @Post('afiliado/pagar/presencial')
-  @MenusProtected(ValidMenu.perfiles)
-  @ItemMenuProtected(ValidItemMenu.perfilAfiliadoPagoRegister)
-  registrarPagoAfiliacionPresencial(@Body() registrarPago:RegistrarPagoAfiliacionPresencialDto){
-    return this.perfilService.registrarPagoAfiliacionPresencial(registrarPago);
-  }
+  // @Post('afiliado/pagar/presencial')
+  // @MenusProtected(ValidMenu.perfiles)
+  // @ItemMenuProtected(ValidItemMenu.perfilAfiliadoPagoRegister)
+  // registrarPagoAfiliacionPresencial(@Body() registrarPago:RegistrarPagoAfiliacionPresencialDto){
+  //   return this.perfilService.registrarPagoAfiliacionPresencial(registrarPago);
+  // }
   
-  @Post('afiliado/pagar/deposito')
-  @MenusProtected(ValidMenu.perfiles)
-  @ItemMenuProtected(ValidItemMenu.perfilAfiliadoPagoRegister)
-  registrarPagoAfiliacionDeposito(@Body() registrarPago:RegistrarPagoAfiliacionDepositoDto){
-    return this.perfilService.registrarPagoAfiliacionDeposito(registrarPago);
-  }
+  // @Post('afiliado/pagar/deposito')
+  // @MenusProtected(ValidMenu.perfiles)
+  // @ItemMenuProtected(ValidItemMenu.perfilAfiliadoPagoRegister)
+  // registrarPagoAfiliacionDeposito(@Body() registrarPago:RegistrarPagoAfiliacionDepositoDto){
+  //   return this.perfilService.registrarPagoAfiliacionDeposito(registrarPago);
+  // }
   
   @Get()
   @MenusProtected(ValidMenu.perfiles)
@@ -105,12 +105,12 @@ export class PerfilController {
     return this.perfilService.findOnePerfilAfiliado(id);
   }
   
-  @Get('afiliado/pago/:id')
-  @MenusProtected(ValidMenu.perfiles)
-  @ItemMenuProtected(ValidItemMenu.perfilAfiliadoDetails)
-  findPagoAfiliacionPerfil(@Param('id',ParseIntPipe) id: number){
-    return this.perfilService.findPagoAfiliacion(id);
-  }
+  // @Get('afiliado/pago/:id')
+  // @MenusProtected(ValidMenu.perfiles)
+  // @ItemMenuProtected(ValidItemMenu.perfilAfiliadoDetails)
+  // findPagoAfiliacionPerfil(@Param('id',ParseIntPipe) id: number){
+  //   return this.perfilService.findPagoAfiliacion(id);
+  // }
   @Get('usuario/email/:term')
   @MenusProtected(ValidMenu.perfiles)
   findOneUserByEmail(@Param('term') term: string) {
@@ -121,7 +121,7 @@ export class PerfilController {
   @MenusProtected(ValidMenu.perfiles)
   @ItemMenuProtected(ValidItemMenu.perfilList)
   findPerfilesFiltersExport(@Query() query:QueryExportPerfil) {
-    console.log('query controller',query);
+    // console.log('query controller',query);
     return this.perfilService.exportPerfiles(query);
   }
   @Get(':id')
@@ -142,12 +142,12 @@ export class PerfilController {
   updateAfiliado(@Param('id',ParseIntPipe) id: number, @Body() updateAfiliadoDto: UpdateAfiliadoDto){
     return this.perfilService.updateAfiliado(id,updateAfiliadoDto);
   }
-  @Patch('afiliado/pago/:id')
-  @MenusProtected(ValidMenu.perfiles)
-  @ItemMenuProtected(ValidItemMenu.perfilAfiliadoPagoUpdate)
-  updatePagarAfiliado(@Param('id',ParseIntPipe) id: number, @Body() updateAfiliadoPagarDto: UpdatePagoAfiliacionDto){
-    return this.perfilService.updatePagarAfiliado(id,updateAfiliadoPagarDto);
-  }
+  // @Patch('afiliado/pago/:id')
+  // @MenusProtected(ValidMenu.perfiles)
+  // @ItemMenuProtected(ValidItemMenu.perfilAfiliadoPagoUpdate)
+  // updatePagarAfiliado(@Param('id',ParseIntPipe) id: number, @Body() updateAfiliadoPagarDto: UpdatePagoAfiliacionDto){
+  //   return this.perfilService.updatePagarAfiliado(id,updateAfiliadoPagarDto);
+  // }
   @Patch('usuario/:id')
   @MenusProtected(ValidMenu.perfiles)
   @ItemMenuProtected(ValidItemMenu.perfilUserUpdate)

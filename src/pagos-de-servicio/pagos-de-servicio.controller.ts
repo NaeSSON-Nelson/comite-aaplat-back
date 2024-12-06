@@ -9,6 +9,8 @@ import { PagosServicesDto } from './dto/pagos-services.dto';
 import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
 import { ItemMenuProtected, MenusProtected } from 'src/auth/decorators/valid-protected.decorator';
 import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
+import { FechasParametrosDto } from './dto/fechas-parametros.dto';
+import { RetrasosPagosDto } from './dto/retrasos-pagos.dto';
 
 @Controller('pagos-de-servicio')
 @AuthorizationResource()
@@ -70,5 +72,15 @@ export class PagosDeServicioController {
   @ItemMenuProtected(ValidItemMenu.cobrosRegistrarPagoDeudas)
   registerPagoComprobantes(@Body() pagosAfiliado: PagosServicesDto){
     return this.pagosDeServicioService.pagarComprobantes(pagosAfiliado);
+  }
+
+
+  @Get('exportar/pagos')
+  mostrarPagos(@Query() parametros:FechasParametrosDto){
+    return this.pagosDeServicioService.reportePagosDeServicio(parametros)
+  }
+  @Get('afiliados/retrasos')
+  mostrarAfiliadosRetrasoPagos(@Query() retrasosDto:RetrasosPagosDto){
+    return this.pagosDeServicioService.reportAfiliadosConRetrasoPago(retrasosDto);
   }
 }

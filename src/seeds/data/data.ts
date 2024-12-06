@@ -19,8 +19,8 @@ class PerfilSeed {
 class AfiliadoSeed {
   estado: Estado;
   ubicacion: Ubicacion;
-  monto:number;
-  moneda:Monedas;
+  montoAfiliacion:number;
+  monedaAfiliacion:Monedas;
 }
 class UsuarioSeed {
   username: string;
@@ -341,8 +341,8 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:1,
       },
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
       estado: Estado.ACTIVO,
     },
     {
@@ -354,8 +354,8 @@ export const initialData: SeedData = {
         nroLote:2,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -366,8 +366,8 @@ export const initialData: SeedData = {
         nroLote:3,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -378,8 +378,8 @@ export const initialData: SeedData = {
         nroLote:1,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -390,8 +390,8 @@ export const initialData: SeedData = {
         nroLote:2,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -402,8 +402,8 @@ export const initialData: SeedData = {
         nroLote:3,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     //
     {
@@ -415,8 +415,8 @@ export const initialData: SeedData = {
         nroLote:1,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -427,8 +427,8 @@ export const initialData: SeedData = {
         nroLote:2,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -439,8 +439,8 @@ export const initialData: SeedData = {
         nroLote:3,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -451,8 +451,8 @@ export const initialData: SeedData = {
         nroLote:1,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -463,8 +463,8 @@ export const initialData: SeedData = {
         nroLote:2,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -475,8 +475,8 @@ export const initialData: SeedData = {
         nroLote:3,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -487,8 +487,8 @@ export const initialData: SeedData = {
         nroLote:1,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -499,8 +499,8 @@ export const initialData: SeedData = {
         nroLote:2,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -511,8 +511,8 @@ export const initialData: SeedData = {
         nroLote:3,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -523,8 +523,8 @@ export const initialData: SeedData = {
         nroLote:1,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
     {
       ubicacion: { 
@@ -535,8 +535,8 @@ export const initialData: SeedData = {
         nroLote:2,
       },
       estado: Estado.ACTIVO,
-      monto:1500,
-      moneda:Monedas.Bs,
+      montoAfiliacion:1500,
+      monedaAfiliacion:Monedas.Bs,
     },
   ],
   usuarios: [
@@ -560,11 +560,11 @@ export const initialData: SeedData = {
       password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
-    {
-      username: 'lecturador',
-      password: bcrypt.hashSync('123456', 10),
-      estado: Estado.ACTIVO,
-    },
+    // {
+    //   username: 'lecturador',
+    //   password: bcrypt.hashSync('123456', 10),
+    //   estado: Estado.ACTIVO,
+    // },
     {
       username: 'user',
       password: bcrypt.hashSync('123456', 10),
@@ -572,6 +572,11 @@ export const initialData: SeedData = {
     },
     {
       username: 'afiliado',
+      password: bcrypt.hashSync('123456', 10),
+      estado: Estado.ACTIVO,
+    },
+    {
+      username: 'afiliado2',
       password: bcrypt.hashSync('123456', 10),
       estado: Estado.ACTIVO,
     },
@@ -592,7 +597,7 @@ export const initialData: SeedData = {
       nombre: 'Roles',
       linkMenu: ValidMenu.roles,
       estado: Estado.ACTIVO,
-      prioridad:10,
+      prioridad:80,
       items:[
         
     //ROLES MENUS
@@ -633,7 +638,7 @@ export const initialData: SeedData = {
       nombre: 'Medidres de agua',
       linkMenu: ValidMenu.medidores,
       estado: Estado.ACTIVO,
-      prioridad:50,
+      prioridad:70,
       items:[
         
     // MENUS DE MEDIDORES DE AGUA
@@ -731,10 +736,10 @@ export const initialData: SeedData = {
       ]
     },
     {
-      nombre:'perfiles',
+      nombre:'Perfiles',
       linkMenu:ValidMenu.perfiles,
       estado:Estado.ACTIVO,
-      prioridad:80,
+      prioridad:70,
       items:[
         //Menus de Perfiles
     {
@@ -819,7 +824,7 @@ export const initialData: SeedData = {
       linkMenu:ValidMenu.cobros,
       estado:Estado.ACTIVO,
       
-      prioridad:90,
+      prioridad:75,
       items:[
     //COBROS DE SERVICIO
     {
@@ -867,10 +872,10 @@ export const initialData: SeedData = {
       ]
     },
     {
-      nombre:'Módulo de registro de lecturas de medidores de agua',
+      nombre:'Registrar lecturas de afiliados',
       linkMenu:ValidMenu.lecturas,
       estado:Estado.ACTIVO,
-      prioridad:90,
+      prioridad:70,
       items:[
         //MENUS DE REGISTRO DE LECTURAS
     {
@@ -889,7 +894,7 @@ export const initialData: SeedData = {
       nombre:'Consultar',
       linkMenu:'user',
       estado:Estado.ACTIVO,
-      prioridad:20,
+      prioridad:30,
       items:[
          //menus usuario afiliado 
     {
@@ -902,16 +907,25 @@ export const initialData: SeedData = {
       linkMenu:ValidItemMenu.consultarDeudas,
       visible:true,
     },
-    // {
-    //   nombre:'Mostrar deudas',
-    //   linkMenu:'deudas',
-    //   visible:false,
-    // },
-    // {
-    //   nombre:'Mostrar multas',
-    //   linkMenu:'multas',
-    //   visible:false,
-    // },
+      ]
+    },
+    {
+      nombre:'Reportes',
+      linkMenu:ValidMenu.reportes,
+      prioridad:60,
+      items:[
+        {
+          nombre:'Reportes de deudores morosos',
+          linkMenu:ValidItemMenu.reportesDeudores,
+          visible:true,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Reportes pagos de servicio',
+          linkMenu:ValidItemMenu.reportesPagosService,
+          visible:true,
+          estado:Estado.ACTIVO
+        },
       ]
     }
   ],

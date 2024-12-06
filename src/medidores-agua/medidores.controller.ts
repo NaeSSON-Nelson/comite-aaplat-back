@@ -116,11 +116,7 @@ export class MedidoresController {
   getPlanillasReportes(@Query() query: QueryLecturasDto){
     return this.medidoresService.getPlanillasRegisters(query);
   }
-  @MenusProtected(ValidMenu.lecturas)
-  @Get('lecturas/:id')
-  getLecturas(@Param('id', ParseIntPipe) id: number){
-    return this.medidoresService.lecturasPlanilla(id);
-  }
+  
   // @Get('lecturas/comprobantes/perfiles')
   // getLecturasGenerarComprobantes(@Query() paginationDto: PaginationDto){
     //   return this.medidoresService.afiliadosPorGenerarComprobantes(paginationDto);
@@ -140,8 +136,8 @@ export class MedidoresController {
   getAsociacionMedidor(@Param('id', ParseIntPipe) id:number){
     return this.medidoresService.getAsociacionDetails(id);
   }
+  @Get('lecturas/export/afiliados')
   @MenusProtected(ValidMenu.lecturas)
-  @Get('lecturas/export')
   getexportMedidorAsociadosListFilter(){
     return this.medidoresService.exportMedidorAsociadosListFilter();
   }
@@ -150,7 +146,11 @@ export class MedidoresController {
   getMazanosList(){
     return this.medidoresService.findAllManzanos();
   }
-  
+  @MenusProtected(ValidMenu.lecturas)
+  @Get('lecturas/:id')
+  getLecturas(@Param('id', ParseIntPipe) id: number){
+    return this.medidoresService.lecturasPlanilla(id);
+  }
   @MenusProtected(ValidMenu.lecturas)
   @Get(':id')
   findMedidorById(@Param('id',ParseIntPipe) id:number){
