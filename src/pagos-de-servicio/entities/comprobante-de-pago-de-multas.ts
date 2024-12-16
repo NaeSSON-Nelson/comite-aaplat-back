@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { MultaServicio } from "./multa-de-servicio";
 import { Monedas } from "src/interfaces/enum/enum-entityes";
+import { ColumnNumericTransformer } from "src/interfaces/class-typeORM";
 
 @Entity()
 export class ComprobanteDePagoDeMultas{
@@ -10,20 +11,15 @@ export class ComprobanteDePagoDeMultas{
     fechaEmitida:Date;
     @Column('text',{nullable:false,})
     metodoPago:string;
-    @Column('numeric',{scale:2,precision:8,nullable:false,})
+    @Column('numeric',{scale:2,precision:8,nullable:false,
+      
+      transformer: new ColumnNumericTransformer(),
+    })
     montoPagado:number;
     @Column('enum',{
       enum:Monedas,
       nullable:false,
     })
-    // @Column('text',{
-    //   nullable:false,
-    // })
-    // titular:string;
-    // @Column('text',{
-    //   nullable:false
-    // })
-    // ciTitular:string;
     moneda:Monedas;
     @Column('varchar',{length:100,nullable:false,})
     entidadPago:string;

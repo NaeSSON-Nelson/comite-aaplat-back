@@ -3,6 +3,8 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  JoinTable,
+  ManyToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   
@@ -12,6 +14,7 @@ import { ColumnsAlways } from 'src/common/inherints-db/column-always';
 import { Estado, TipoPerfil } from '../../../../interfaces/enum/enum-entityes';
 import { Usuario } from './usuario.entity';
 import { Afiliado } from './afiliado.entity';
+import { BeneficiarioDescuentos } from '../../../../configuraciones-applat/entities/beneficiario-descuentos';
 
 @Entity()
 export class Perfil extends ColumnsAlways {
@@ -135,7 +138,6 @@ export class Perfil extends ColumnsAlways {
   @OneToOne(() => Afiliado, (afiliado) => afiliado.perfil,{cascade:['insert']}) // specify inverse side as a second parameter
   afiliado: Afiliado
 
-  
   @BeforeInsert()
   CreatePerfil() {
     this.nombrePrimero = this.nombrePrimero.toLocaleLowerCase().trim();
@@ -146,11 +148,7 @@ export class Perfil extends ColumnsAlways {
       this.apellidoSegundo = this.apellidoSegundo.toLocaleLowerCase().trim();
     if (this.profesion)
       this.profesion = this.profesion.toLocaleLowerCase().trim();
-      if(this.estado === Estado.ACTIVO){
-        this.isActive=true;
-    } else if(this.estado === Estado.DESHABILITADO){
-        this.isActive=false;
-    }
+      
   }
   @BeforeUpdate()
   actualizarAfiliado() {

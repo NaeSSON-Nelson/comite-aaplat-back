@@ -26,11 +26,51 @@ export class JwtStrategy extends PassportStrategy(Strategy,'jwt'){
 
         // const usuario = await this.usuarioRepository.findOne({where:{username},relations:{roleToUsuario:{role:{menuToRole:{menu:{itemMenu:true}}}}}});
         const usuario = await this.usuarioRepository.createQueryBuilder('usuario')
-                            .leftJoinAndSelect('usuario.roleToUsuario', 'to_usuario', 'to_usuario."usuarioId" = usuario.id',)
-                            .leftJoinAndSelect('to_usuario.role',    'roles',      'roles.id = to_usuario."roleId"')
-                            .leftJoinAndSelect('roles.menuToRole',   'to_role',    'to_role."roleId" = roles.id')
-                            .leftJoinAndSelect('to_role.menu',       'menus',      'menus.id = to_role."menuId"')
-                            .leftJoinAndSelect('menus.itemMenu',     'items',    'menus.id = items."menuId"',)
+    
+                            .select([
+                                'usuario.id',
+                                'usuario.username',
+                                'usuario.isActive',
+                                'usuario.estado',
+                                'perfil.id',
+                                'perfil.nombrePrimero',
+                                'perfil.nombreSegundo',
+                                'perfil.apellidoPrimero',
+                                'perfil.apellidoSegundo',
+                                'to_usuario.id',
+                                'to_usuario.roleId',
+                                'to_usuario.usuarioId',
+                                'to_usuario.estado',
+                                'to_usuario.isActive',
+                                'roles.id',
+                                'roles.nombre',
+                                'roles.nivel',
+                                'roles.estado',
+                                'roles.isActive',
+                                'to_role.id',
+                                'to_role.menuId',
+                                'to_role.roleId',
+                                'to_role.isActive',
+                                'to_role.estado',
+                                'menus.id',
+                                'menus.nombre',
+                                'menus.linkMenu',
+                                'menus.prioridad',
+                                'menus.isActive',
+                                'menus.estado',
+                                'items.id',
+                                'items.nombre',
+                                'items.visible',
+                                'items.linkMenu',
+                                'items.isActive',
+                                'items.estado',
+                            ])
+                            .innerJoin('usuario.perfil','perfil','perfil.id = usuario.perfilId')
+                            .leftJoin('usuario.roleToUsuario', 'to_usuario', 'to_usuario."usuarioId" = usuario.id',)
+                            .leftJoin('to_usuario.role',    'roles',      'roles.id = to_usuario."roleId"')
+                            .leftJoin('roles.menuToRole',   'to_role',    'to_role."roleId" = roles.id')
+                            .leftJoin('to_role.menu',       'menus',      'menus.id = to_role."menuId"')
+                            .leftJoin('menus.itemMenu',     'items',    'menus.id = items."menuId"',)
                             // .leftJoinAndSelect('to_menu.itemMenu',   'items',      'items.id = to_menu.itemMenuId AND items.visible = true',)
                             .where('usuario.username = :username', { username })
                             // .orderBy('roles.nivel','DESC')

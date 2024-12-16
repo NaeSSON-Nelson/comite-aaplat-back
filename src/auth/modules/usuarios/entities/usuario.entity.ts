@@ -48,22 +48,7 @@ export class Usuario  extends ColumnsAlways{
     roleToUsuario:RoleToUsuario[];
 
 
-    @BeforeInsert()
-    estadosUsuario(){
-        if(this.estado === Estado.ACTIVO){
-            this.isActive=true;
-        } else if(this.estado === Estado.DESHABILITADO){
-            this.isActive=false;
-        }
-    }
-    @BeforeUpdate()
-    checkEstados(){
-        if(this.estado === Estado.ACTIVO){
-            this.isActive=true;
-        } else if(this.estado === Estado.DESHABILITADO){
-            this.isActive=false;
-        }
-    }
+    
     
 
 }

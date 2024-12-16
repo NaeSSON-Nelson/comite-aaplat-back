@@ -13,7 +13,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { Barrio, Estado } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, EstadoAsociacion } from 'src/interfaces/enum/enum-entityes';
 class AfiliadoForm {
   @IsNumber()
   @Min(1)
@@ -65,16 +65,15 @@ export class CreateMedidorAsociadoDto {
   ubicacion:UbicacionForm;
   // FIN
 
-  @IsString()
-  @MinLength(1)
-  estadoMedidorAsociado:string
+  // @IsEnum(EstadoAsociacion)
+  // estadoMedidorAsociado:EstadoAsociacion
 
-  @IsNotEmpty()
-  @IsBoolean()
-  registrable:boolean;
+  // @IsNotEmpty()
+  // @IsBoolean()
+  // registrable:boolean;
   
   @IsEnum(Estado)
-  @IsNotEmpty()
+  @IsOptional()
   estado:Estado;
 
   @ValidateNested()

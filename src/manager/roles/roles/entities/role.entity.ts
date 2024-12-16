@@ -35,11 +35,6 @@ export class Role extends ColumnsAlways{
     @BeforeInsert()
     CrearNuevoRole(){
         this.nombre=this.nombre.toLocaleLowerCase().trim();
-        if(this.estado === Estado.ACTIVO){
-            this.isActive=true;
-          }else{
-            this.isActive=false;
-          } 
     }
     @BeforeUpdate()
     actualizarRole(){

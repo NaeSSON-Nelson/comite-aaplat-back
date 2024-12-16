@@ -29,7 +29,7 @@ export class RolesService {
   ) {}
 
   async create(createRoleDto: CreateRoleDto) {
-    const { menus, ...dataRole } = createRoleDto;
+    const { menus,estado, ...dataRole } = createRoleDto;
     const role = this.roleRepository.create(dataRole);
 
     const queryRunner = this.dataSource.createQueryRunner();

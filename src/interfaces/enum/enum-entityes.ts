@@ -22,7 +22,7 @@ export enum TipoPerfil{
 }
 export enum Nivel{
   afiliado=10,
-  contador=30,
+  secreataria=30,
   administrativo=50,
   root=100,
 }
@@ -56,4 +56,17 @@ export enum RetrasoTipo{
   bimestral='BIMESTRE',
   trimestral='TRIMESTRE',
   demas='DEMAS'
+}
+export enum TipoMulta{
+  retrasoPago='RETRASO-PAGO',
+  reconexion='RECONEXIÓN',
+  // varios='VARIOS',
+}
+export enum EstadoAsociacion{
+  conectado='CONECTADO',
+  desconectado='DESCONECTADO'
+}
+export enum TipoAccion{
+  conexion='CONEXION',
+  desconexion='DESCONEXION'
 }

@@ -4,6 +4,8 @@ import {
   Column,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -13,6 +15,7 @@ import { ColumnsAlways, Ubicacion } from 'src/common/inherints-db';
 import { Estado, MetodoPago, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
 import { ColumnNumericTransformer } from 'src/interfaces/class-typeORM';
+import { BeneficiarioDescuentos } from 'src/configuraciones-applat/entities/beneficiario-descuentos';
 
 @Entity({
   name: 'afiliados',
@@ -32,61 +35,11 @@ export class Afiliado extends ColumnsAlways {
     enum:Monedas,
   })
   monedaAfiliacion:Monedas;
-  // @Column({
-  //   type:'bool',
-  //   default:false,
-  // })
-  // pagado:boolean;
-  // @Column({
-  //   type:'enum',
-  //   enum:MetodoPago,
-  //   nullable:true,
-  // })
-  // metodoPago:MetodoPago;
-  // @Column({
-  //   type:'varchar',
-  //   length:100,
-  //   nullable:true
-  // })
-  // entidad:string;
-  // @Column({
-  //   type:'varchar',
-  //   length:100,
-  //   nullable:true
-  // })
-  // nroRecibo:string;
-  // @Column({
-  //   type:'varchar',
-  //   length:100,
-  //   nullable:true
-  // })
-  // remitente:string;
-  // @Column({
-  //   type:'varchar',
-  //   length:100,
-  //   nullable:true
-  // })
-  // nroCuenta:string;
-  // @Column('numeric',{
-  //   precision:8,
-  //   scale:2,
-  //   transformer: new ColumnNumericTransformer(),
-  //   nullable:true,
-  // })
-  // montoRecibido:number;
-  // @Column({
-  //   type:'enum',
-  //   enum:Monedas,
-  //   nullable:true,
-  // })
-  // monedaRecibido:Monedas;
 
-  // @Column({
-  //   type:'text',
-  //   nullable:true
-  // })
-  // fechaPago:Date;
-
+  @ManyToMany(()=>BeneficiarioDescuentos,{cascade:true})
+  @JoinTable()
+  descuentos:BeneficiarioDescuentos[]; // PARA ADULTOS MAYORES Y/O PERSONAS CON DISCAPACIDAD
+ 
   @Column(() => Ubicacion)
   ubicacion:Ubicacion;
   @OneToMany(() => MedidorAsociado, (asociacion) => asociacion.afiliado)
@@ -96,16 +49,5 @@ export class Afiliado extends ColumnsAlways {
   @JoinColumn()
   perfil: Perfil;
 
-  @BeforeInsert()
-  addColumns(){
-    if(this.estado === Estado.ACTIVO){
-      this.isActive=true;
-    }else{
-      this.isActive=false;
-    } 
-  }
-  @BeforeUpdate()
-  updateAfiliado(){
-    this.addColumns();
-  }
+ 
 }

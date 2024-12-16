@@ -44,7 +44,7 @@ export class Menu extends ColumnsAlways{
     prioridad:number;
     @BeforeInsert()
     CrearNuevoMenu(){
-        this.nombre=this.nombre.toLocaleLowerCase().trim();
+        // this.nombre=this.nombre.toLocaleLowerCase().trim();
         if(this.linkMenu)
         this.linkMenu=this.linkMenu.toLocaleLowerCase().trim();
         if(this.estado === Estado.ACTIVO){

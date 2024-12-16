@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Like, QueryRunner, Repository, ILike } from 'typeorm';
+import { DataSource, Like, QueryRunner, Repository, ILike, LessThanOrEqual } from 'typeorm';
 import { initialData } from './data/data';
 import { CommonService } from '../common/common.service';
 import { Menu } from '../manager/menus/menus/entities/menu.entity';
@@ -19,6 +19,10 @@ import { PlanillaMesLectura } from 'src/medidores-agua/entities/planilla-mes-lec
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
 import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
 import { ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
+import { TarifaPorConsumoAgua } from 'src/configuraciones-applat/entities/tarifa-por-consumo-agua';
+import { TarifaMultaPorRetrasosPagos } from 'src/configuraciones-applat/entities/tarifa-multa-por-retrasos-pagos';
+import { BeneficiarioDescuentos } from 'src/configuraciones-applat/entities/beneficiario-descuentos';
+import { DescuentosAplicadosPorPagar } from '../pagos-de-servicio/entities/descuentos-aplicados-por-pagar';
 
 @Injectable()
 export class SeedsService {
@@ -54,11 +58,36 @@ export class SeedsService {
     private readonly planillaMesLecturasRepository: Repository<PlanillaMesLectura>,
     @InjectRepository(ComprobantePorPago)
     private readonly comprobantesPorPagarRepository: Repository<ComprobantePorPago>,
+    @InjectRepository(TarifaPorConsumoAgua)
+    private readonly tarifaPorConsumoRepositoyService: Repository<TarifaPorConsumoAgua>,
+    @InjectRepository(TarifaMultaPorRetrasosPagos)
+    private readonly tarifaMultaPorRetrasosPagosRepositoyService: Repository<TarifaMultaPorRetrasosPagos>,
+    @InjectRepository(BeneficiarioDescuentos)
+    private readonly beneficiarioDescuentosRepositoyService: Repository<BeneficiarioDescuentos>,
     
     private readonly dataSource: DataSource,
     private readonly commonService: CommonService,
   ) {}
-
+  async executeSeedZero(){
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const resultTarifasConsumo = await this.insertTarifasPorConsumoAgua();
+      await queryRunner.manager.save(resultTarifasConsumo);
+      const resultMultasRetrasos = await this.insertTarifasMultasRetrasos();
+      await queryRunner.manager.save(resultMultasRetrasos);
+      const resultBeneficiarios = await this.insertBeneficiarios();
+      await queryRunner.manager.save(resultBeneficiarios);
+      await queryRunner.commitTransaction();
+      return { OK: true, msg: 'SEED ZERO EXECUTED!' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
   async executeSeed() {
     // return 'In process';
     const queryRunner = this.dataSource.createQueryRunner();
@@ -100,6 +129,8 @@ export class SeedsService {
       await queryRunner.manager.save(usuariosSave);
       const afiliadosSave = await this.insertAfiliados(perfilesSave);
       await queryRunner.manager.save(afiliadosSave);
+      const beneficiariosSave = await this.insertAfiliadoBeneficiarios(afiliadosSave);
+      await queryRunner.manager.save(beneficiariosSave);
       const medidoresSave = await this.insertMedidores();
       await queryRunner.manager.save(medidoresSave);
       //DEPENDENCIES
@@ -124,6 +155,24 @@ export class SeedsService {
     } finally {
       await queryRunner.release();
     }
+  }
+  async insertAfiliadoBeneficiarios(afiliados: Afiliado[]) {
+    const beneficio = await this.beneficiarioDescuentosRepositoyService.findOne({
+      where:{
+        tipoBeneficiario:'Adulto mayor'
+      }
+    })
+    if(!beneficio) return [];
+    const beneficiarios:Afiliado[]=[];
+    for(const afiliado of afiliados){
+      if(this.calcularEdad(afiliado.perfil?.fechaNacimiento)>=60){
+        const pre = afiliado;
+        pre.descuentos=[];
+        pre.descuentos.push(beneficio)
+        beneficiarios.push(pre);
+      }
+    }
+    return beneficiarios
   }
   
   private async insertPerfiles(){
@@ -209,8 +258,8 @@ export class SeedsService {
             :index===11?Mes.diciembre
             :Mes.enero,
             anioSeguimiento:year,
-            fechaRegistroLecturas: new Date(year.anio,index+1,2,8,0,0,0),
-            fechaFinRegistroLecturas: new Date(year.anio,index+1,28,12,59,59,0),
+            fechaRegistroLecturas: new Date(year.anio,index+1,1,8,0,0,0),
+            fechaFinRegistroLecturas: new Date(year.anio,index+1,20,12,59,59,0),
           }
           ) 
           meses.push(mes);
@@ -234,7 +283,7 @@ export class SeedsService {
           :Mes.enero,
           anioSeguimiento:year,
           fechaRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,2,8,0,0,0),
-          fechaFinRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,28,12,59,59,0),
+          fechaFinRegistroLecturas: new Date(fechaActual.getFullYear(),index+1,20,12,59,59,0),
         }
         ) 
         meses.push(mes);
@@ -284,7 +333,7 @@ export class SeedsService {
       // GESTIONES PASADAS
       if(planilla.gestion<fechaActual.getFullYear()){
         for(let index=0;index<12;index++){
-          let lecturaGen = Math.round((Math.random()*100)+5);
+          let lecturaGen = Math.round((Math.random()*30)+5);
           lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
           const lectura = this.planillaMesLecturasRepository.create({
             lectura:lecturaSeguimiento,
@@ -306,8 +355,6 @@ export class SeedsService {
             registrable:false,
             registrado:true,
             medicion:planilla.medidor.medidor.medicion,
-            editable:false,
-            tarifaGenerada:true,
           })
           lecturasPasadas.push(lectura);
           this.lecturaSalvada=lecturaSeguimiento;
@@ -315,7 +362,7 @@ export class SeedsService {
       }
       else  //GESTION ACTUAL
       for(let index=0;index<=fechaActual.getMonth()-1;index++){
-        let lecturaGen = Math.round((Math.random()*100)+10);
+        let lecturaGen = Math.round((Math.random()*30)+10);
         lecturaSeguimiento=lecturaSeguimiento+lecturaGen;
         //MES PASADO PARA REGISTRO ACTUAL
         if(index === (fechaActual.getMonth()-1)){
@@ -337,7 +384,6 @@ export class SeedsService {
             planilla,
             registrable:true,
             registrado:false,
-            editable:true,
           })
           lecturasActuales.push(lectura);
         }else{
@@ -362,8 +408,6 @@ export class SeedsService {
             registrable:false,
             registrado:true,
             medicion:planilla.medidor.medidor.medicion,
-            editable:false,
-            tarifaGenerada:true,
           })
           lecturasPasadas.push(lectura);
 
@@ -380,10 +424,37 @@ export class SeedsService {
   private readonly COSTO_ADICIONAL = 2;
   private async insertComprobantesPorPagarAnteriores(lecturas:PlanillaMesLectura[]){
     const comprobantesPorPagar:ComprobantePorPago[]=[];
+    const fechaActual=new Date();
+    const tarifarioVigente= (await this.tarifaPorConsumoRepositoyService.find({
+      where:{
+        vigencia:LessThanOrEqual(fechaActual),
+        isActive:true
+      },
+      order:{
+        id:'DESC'
+      }
+    }))[0]
+    if(!tarifarioVigente) throw new NotFoundException('no se encontro una tarifa de consumo para realizar la operacion');
     for(const lectu of lecturas){
+      let totalDescuentos=0;
+      const descuentosAplicados:DescuentosAplicadosPorPagar[]=[];
+      const descuentos =lectu.planilla.medidor.afiliado.descuentos;
+    
+      if(descuentos){
+        if(descuentos.length>0){
+          descuentos.forEach(beneficio=>{
+            totalDescuentos=beneficio.descuento+totalDescuentos
+            descuentosAplicados.push(this.dataSource.getRepository(DescuentosAplicadosPorPagar).create({
+              descuento:beneficio.descuento,
+              detalles:beneficio.detalles,
+              tipoDescuentoBeneficiario:beneficio.tipoBeneficiario
+            }))
+          });
+        }
+      }
       let fechaLimitePago:Date;
       if(lectu.PlanillaMesLecturar === Mes.diciembre){
-        fechaLimitePago = new Date(lectu.planilla.gestion+1,0,25)
+        fechaLimitePago = new Date(lectu.planilla.gestion+1,0,tarifarioVigente.diaLimitePago)
       }else{
         fechaLimitePago = new Date(lectu.planilla.gestion,
         lectu.PlanillaMesLecturar === Mes.enero?(1)
@@ -397,17 +468,26 @@ export class SeedsService {
         :lectu.PlanillaMesLecturar === Mes.septiembre?(9)
         :lectu.PlanillaMesLecturar === Mes.octubre?(10)
         :lectu.PlanillaMesLecturar === Mes.noviembre?(11)
-        :0,25)
+        :0,tarifarioVigente.diaLimitePago)
+      }
+      let monto:number=0;
+      if(totalDescuentos>0){
+        const montoOriginal= lectu.consumoTotal>tarifarioVigente.lecturaMinima?tarifarioVigente.tarifaMinima +((lectu.consumoTotal-tarifarioVigente.lecturaMinima)*tarifarioVigente.tarifaAdicional):tarifarioVigente.tarifaMinima;
+        const descontado = (montoOriginal*totalDescuentos)/100;
+        monto = montoOriginal-descontado;
+      }else{
+        
+         monto= lectu.consumoTotal>tarifarioVigente.lecturaMinima?tarifarioVigente.tarifaMinima +((lectu.consumoTotal-tarifarioVigente.lecturaMinima)*tarifarioVigente.tarifaAdicional):tarifarioVigente.tarifaMinima;
       }
       const comp = this.comprobantesPorPagarRepository.create({
         lectura:lectu,
         metodoRegistro:'GENERADO POR GENERACION DE RAIZ',
-        monto:lectu.consumoTotal >this.LECTURA_MINIMA
-                ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
-                : this.TARIFA_MINIMA,
+        monto,
         motivo: `PAGO DE SERVICIO, GESTION:${lectu.planilla.gestion}, MES: ${lectu.PlanillaMesLecturar}`,
-        moneda: Monedas.Bs,
-        fechaLimitePago
+        moneda: tarifarioVigente.moneda,
+        fechaLimitePago,
+        descuentos:descuentosAplicados,
+        tarifaConsumoCalculo:tarifarioVigente
       })
       comprobantesPorPagar.push(comp);
     }
@@ -679,7 +759,7 @@ export class SeedsService {
      
       //INSERT INTO RELATIONS MENU TO ROLE
       
-      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.consultar,ValidMenu.reportes],ValidRole.root);
+      const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.consultar,ValidMenu.reportes,ValidMenu.opciones],ValidRole.root);
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
       const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.reportes],ValidRole.administrativo);
@@ -817,4 +897,60 @@ export class SeedsService {
       await queryRunner.release();
     }
   }
+
+  async insertTarifasPorConsumoAgua(){
+    const tarifas = initialData.tarifaConsumoAgua;
+    const tarifasDb:TarifaPorConsumoAgua[]=[];
+    for(const tarifa of tarifas){
+      tarifasDb.push(this.tarifaPorConsumoRepositoyService.create({
+        ...tarifa
+      }))
+    };
+    return tarifasDb;
+  }
+  async insertTarifasMultasRetrasos(){
+    const tarifas = initialData.tarifaMultasPorRetraso;
+    const tarifasDb:TarifaMultaPorRetrasosPagos[]=[];
+    for(const tarifa of tarifas){
+      tarifasDb.push(this.tarifaMultaPorRetrasosPagosRepositoyService.create({
+        ...tarifa
+      }))
+    };
+    return tarifasDb;
+  }
+  async insertBeneficiarios(){
+    const beneficiarios = initialData.benficiarios;
+    const beneficiariosDb:BeneficiarioDescuentos[]=[];
+    for(const beneficiario of beneficiarios){
+      beneficiariosDb.push(this.beneficiarioDescuentosRepositoyService.create({
+        ...beneficiario
+      }))
+    };
+    return beneficiariosDb;
+  }
+
+  private calcularEdad(fechaNacimiento:Date) {
+    // Convertir la fecha de nacimiento a un objeto Date
+    const fechaNac = new Date(fechaNacimiento);
+    
+    // Obtener la fecha actual
+    const fechaActual = new Date();
+    
+    // Calcular la diferencia en años
+    let edad = fechaActual.getFullYear() - fechaNac.getFullYear();
+    
+    // Ajustar la edad considerando el mes y día
+    const mesActual = fechaActual.getMonth();
+    const diaActual = fechaActual.getDate();
+    const mesNacimiento = fechaNac.getMonth();
+    const diaNacimiento = fechaNac.getDate();
+    
+    // Restar un año si aún no ha pasado el cumpleaños este año
+    if (mesActual < mesNacimiento || 
+        (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
+        edad--;
+    }
+    
+    return edad;
+}
 }

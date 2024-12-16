@@ -71,11 +71,7 @@ export class Medidor extends ColumnsAlways{
   registrarNuevoMedidor() {
     this.marca = this.marca.toUpperCase().trim();
     this.nroMedidor = this.nroMedidor.toUpperCase().trim();
-    if(this.estado === Estado.ACTIVO){
-      this.isActive=true;
-    }else{
-      this.isActive=false;
-    } 
+    
   }
   @BeforeUpdate()
   actualizarMedidor() {

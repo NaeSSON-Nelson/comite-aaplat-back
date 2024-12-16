@@ -17,8 +17,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { UploadProfileImage } from './dto/uploadPerfilImage.dto';
 import { QueryExportPerfil } from './querys/query-export-perfil';
-import { RegistrarPagoAfiliacionDepositoDto, RegistrarPagoAfiliacionPresencialDto } from './dto/registrar-pago-afiliacion.dto';
-import { UpdatePagoAfiliacionDto } from './dto/update-pago-afiliacion.dto';
 
 
 @Controller('perfiles')
@@ -98,6 +96,10 @@ export class PerfilController {
   findOnePerfilUser(@Param('id',ParseIntPipe) id: number) {
     return this.perfilService.findOnePerfilUsuario(id);
   }
+  @Get('afiliados/beneficiarios')
+  ObtenerBeneficiosDescuentos() {
+    return this.perfilService.obtenerListarTiposBeneficiarios();
+  }
   @Get('afiliado/:id')
   @MenusProtected(ValidMenu.perfiles)
   @ItemMenuProtected(ValidItemMenu.perfilAfiliadoDetails)
@@ -124,6 +126,7 @@ export class PerfilController {
     // console.log('query controller',query);
     return this.perfilService.exportPerfiles(query);
   }
+  
   @Get(':id')
   @MenusProtected(ValidMenu.perfiles)
   @ItemMenuProtected(ValidItemMenu.perfilDetails)

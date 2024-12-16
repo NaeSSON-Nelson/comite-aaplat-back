@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common/exceptions';
+import { BadRequestException, NotFoundException } from '@nestjs/common/exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ComprobanteDePagoDeMultas, ComprobantePago, ComprobantePorPago, MultaServicio } from './entities';
@@ -7,7 +7,7 @@ import { DataSource, FindOptionsOrder, FindOptionsWhere, ILike, In, IsNull, Less
 import { CommonService } from 'src/common/common.service';
 import { AnioSeguimientoLectura } from 'src/medidores-agua/entities/anio-seguimiento-lecturas.entity';
 import { MesSeguimientoRegistroLectura } from 'src/medidores-agua/entities/mes-seguimiento-registro-lectura.entity';
-import { Mes, Monedas, RetrasoTipo } from 'src/interfaces/enum/enum-entityes';
+import { EstadoAsociacion, Mes, Monedas, RetrasoTipo, TipoAccion, TipoMulta } from 'src/interfaces/enum/enum-entityes';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { Afiliado, Perfil } from 'src/auth/modules/usuarios/entities';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
@@ -17,9 +17,31 @@ import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { FechasParametrosDto } from './dto/fechas-parametros.dto';
 import { RetrasosPagosDto } from './dto/retrasos-pagos.dto';
+import { RegistrarCortesRealizadosDto } from './dto/registrar-cortes-realizados.dto';
+import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
+import { HistorialConexiones } from 'src/asociaciones/entities/historial-cortes.entity';
+import { RegistrarReconexionesRealizadasDto } from './dto/registrar-reconecciones-realizadas.dto';
+import { TarifaMultaPorRetrasosPagos } from 'src/configuraciones-applat/entities/tarifa-multa-por-retrasos-pagos';
 
 @Injectable()
 export class PagosDeServicioService {
+  //     }
+  //   }
+  // ],
+  // relations:{
+  //   afiliado:{
+  //     medidorAsociado:{
+  //       planillas:{
+  //         lecturas:{
+  //           pagar:true
+  //         }
+  //       },
+  //       multasAsociadas
+  //     }
+  //   }
+  // }
+  // });
+  
   constructor(
     // @InjectRepository(PlanillaPagos)
     // private readonly planillasPagosService: Repository<PlanillaPagos>,
@@ -38,96 +60,7 @@ export class PagosDeServicioService {
   private readonly LECTURA_MINIMA = 10;
   private readonly COSTO_ADICIONAL = 2;
   
-  // @Cron('15 * * * * *')
-  // At 00:00 on day-of-month 7.
-  @Cron('0 0 10 * *')
-  private async ComprobantesPorPagarAutomatizado() {
-    const fechaActual = new Date()
-    let gestion = fechaActual.getFullYear();
-    let index=fechaActual.getMonth()-1;
-    if(fechaActual.getMonth()===0){
-      gestion = fechaActual.getFullYear()-1;
-      index=11;
-    }
-    const seguimientoAnioActual = await this.dataSource
-      .getRepository(AnioSeguimientoLectura)
-      .findOne({
-        where: { anio: gestion,meses:{} },
-        relations: { meses: true },
-      });
-    if (!seguimientoAnioActual) {
-      this.logger.error(
-        `this date ${fechaActual.getFullYear()} not registered`,
-      );
-      return;
-    }
-    const month = new Date(gestion,index)
-      .toLocaleString('default', { month: 'long' })
-      .toUpperCase();
-   
-    const planQr = this.dataSource
-      .getRepository(Afiliado)
-      .createQueryBuilder('afiliados');
-    try {
-      const afiliados = await planQr
-        .innerJoinAndSelect(
-          'afiliados.medidorAsociado',
-          'medidor',
-          'medidor."afiliadoId" = afiliados.id AND medidor.isActive = true',
-        )
-        .innerJoinAndSelect(
-          'medidor.planillas',
-          'planillas',
-          'planillas.gestion = :year AND planillas.isActive = true',
-          { year: gestion },
-        )
-        .innerJoinAndSelect(
-          'planillas.lecturas',
-          'lecturas',
-          'lecturas.PlanillaMesLecturar = :month AND lecturas.isActive = true',
-          { month },
-        )
-        .where('planillas.isActive = true')
-        .getMany();
-      // console.log(afiliados);
-      // for (const afiliado of afiliados) {
-      //   for (const medidor of afiliado.medidorAsociado) {
-      //     const comprobante = await this.comprobantePorPagarService.findOneBy({
-      //       lectura: { id: medidor.planillas[0].lecturas[0].id },
-      //     });
-      //     if (comprobante) {
-      //       this.logger.warn(
-      //         `el mes lectura ${medidor.planillas[0].lecturas[0].PlanillaMesLecturar} del medidor de agua con NRO:${medidor.medidor.nroMedidor} ya tiene un comprobante por pagar registrado`,
-      //       );
-      //     } else {
-      //       const comprobantePorPagar = this.comprobantePorPagarService.create({
-      //         lectura: medidor.planillas[0].lecturas[0],
-      //         //TODO: MONTO A PAGAR MINIMO ES DE 10 BS SI EL REGISTRO DE LECTURA ES INFERIOR A 10 M3, SE COBRA 2 BS POR CADA M3
-      //         monto:
-      //           medidor.planillas[0].lecturas[0].consumoTotal >
-      //           this.LECTURA_MINIMA
-      //             ? this.TARIFA_MINIMA +
-      //               (medidor.planillas[0].lecturas[0].consumoTotal -
-      //                 this.LECTURA_MINIMA) *
-      //                 this.COSTO_ADICIONAL
-      //             : this.TARIFA_MINIMA,
-      //         motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
-      //         metodoRegistro: 'REGISTRO AUTOMATIZADO',
-      //         moneda: Monedas.Bs,
-      //       });
-      //       try {
-      //         await this.comprobantePorPagarService.save(comprobantePorPagar);
-      //         this.logger.log(`COMPROBANTE DE PAGO REGISTRADO!`);
-      //       } catch (error) {
-      //         this.logger.error(error);
-      //       }
-      //     }
-      //   }
-      // }
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  
 
   async comprobantesPorPagarPerfil(idPerfil:number){
 
@@ -155,95 +88,110 @@ export class PagosDeServicioService {
     }
   }
   async pagarComprobantes(pagosDto:PagosServicesDto){
+    const {perfilId,multas,comprobantes} = pagosDto;
     const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
-    
+    // const perfil = await this.dataSource.getRepository(Perfil).findOne({
+    //   where:[{
+    //     id:perfilId,
+    //     afiliado:{
+    //       medidorAsociado:{
+    //         planillas:{
+    //           lecturas:{
+    //             pagar:{
+    //               pagado:false,
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   },
+    //   {
+    //     id:perfilId,
+    //     afiliado:{
+    //       medidorAsociado:{
+    //         multasAsociadas:{
+    //           pagado:false,
+    //         }
+    //       }
+    //     }
+    //   }
+    // ],
+    // relations:{
+    //   afiliado:{
+    //     medidorAsociado:{
+    //       planillas:{
+    //         lecturas:{
+    //           pagar:true
+    //         }
+    //       },
+    //       multasAsociadas
+    //     }
+    //   }
+    // }
+    // });
     const perfil = await qb
                           .innerJoinAndSelect('perfil.afiliado','afiliado','afiliado.perfilId = perfil.id AND afiliado.isActive = true')
-                          .innerJoinAndSelect('afiliado.medidorAsociado','medidor','medidor.afiliadoId = afiliado.id AND medidor.isActive = true')
-                          .innerJoinAndSelect('medidor.planillas','planilla','planilla.medidorId = medidor.id')
-                          .innerJoinAndSelect('planilla.lecturas','lectura','lectura.planillaId = planilla.id')
-                          .innerJoinAndSelect('lectura.pagar','pagar','pagar.pagado = false')
-                          /*
-                           * AÑADIR COMPROBANTES ADICIONAL A LA CONSULTA 
-                           */
-                          .where('perfil.id = :id',{id:pagosDto.perfilId})
+                          .innerJoinAndSelect('afiliado.medidorAsociado','medidor','medidor.afiliadoId = afiliado.id')
+                          .innerJoinAndSelect('medidor.planillas','planilla','planilla."medidorId" = medidor.id')
+                          .innerJoinAndSelect('planilla.lecturas','lectura','lectura."planillaId" = planilla.id AND lectura.registrado = true')
+                          .innerJoinAndSelect('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
+                          .leftJoinAndSelect('medidor.multasAsociadas','multas','multas."medidorAsociadoId" = medidor.id AND multas.pagado = false')
+                          
+                          .where('perfil.id = :id',{id:perfilId})
                           .andWhere('perfil.isActive = true')
                           .getOne();
     if(!perfil) throw new BadRequestException(`Perfil ${pagosDto.perfilId} not found`);
-    const multasPerfil = await this.dataSource.getRepository(MultaServicio).find({
-      where:{
-        medidorAsociado:{
-          afiliado:{
-            perfil:{
-              id:perfil.id
-            }
-          }
-        },
-        id:In(pagosDto.multas),
-        pagado:false,
-      },
-      relations:{
-        lecturasMultadas:true
-      },
-    })
-    console.log('mutlas de perfil',multasPerfil);
+    
     const pagados: ComprobantePago[]=[];
     const updateComprobantesPagados :ComprobantePorPago[]=[];
-    const planillasValidMultas:PlanillaLecturas[]=[];
+    const comprobanteMultas:ComprobanteDePagoDeMultas[]=[];
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     for(const medidorAsc of perfil.afiliado.medidorAsociado){
-      for(const planilla of medidorAsc.planillas){
-        planillasValidMultas.push(planilla);
-        for(const lectura of planilla.lecturas){
-          if(!(lectura.pagar.pagado) && pagosDto.comprobantes.includes(lectura.pagar.id)){
-            const registroPagado = this.comprobantePagoService.create({
-              comprobantePorPagar:lectura.pagar,
-              
-              entidadPago:'NINGUNO',
-              fechaEmitida: new Date(),
-              metodoPago:'PAGO POR CAJA - PRESENCIAL',
-              montoPagado:lectura.pagar.monto,
-              moneda:lectura.pagar.moneda,
-            })
-            lectura.pagar.pagado=true;
-            lectura.pagar.estadoComprobate='PAGADO';
-            lectura.pagar.fechaPagada = registroPagado.fechaEmitida;
-            // await queryRunner.manager.save(lectura.pagar);
-            updateComprobantesPagados.push(lectura.pagar);
-            pagados.push(registroPagado);
+      if(medidorAsc.planillas?.length>0){
+        for(const planilla of medidorAsc.planillas){
+          for(const lectura of planilla.lecturas){
+            console.log('lectura',lectura);
+            if(!lectura.pagar.pagado && comprobantes.includes(lectura.pagar.id)){
+              const registroPagado = this.comprobantePagoService.create({
+                comprobantePorPagar:lectura.pagar,
+                
+                entidadPago:'NINGUNO',
+                fechaEmitida: new Date(),
+                metodoPago:'PAGO POR CAJA - PRESENCIAL',
+                montoPagado:lectura.pagar.monto,
+                moneda:lectura.pagar.moneda,
+              })
+              lectura.pagar.pagado=true;
+              lectura.pagar.estadoComprobate='PAGADO';
+              lectura.pagar.fechaPagada = registroPagado.fechaEmitida;
+              // await queryRunner.manager.save(lectura.pagar);
+              updateComprobantesPagados.push(lectura.pagar);
+              pagados.push(registroPagado);
+            }
           }
         }
+
+      }
+      if(medidorAsc.multasAsociadas?.length>0){
+        for(const multa of medidorAsc.multasAsociadas){
+          if(multas.includes(multa.id)){
+          const comprobanteMulta = queryRunner.manager.create(ComprobanteDePagoDeMultas,{
+            fechaEmitida: new Date(),
+            metodoPago:'PAGO POR CAJA - PRESENCIAL',
+            entidadPago:'NINGUNO',
+            montoPagado:multa.monto,
+            moneda:multa.moneda,
+            multaServicio:multa
+        })
+          comprobanteMultas.push(comprobanteMulta);
+          await queryRunner.manager.update(MultaServicio,multa.id,{pagado:true});
+        }
+      }
       }
     }
-    const comprobanteMultas:ComprobanteDePagoDeMultas[]=[];
     
-    for(const multa of multasPerfil){
-      let totalMultas:number=0;
-      for(const gest of planillasValidMultas){
-        for(const lctMult of multa.lecturasMultadas){
-          console.log('lectura de multa:',lctMult);
-          console.log('lectura de gestion:',gest.lecturas);
-          const lt = gest.lecturas.find(res=>res.id===lctMult.id);
-          console.log('hay lecto lt:',lt);
-          if(lt){
-            totalMultas++;
-          }
-        }
-      }
-      if(totalMultas !== multa.lecturasMultadas.length) throw new BadRequestException(`NO SE ENCUENTRAN TODAS LAS LECTURAS MULTADAS DE LA MULTA ENVIADA PARA PAGAR.`)
-      const comprobanteMulta = queryRunner.manager.create(ComprobanteDePagoDeMultas,{
-        fechaEmitida: new Date(),
-        metodoPago:'PAGO POR CAJA - PRESENCIAL',
-        entidadPago:'NINGUNO',
-        montoPagado:multa.monto,
-        moneda:multa.moneda,
-        multaServicio:multa
-    })
-    comprobanteMultas.push(comprobanteMulta);
-    await queryRunner.manager.update(MultaServicio,multa.id,{pagado:true});
-    }
     try {
       // console.log(pagados);
       await queryRunner.manager.save(pagados);
@@ -283,80 +231,6 @@ export class PagosDeServicioService {
       data: lecturaPorPagar,
     };
   }
-  // async generarComprobantes(){
-  //   const fechaActual = new Date()
-  //   let gestion = fechaActual.getFullYear();
-  //   let index=fechaActual.getMonth()-1;
-  //   if(fechaActual.getMonth()===0){
-  //     gestion = fechaActual.getFullYear()-1;
-  //     index=11;
-  //   }
-  //   const mes=index===0?Mes.enero
-  //   :index===1?Mes.febrero
-  //   :index===2?Mes.marzo
-  //   :index===3?Mes.abril
-  //   :index===4?Mes.mayo
-  //   :index===5?Mes.junio
-  //   :index===6?Mes.julio
-  //   :index===7?Mes.agosto
-  //   :index===8?Mes.septiembre
-  //   :index===9?Mes.octubre
-  //   :index===10?Mes.noviembre
-  //   :index===11?Mes.diciembre
-  //   :Mes.enero;
-  //   const month = new Date(gestion,index).toLocaleString('default', { month: 'long' }).toUpperCase();
-  //   const mesRegistrar = await this.dataSource.getRepository(MesSeguimientoRegistroLectura).findOne({
-  //     where:[
-  //       {
-  //         mes,
-  //         anioSeguimiento:{
-  //           anio:gestion,
-  //         }
-  //       },
-  //     ],relations:{anioSeguimiento:true}
-  //   })
-  //   if(!mesRegistrar) throw new BadRequestException(`Mes no registrado ${month} año ${gestion}`);
-  //   if(fechaActual.getTime()<=mesRegistrar.fechaRegistroLecturas.getTime() || fechaActual.getTime()>= mesRegistrar.fechaFinRegistroLecturas.getTime())
-  //   throw new BadRequestException(`No se encuentra en el rango de fecha establecida permitada para generar los comprobantes`)
-  
-  //   const planillasLecturas = await this.dataSource.getRepository(PlanillaLecturas)
-  //           .find({where:
-  //             {gestion:mesRegistrar.anioSeguimiento.anio,
-  //               lecturas:{PlanillaMesLecturar:mesRegistrar.mes,isActive:true},
-  //               isActive:true},
-  //           relations:{lecturas:{pagar:true}}});
-  //   const lecturas:PlanillaMesLectura[]=[];
-  //   planillasLecturas.forEach(plan=>{
-  //     plan.lecturas.forEach(lect=>{
-        
-  //       if(lect.pagar===null)
-  //       lecturas.push(lect);
-  //     })
-  //   })
-  //   const comprobantesGenerados:ComprobantePorPago[]=[];
-  //   for(const lectu of lecturas){
-  //     const comp = this.comprobantePorPagarService.create({
-  //       lectura:lectu,
-  //       metodoRegistro:'GENERADO POR LA CAJA',
-  //       monto:lectu.consumoTotal >this.LECTURA_MINIMA
-  //               ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
-  //               : this.TARIFA_MINIMA,
-  //       motivo: `PAGO DE SERVICIO, GESTION:${gestion}, MES: ${month}`,
-  //       moneda: Monedas.Bs,
-  //     })
-  //     try {
-  //       await this.comprobantePorPagarService.save(comp);
-  //       comprobantesGenerados.push(comp);
-  //     } catch (error) {
-  //       this.logger.error('error al registrar un comprobante',error);
-  //     }
-  //   }
-  //   return {
-  //     OK:true,
-  //     message:'Comprobantes creados con exito',
-  //     data:comprobantesGenerados.length,
-  //   };
-  // }
   async findAllPefiles(paginationDto: SearchPerfil) {
     const { offset = 0, limit = 10, order = 'ASC', q = '',sort } = paginationDto;
     const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
@@ -424,54 +298,132 @@ export class PagosDeServicioService {
     };
   }
   async comprobantesPorPagarAfiliado(idPerfil:number){
-    const perfil = await this.dataSource.getRepository(Perfil).findOne({
-      where:{id:idPerfil,isActive:true},
-      select:{id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,isActive:true,profesion:true,
-              afiliado:{id:true,isActive:true,ubicacion:{barrio:true,numeroVivienda:true},
-              medidorAsociado:{id:true,medidor:{nroMedidor:true,id:true,},ubicacion:{barrio:true,numeroVivienda:true},
-                
-              }}},
-      relations:{afiliado:{medidorAsociado:{medidor:true}}}
-    })
-    if(!perfil || !perfil.isActive) throw new BadRequestException(`Perfil ${idPerfil} not found`);
-    if(!perfil.afiliado || !perfil.afiliado.isActive) throw new BadRequestException(`The perfil isn't afiliado`);
-    if(perfil.afiliado.medidorAsociado.length===0) throw new BadRequestException(`The perfil not have medidores de agua asociados`)
-    const perfilSend = {}
-    for(const medidor of perfil.afiliado.medidorAsociado){
-      const deudas = await this.dataSource.getRepository(PlanillaLecturas).find({
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    // const perfil = await qb.select([
+    //                       'perfil.id',
+    //                       'perfil.nombrePrimero',
+    //                       'perfil.nombreSegundo',
+    //                       'perfil.apellidoPrimero',
+    //                       'perfil.apellidoSegundo',
+    //                       'perfil.CI',
+    //                       'afiliado.id',
+    //                       'afiliado.ubicacion.barrio',
+    //                       'afiliado.ubicacion.numeroVivienda',
+    //                       'asociado.id',
+    //                       'medidor.id',
+    //                       'medidor.nroMedidor',
+    //                       'planilla.id',
+    //                       'planilla.gestion',
+    //                       'lectura.id',
+    //                       'lectura.PlanillaMesLecturar',
+    //                       'lectura.consumoTotal',
+    //                       'lectura.lectura',
+    //                       'lectura.estadoMedidor',
+    //                       'lectura.medicion',
+    //                       'lectura.isMulta',
+    //                       'multas.id',
+    //                       'multas.pagado',
+    //                       'multas.monto',
+    //                       'multas.motivo',
+    //                       'multas.moneda',
+    //                       'multas.tipoMulta',
+    //                       'pagar.id',
+    //                       'pagar.pagado',
+    //                       'pagar.moneda',
+    //                       'pagar.monto',
+    //                       'pagar.pagado',
+    //                       ])
+    //                       .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
+    //                       .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
+    //                       .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
+    //                       .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
+    //                       .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id AND lectura.registrado = true')
+    //                       .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
+    //                       .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = false')
+    //                       .where('perfil.id = :perfilid',{perfilid:idPerfil})
+    //                       .orderBy({'lectura.id':'ASC'})
+    //                       .getOne();
+    const perfilSend = await this.dataSource.getRepository(Perfil).findOne({
+      where:{id:idPerfil},
+      select:{id:true,isActive:true,estado:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,
+        CI:true,contacto:true,
+        afiliado:{
+          id:true,ubicacion:{
+            barrio:true,numeroVivienda:true
+          },
+          medidorAsociado:{
+            id:true,
+            isActive:true,
+          }
+        }
+      },
+      relations:{
+        afiliado:{
+          medidorAsociado:{
+            medidor:true,
+            
+          }
+        }
+      }
+    });
+    if(!perfilSend) throw new NotFoundException(`El perfil solicitado no existe`);
+    if(!perfilSend.afiliado) throw new BadRequestException(`El Perfil solicitado no es afiliado`);
+    if(perfilSend.afiliado.medidorAsociado.length===0) throw new BadRequestException(`El afiliado no tiene medidores asociados`);
+    for(const asc of perfilSend.afiliado.medidorAsociado){
+      const planillas = await this.dataSource.getRepository(PlanillaLecturas).find({
         where:{
-          medidor:{id:medidor.id},
-          lecturas:{pagar:{pagado:false}},
+          medidor:{
+            id:asc.id
+          },
+          lecturas:{
+            pagar:{
+              pagado:false
+            }
+          }
         },
         select:{
-          gestion:true,id:true,
-          lecturas:{estadoMedidor:true,medicion:true,id:true,lectura:true,isMulta:true,PlanillaMesLecturar:true,consumoTotal:true,
-            multa:{
-              id:true,created_at:true,estado:true,isActive:true,monto:true,moneda:true,motivo:true,pagado:true
-            },
-            pagar:{id:true,metodoRegistro:true,moneda:true,monto:true,motivo:true,pagado:true,created_at:true,estadoComprobate:true,
-            }},
-            
+          id:true,gestion:true,
+          lecturas:{
+            id:true,
+            consumoTotal:true,
+            isMulta:true,
+            isActive:true,
+            lectura:true,
+            medicion:true,
+            PlanillaMesLecturar:true,
+            estadoMedidor:true,
+            pagar:{
+              id:true,
+              moneda:true,
+              monto:true,
+              pagado:true,
+            }
+          }
         },
         relations:{
           lecturas:{
-            pagar:true,
-            multa:true
-          }
-        },
-        order:{
-          lecturas:{
-            id:'ASC'
+            pagar:true
           }
         }
-      })
-      // console.log(deudas);
-      medidor.planillas=deudas;
+      });
+      asc.planillas=planillas;
+      const multasActivas = await this.dataSource.getRepository(MultaServicio).find({
+        where:{
+          medidorAsociado:{
+            id:asc.id
+          },
+          pagado:false
+        },
+        select:{
+          id:true,motivo:true,moneda:true,monto:true,pagado:true,tipoMulta:true,
+        }
+      });
+      asc.multasAsociadas=multasActivas;
     }
     return{
       OK:true,
       message:'Tarifas por pagar de perfil',
-      data:perfil
+      data:perfilSend
     }
 
   }
@@ -552,38 +504,6 @@ export class PagosDeServicioService {
           pagado:true,
         }
       },
-      // select:{
-      //   consumoTotal:true,
-      //   estado:true,
-      //   created_at:true,
-      //   estadoMedidor:true,
-      //   id:true,isActive:true,
-      //   lectura:true,
-      //   mesLecturado:true,
-      //   pagar:{
-      //     estadoComprobate:true,
-      //     estado:true,
-      //     fechaPagada:true,
-      //     id:true,
-      //     metodoRegistro:true,
-      //     moneda:true,
-      //     monto:true,
-      //     motivo:true,
-      //     pagado:true,
-      //     comprobante:{
-      //       ciTitular:true,
-      //       created_at:true,
-      //       entidadPago:true,
-      //       fechaEmitida:true,
-      //       id:true,
-      //       metodoPago:true,
-      //       moneda:true,
-      //       montoPagado:true,
-      //       nroRecibo:true,
-      //       titular:true,
-      //     }
-      //   }
-      // },
       relations:{
         pagar:{
           comprobante:true,
@@ -596,7 +516,7 @@ export class PagosDeServicioService {
       data:lecturas};
   }
 
-  async findPlanillasMultasById(comprobantesLecturasPagadas:ComprobantePago[],comprobantesMultas:ComprobanteDePagoDeMultas[]){
+  private async findPlanillasMultasById(comprobantesLecturasPagadas:ComprobantePago[],comprobantesMultas:ComprobanteDePagoDeMultas[]){
     const planillasPagadas=await this.dataSource.getRepository(PlanillaLecturas).find({
       select:{id:true,gestion:true,lecturas:{
         id:true,consumoTotal:true,lectura:true,estadoMedidor:true,medicion:true,PlanillaMesLecturar:true,
@@ -618,6 +538,11 @@ export class PagosDeServicioService {
             comprobante:true,
           }
         }
+      },
+      order:{
+        lecturas:{
+          id:'ASC',
+        }
       }
     });
     const multasPagadas = await this.dataSource.getRepository(ComprobanteDePagoDeMultas).find({
@@ -627,13 +552,14 @@ export class PagosDeServicioService {
       select:{
         id:true,fechaEmitida:true,metodoPago:true,moneda:true,montoPagado:true,
         multaServicio:{
-          id:true,motivo:true,moneda:true,monto:true,lecturasMultadas:{
-            id:true,isMulta:true,consumoTotal:true,lectura:true,PlanillaMesLecturar:true,medicion:true,
-          }
+          id:true,motivo:true,moneda:true,monto:true
         }
       },
       relations:{
-        multaServicio:{lecturasMultadas:true}
+        multaServicio:true
+      },
+      order:{
+        id:'ASC'
       }
     });
     return{
@@ -754,28 +680,116 @@ export class PagosDeServicioService {
         }
         break;
       case RetrasoTipo.trimestral:
-        // 3 MESES
-        if(dateActual.getDate()<=this.DIA_LIMITE_PAGO){
-          if(dateActual.getMonth()===0){
-            fechaInit= new Date(dateActual.getFullYear()-1,9,1,0,0,0,0);
-          }else if(dateActual.getMonth() ===1){
-            fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
-          }else if(dateActual.getMonth() === 2){
-            fechaInit = new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+        // 3 MESES O MAS
+        // if(dateActual.getDate()<=this.DIA_LIMITE_PAGO){
+        //   if(dateActual.getMonth()===0){
+        //     fechaInit= new Date(dateActual.getFullYear()-1,9,1,0,0,0,0);
+        //   }else if(dateActual.getMonth() ===1){
+        //     fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
+        //   }else if(dateActual.getMonth() === 2){
+        //     fechaInit = new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+        //   }
+        //   else{
+        //     fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-3,1,0,0,0,0);
+        //   }
+        // }else{
+        //   if(dateActual.getMonth() === 0){
+        //     fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
+        //   }else if(dateActual.getMonth()===1){
+        //     fechaInit= new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
+        //   }else{
+        //     fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-3,1,0,0,0,0);
+        //   }
+        // }
+        const qbuilder = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+        
+        const perfil3Meses = await qbuilder 
+                          .select([
+                            'perfil.id',
+                            'perfil.nombrePrimero',
+                            'perfil.nombreSegundo',
+                            'perfil.apellidoPrimero',
+                            'perfil.apellidoSegundo',
+                            'perfil.CI',
+                            'afiliado.id',
+                            'afiliado.ubicacion.barrio',
+                            'afiliado.ubicacion.numeroVivienda',
+                            'afiliado.ubicacion.manzano',
+                            'afiliado.ubicacion.numeroManzano',
+                            'afiliado.ubicacion.nroLote',
+                            'asociado.id',
+                            'asociado.ubicacion.barrio',
+                            'asociado.ubicacion.numeroVivienda',
+                            'asociado.ubicacion.manzano',
+                            'asociado.ubicacion.numeroManzano',
+                            'asociado.ubicacion.nroLote',
+                            'medidor.id',
+                            'medidor.nroMedidor',
+                            'planilla.id',
+                            'planilla.gestion',
+                            'lectura.id',
+                            'lectura.PlanillaMesLecturar',
+                            'pagar.id',
+                            'pagar.pagado',
+                            'pagar.monto',
+                            'pagar.moneda',
+                            'pagar.fechaLimitePago',
+                            'multas.id',
+                            'multas.pagado',
+                            'multas.monto',
+                            'multas.moneda',
+                            'multas.motivo',
+                            ])
+                            .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
+                            .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
+                            .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
+                            .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
+                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id AND lectura.registrado = true')
+                            .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
+                            .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = false')
+                            // .where('pagar.fechaLimitePago BETWEEN :fechaInit AND :dateActual',{fechaInit,dateActual})
+                            .where('pagar.fechaLimitePago < :limitePago',{limitePago:dateActual})
+                            .orderBy({
+                              'afiliado.ubicacion.manzano':'ASC',
+                              'afiliado.ubicacion.numeroManzano':'ASC',
+                              'afiliado.ubicacion.nroLote':'ASC',
+                              'planilla.gestion':'ASC',
+                              'lectura.id':'ASC',
+                              'multas.id':'ASC',
+                            })
+                            // .groupBy('perfil.id, asociado.id,planilla.id')
+                            // .having(`COUNT(DISTINCT TO_CHAR(pagar.fechaLimitePago, 'YYYY-MM'))>= 3`)
+                            .getMany();
+        const filterPerfiles:Perfil[]=[];
+        for(const perfil of perfil3Meses){
+          const asociaciones:MedidorAsociado[]=[];
+          for(const asc of perfil.afiliado.medidorAsociado){
+            const planillas3:PlanillaLecturas[]=[];
+            for(const planilla of asc.planillas){
+              if(planilla.lecturas.length>=3){
+                planillas3.push(planilla);
+              }
+            }
+            if(planillas3.length>0) {
+              asociaciones.push({
+                ...asc,
+                planillas:planillas3
+              })
+            }
           }
-          else{
-            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-3,1,0,0,0,0);
+          if(asociaciones.length>0) {
+            const post =perfil;
+            post.afiliado.medidorAsociado=asociaciones;
+            filterPerfiles.push(post)
           }
-        }else{
-          if(dateActual.getMonth() === 0){
-            fechaInit= new Date(dateActual.getFullYear()-1,10,1,0,0,0,0);
-          }else if(dateActual.getMonth()===1){
-            fechaInit= new Date(dateActual.getFullYear()-1,11,1,0,0,0,0);
-          }else{
-            fechaInit= new Date(dateActual.getFullYear(),dateActual.getMonth()-3,1,0,0,0,0);
-          }
+
         }
-        break;
+        return{
+        OK:true,
+        message:`LISTADO DE PERFILES CON 3 RETRASOS DE PAGO O MAS`,
+        data:filterPerfiles
+        }    
+        
       case RetrasoTipo.demas:
         // TODOS: TODOSPUES
 
@@ -815,20 +829,15 @@ export class PagosDeServicioService {
                             'multas.pagado',
                             'multas.monto',
                             'multas.moneda',
-                            'multadas.id',
-                            'multadas.PlanillaMesLecturar',
-                            'gestion_multadas.id',
-                            'gestion_multadas.gestion',
+                            'multas.motivo',
                             ])
                             .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
                             .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
                             .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
                             .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
-                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id')
+                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id AND lectura.registrado = true')
                             .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
                             .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = false')
-                            .leftJoin('multas.lecturasMultadas','multadas','multadas."multaId" = multas.id')
-                            .leftJoin('multadas.planilla','gestion_multadas','gestion_multadas.id = multadas."planillaId"')
                             // .where('pagar.fechaLimitePago BETWEEN :fechaInit AND :dateActual',{fechaInit,dateActual})
                             .orderBy({
                               'afiliado.ubicacion.manzano':'ASC',
@@ -836,7 +845,7 @@ export class PagosDeServicioService {
                               'afiliado.ubicacion.nroLote':'ASC',
                               'planilla.gestion':'ASC',
                               'lectura.id':'ASC',
-                              'multadas.id':'ASC',
+                              'multas.id':'ASC',
                             })
                             .getMany();
                             return{
@@ -893,7 +902,7 @@ export class PagosDeServicioService {
                             .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id')
                             .innerJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
                             .innerJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
-                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id')
+                            .innerJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id AND lectura.registrado = true')
                             .innerJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
                             .leftJoin('asociado.multasAsociadas','multas','multas."medidorAsociadoId" = asociado.id AND multas.pagado = false')
                             .leftJoin('multas.lecturasMultadas','multadas','multadas."multaId" = multas.id')
@@ -914,5 +923,484 @@ export class PagosDeServicioService {
     message:`LISTADO DE PERFILES CON RETRASO DE PAGOS ${retrasoTipo.tipo}`,
     data:perfil
   }
+  }
+
+
+  async listarAfiliadosParaCorteServicio(){
+    const fechaActual:Date = new Date(); // DE ACUERDO A LA FECHA PRESENTE SE OBTENDRAS LAS DEUDAS POR PAGAR
+    const limiteParaCortesServicio = (await this.dataSource.getRepository(TarifaMultaPorRetrasosPagos).find({
+      where:{
+        vigencia:LessThanOrEqual(fechaActual),
+        isActive:true
+      },
+      order:{
+        id:'DESC'
+      }
+    }))[0]; //OBTENEMOS EL PRIMER REGISTRO
+    if(!limiteParaCortesServicio) throw new NotFoundException(`No hay ningun registro de limite para corte de servicio para realizar el filtro de busqueda`);
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    const perfilesMulta = await qb
+                            .select([
+                              'perfil.id',
+                              'perfil.nombrePrimero',
+                              'perfil.nombreSegundo',
+                              'perfil.apellidoPrimero',
+                              'perfil.apellidoSegundo',
+                              'perfil.CI',
+                              'perfil.contacto',
+                              'afiliado.id',
+                              'afiliado.ubicacion.barrio',
+                              'afiliado.ubicacion.numeroVivienda',
+                              'afiliado.ubicacion.manzano',
+                              'afiliado.ubicacion.numeroManzano',
+                              'afiliado.ubicacion.nroLote',
+                              'asociado.id',
+                              'asociado.ubicacion.barrio',
+                              'asociado.ubicacion.numeroVivienda',
+                              'asociado.ubicacion.manzano',
+                              'asociado.ubicacion.numeroManzano',
+                              'asociado.ubicacion.nroLote',
+                              'asociado.corte',
+                              'medidor.id',
+                              'medidor.nroMedidor',
+                              'planilla.id',
+                              'planilla.gestion',
+                              'lectura.id',
+                              'lectura.PlanillaMesLecturar',
+                              'pagar.id',
+                              'pagar.pagado',
+                              'pagar.monto',
+                              'pagar.moneda',
+                              'pagar.fechaLimitePago',
+                              ])
+                              .innerJoin('perfil.afiliado','afiliado','perfil.id = afiliado."perfilId"')
+                              .innerJoin('afiliado.medidorAsociado','asociado','asociado."afiliadoId" = afiliado.id AND asociado.estadoMedidorAsociado != :estado',{estado:EstadoAsociacion.desconectado})
+                              .leftJoin('asociado.planillas', 'planilla','planilla."medidorId" = asociado.id')
+                              .leftJoin('asociado.medidor', 'medidor','medidor.id = asociado."medidorId"')
+                              .leftJoin('planilla.lecturas','lectura','lectura."planillaId" = planilla.id AND lectura.registrado = true')
+                              .leftJoin('lectura.pagar','pagar','pagar."lecturaId" = lectura.id AND pagar.pagado = false')
+                              
+                              .where('pagar.fechaLimitePago < :fechaActual',{fechaActual})
+                              // .orderBy({
+                              //   'afiliado.ubicacion.manzano':'ASC',
+                              //   'afiliado.ubicacion.numeroManzano':'ASC',
+                              //   'afiliado.ubicacion.nroLote':'ASC',
+                              //   'planilla.gestion':'ASC',
+                              //   'lectura.id':'ASC',
+                              //   'multadas.id':'ASC',
+                              // })
+                              .getMany();
+    const cortesPorCierre = await this.dataSource.getRepository(Perfil).find({
+      where:{
+        afiliado:{
+          medidorAsociado:{
+            corte:true // ACCION QUE INDICA QUE EL MEDIDOR DE AGUA SERA QUITADO POR CIERRE DE ASOCIACION
+          }
+        }
+      },
+      select:{
+        id:true,nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,
+        afiliado:{id:true,ubicacion:{barrio:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true},
+        medidorAsociado:{id:true,ubicacion:{barrio:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true},corte:true,
+        medidor:{id:true,nroMedidor:true}}}
+      },
+      relations:{
+        afiliado:{
+          medidorAsociado:{
+            medidor:true
+          }
+        }
+      }
+    })
+    
+    const perfilesConRetrasoPagos:Perfil[]=[];
+    for(const perfil of perfilesMulta){
+      const asociaciones:MedidorAsociado[]=[];
+      for(const asc of perfil.afiliado.medidorAsociado){
+        const planillas:PlanillaLecturas[]=[];
+        for(const plan of asc.planillas){
+          if(plan.lecturas.length>=limiteParaCortesServicio.mesesDemora){
+            planillas.push(plan);
+          }
+        }
+        if(planillas.length>0){
+          asociaciones.push({
+            ...asc,
+            planillas
+          })
+        }
+      }
+      if(asociaciones.length>0){
+        const perf =perfil;
+        perf.afiliado.medidorAsociado=asociaciones;
+        perfilesConRetrasoPagos.push(perf)
+      }
+    }
+    const listado:any[]=perfilesConRetrasoPagos.map(perfil=>{
+      const {nombrePrimero,nombreSegundo,apellidoPrimero,apellidoSegundo,contacto,CI,afiliado}=perfil;
+      const {id,medidorAsociado,ubicacion} = afiliado
+      return{
+        nombrePrimero,nombreSegundo,apellidoPrimero,apellidoSegundo,contacto,CI,
+        afiliado:{
+          id,
+          ubicacion:{...ubicacion},
+          medidorAsociado:medidorAsociado.map(asc=>{
+            const {medidor,planillas,id,ubicacion}=asc;
+            return{
+              id,
+              medidor,
+              ubicacion,
+              motivo:'Retraso de pago de servicio por',
+              tipo:'MULTA',
+              totalPagosRetrasos:this.obtenerTotalRetrasos(planillas)
+            }
+          })
+        }
+      }
+    });
+    listado.push(
+      ...cortesPorCierre.map(perfil=>{
+        const {nombrePrimero,nombreSegundo,apellidoPrimero,apellidoSegundo,contacto,CI,afiliado}=perfil;
+      const {id,medidorAsociado,ubicacion} = afiliado
+      return{
+        nombrePrimero,nombreSegundo,apellidoPrimero,apellidoSegundo,contacto,CI,
+        afiliado:{
+          id,
+          ubicacion:{...ubicacion},
+          medidorAsociado:medidorAsociado.map(asc=>{
+            const {medidor,id,corte,ubicacion}=asc;
+            return{
+              id,
+              medidor,
+              motivo:'Cierre de asociación',
+              corte,
+              ubicacion,
+              tipo:'CIERRE'
+            }
+          })
+        }
+      }
+      })
+    )
+    return {
+      OK:true,
+      message:'Lista de afiliados para recortes de servicio',
+      data:listado
+    }
+  }
+  MONTO_MULTA_RECONECCION:number=50;
+  MONEDA_MULTA_RECONECCION:Monedas=Monedas.Bs;
+  // MOTIVO_MULTA_RECONECCION:string=''
+  async registrarCortesRealizados(registrarCortesDto:RegistrarCortesRealizadosDto){
+    const {medidoresCortados}=registrarCortesDto;
+    // console.log(medidoresCortados);
+    const asociaciones = await this.dataSource.getRepository(MedidorAsociado).find(
+      {where:{
+        id:In(medidoresCortados.map(asc=>asc.id))
+      },
+      relations:{
+        planillas:{
+          lecturas:true
+        }
+      }
+    });
+    if(asociaciones.length===0) throw new NotFoundException(`No se encontraron asociaciones con los parametros enviados`);
+    const multasPorReconeccion:MultaServicio[]=[]
+    const agregarCorteAsociacion:HistorialConexiones[]=[];
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    for(const asc of asociaciones){
+      if(!asc.isActive) throw new BadRequestException(`NO SE PUEDE REALIZAR UN CORTE A UNA ASOCIACION DESHABILITADA`);
+      if(asc.estadoMedidorAsociado === EstadoAsociacion.desconectado) throw new BadRequestException(`LA ASOCIACION ${asc.id} YA SE ENCEUNTRA CORTADA`);
+      const registrarDto = medidoresCortados.find(mds=>mds.id === asc.id)!;
+      
+      if(!registrarDto) throw new NotFoundException(`El asociado con id ${asc.id} no fue encontrado`);
+      if(registrarDto.tipoCorte ==='MULTA'){
+
+        const multaReconeccion= this.dataSource.getRepository(MultaServicio).create({
+          monto:this.MONTO_MULTA_RECONECCION,
+          moneda:this.MONEDA_MULTA_RECONECCION,
+          motivo:'Multa para realizar la reconexión de medidor de agua por demora de pagos de servicio',
+          tipoMulta:TipoMulta.reconexion,
+          medidorAsociado:asc
+        })
+        multasPorReconeccion.push(multaReconeccion);
+        const corte = this.dataSource.getRepository(HistorialConexiones).create({
+          fechaRealizada: new Date(),
+          motivo:'Corte de servicio por demora de pago',
+          asociacion:asc,
+          tipoAccion:TipoAccion.desconexion
+        })
+        agregarCorteAsociacion.push(corte);
+      }else if(registrarDto.tipoCorte ==='CIERRE'){
+        const corte = this.dataSource.getRepository(HistorialConexiones).create({
+          fechaRealizada: new Date(),
+          motivo:asc.motivoTipoConexion,
+          asociacion:asc,
+          tipoAccion:TipoAccion.desconexion
+        });
+        agregarCorteAsociacion.push(corte);
+      }
+      await queryRunner.manager.update(MedidorAsociado,asc.id,{estadoMedidorAsociado:EstadoAsociacion.desconectado,corte:false,registrable:false,motivoTipoConexion:null,reconexion:false});
+      await queryRunner.manager.update(PlanillaLecturas,asc.planillas.find(plan=>plan.gestion === (new Date()).getFullYear()).id,{registrable:false})
+    }
+    try {
+      // console.log(pagados);
+      await queryRunner.manager.save(multasPorReconeccion);
+      await queryRunner.manager.save(agregarCorteAsociacion);
+      await queryRunner.commitTransaction();
+      return{
+        OK:true,
+        message:'Registros de cortes exitoso!',
+      }
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally{
+      await queryRunner.release();
+    }
+  }
+  private obtenerTotalRetrasos(planillas: PlanillaLecturas[]): any {
+    let totalLecturas:number=0;
+    for(const planilla of planillas){
+      for(const lectura of planilla.lecturas){
+        if(!lectura.pagar.pagado) totalLecturas++;
+      }
+    };
+    return totalLecturas;
+  }
+
+  async listarAfiliadosParaReconexion(){
+    const qb = this.dataSource.getRepository(Perfil).createQueryBuilder('perfil');
+    // const perfiles = await this.dataSource.getRepository(Perfil).find({
+    //   relations:{
+    //     afiliado:{
+    //       medidorAsociado:{
+    //         multasAsociadas:true,
+    //         medidor:true,
+    //         planillas:{
+    //           lecturas:{
+    //             pagar:true
+    //           }
+    //         }
+    //       }
+    //     }
+    //   },
+    //   where:[{
+    //     afiliado:{ //
+    //       medidorAsociado:{
+    //         estadoMedidorAsociado:EstadoAsociacion.desconectado,
+    //         multasAsociadas:{
+    //           tipoMulta:TipoMulta.reconexion
+    //         }
+    //       }
+    //     }
+    //   },
+    //   {afiliado:{
+    //     medidorAsociado:{
+    //       reconexion:true,
+    //       estadoMedidorAsociado:EstadoAsociacion.desconectado,
+    //     }
+    //   }},{
+    //     afiliado:{
+    //       medidorAsociado:{
+          
+    //       }
+    //     }
+    //   }
+    // ],
+    // select:{
+    //   id:true,estado:true,isActive:true,nombrePrimero:true,nombreSegundo:true,CI:true,
+    //   contacto:true,apellidoPrimero:true,apellidoSegundo:true,
+    //   afiliado:{
+    //     id:true,ubicacion:{barrio:true,manzano:true,numeroManzano:true,numeroVivienda:true,nroLote:true}
+        
+    //     ,medidorAsociado:{id:true,corte:true,medidor:{id:true,nroMedidor:true}
+    //     ,estadoMedidorAsociado:true,reconexion:true,motivoTipoConexion:true,
+    //     ubicacion:{barrio:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true}
+    //     ,multasAsociadas:{id:true,tipoMulta:true,motivo:true,pagado:true}}}}});
+    const perfiles = await qb
+                            .select([
+                              'perfil.id',
+                              'perfil.nombrePrimero',
+                              'perfil.nombreSegundo',
+                              'perfil.apellidoPrimero',
+                              'perfil.apellidoSegundo',
+                              'perfil.CI',
+                              'perfil.contacto',
+                              'afiliado.id',
+                              'afiliado.ubicacion.barrio',
+                              'afiliado.ubicacion.numeroVivienda',
+                              'afiliado.ubicacion.manzano',
+                              'afiliado.ubicacion.numeroManzano',
+                              'afiliado.ubicacion.nroLote',
+                              'asociado.id',
+                              'asociado.ubicacion.barrio',
+                              'asociado.ubicacion.numeroVivienda',
+                              'asociado.ubicacion.manzano',
+                              'asociado.ubicacion.numeroManzano',
+                              'asociado.ubicacion.nroLote',
+                              'asociado.corte',
+                              'asociado.reconexion',
+                              'asociado.estadoMedidorAsociado',
+                              'multa.id',
+                              'multa.motivo',
+                              'multa.tipoMulta',
+                              'multa.pagado',
+                              'multa.isActive',
+                              'multa.estado',
+                              'medidor.id',
+                              'medidor.nroMedidor',
+                              'planilla.id',
+                              'planilla.gestion',
+                              'lectura.id',
+                              'lectura.PlanillaMesLecturar',
+                              'lectura.registrado',
+                              'pagar.id',
+                              'pagar.pagado',
+                              'pagar.monto',
+                              'pagar.moneda',
+                              'pagar.fechaLimitePago',
+                            ])
+                            .innerJoin('perfil.afiliado','afiliado','afiliado.perfilId = perfil.id AND afiliado.isActive = true')
+                            .innerJoin('afiliado.medidorAsociado','asociado','asociado.afiliadoId = afiliado.id AND asociado.isActive = true AND asociado.estadoMedidorAsociado = :estadoMedidor',{estadoMedidor:EstadoAsociacion.desconectado})
+                            .innerJoin('asociado.medidor','medidor','medidor.id = asociado.medidorId')
+                            .leftJoin('asociado.multasAsociadas','multa','multa.medidorAsociadoId = asociado.id AND multa.isActive = true')
+                            .leftJoin('asociado.planillas','planilla','planilla.medidorId = asociado.id AND planilla.isActive = true')
+                            .leftJoin('planilla.lecturas','lectura','lectura.planillaId = planilla.id AND lectura.registrado = true')
+                            .leftJoin('lectura.pagar','pagar','pagar.lecturaId = lectura.id')
+                            .where('perfil.isActive = true')
+                            .getMany()
+                              ;
+    const perfilesReconeccion:Perfil[]=[];
+    for(const perfil of perfiles){
+      console.log('perfil :',perfil.nombrePrimero);
+      const asociaciones:MedidorAsociado[]=[];
+      for(const asc of perfil.afiliado.medidorAsociado){
+        if(asc.reconexion){
+          
+        asociaciones.push(asc);
+        break;
+        }
+        const multas = asc.multasAsociadas.filter(multa=>!multa.pagado);
+        console.log('multas',multas);
+        if(multas.length>0) break;
+        const planillasSinPagar = asc.planillas.filter(planilla=>
+          // planilla.lecturas.some(lectu=>!lectu.pagar.pagado)
+          {
+          const lecturasSinPagar = planilla.lecturas.filter(lectu=>!lectu.pagar.pagado);
+          console.log('sus lectura sin pagar',lecturasSinPagar);
+          if(lecturasSinPagar.length>0){
+            planilla.lecturas=lecturasSinPagar;
+            return true;
+          }
+          return false;
+        }
+      );
+        // console.log('planillas sin pagar',planillasSinPagar);
+        if(planillasSinPagar.length>0) break;
+        
+        
+        asociaciones.push(asc);
+
+      }
+      if(asociaciones.length>0){
+        const perfilS=perfil;
+        perfilS.afiliado.medidorAsociado=asociaciones;
+        perfilesReconeccion.push(perfilS);
+      }
+    }
+    return{
+      OK:true,
+      message:'lista de afiliados para su reconexion',
+      // data:perfilesReconeccion
+      data:perfilesReconeccion
+    }
+  }
+  async registrarReconexiones(reconeccionesDto: RegistrarReconexionesRealizadasDto) {
+    const {reconexionesList}=reconeccionesDto;
+    const asociaciones =await this.dataSource.getRepository(MedidorAsociado).find({
+      where:{
+        id:In(reconexionesList.map(res=>res.id))
+      },
+      relations:{
+        planillas:{lecturas:{pagar:true}},
+        multasAsociadas:true
+      }
+    });
+    if(asociaciones.length===0) throw new NotFoundException(`No se encontraron asociaciones para reconexión`);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    const reconexiones:HistorialConexiones[]=[]
+    for(const asc of asociaciones){
+      if(!asc.isActive) throw new BadRequestException(`NO SE PUEDE REALIZAR LA RECONEXIÓN DE UNA ASOCIACION QUE ESTA CERRADO`);
+      if(asc.estadoMedidorAsociado === EstadoAsociacion.conectado) throw new BadRequestException(`LA ASOCIACION ${asc.id} YA SE ENCUENTRA CONECTADA`);
+      
+      for(const planilla of asc.planillas){
+       for(const lectura of planilla.lecturas){
+         if(lectura.registrado && !lectura.pagar.pagado) throw new BadRequestException(`LA ASOCIACIÓN TIENE DEUDAS DE LECTURAS POR PAGAR, NO SE PUEDE REALIZAR LA RECONEXION`);
+       } 
+      }
+      for(const multa of asc.multasAsociadas){
+        if(!multa.pagado) throw new BadRequestException(`LA ASOCIACION TIENE MULTAS POR PAGAR, NO SE PUEDE REALIZAR LA RECONEXIÓN`);
+      }
+      if(asc.reconexion){
+        const conexion = this.dataSource.getRepository(HistorialConexiones).create({
+          tipoAccion:TipoAccion.conexion,
+          fechaRealizada:new Date(),
+          motivo:asc.motivoTipoConexion,
+          asociacion:asc
+        });
+        reconexiones.push(conexion);
+        await queryRunner.manager.update(MedidorAsociado,asc.id,{motivoTipoConexion:null,reconexion:false,corte:false,estadoMedidorAsociado:EstadoAsociacion.conectado});
+        const gestion = asc.planillas?.find(plan=>plan.gestion === (new Date()).getFullYear());
+        if(gestion){
+          await queryRunner.manager.update(PlanillaLecturas,gestion.id,{registrable:true});
+        }else{
+          const gestionCreada = queryRunner.manager.create(PlanillaLecturas,{
+            gestion:(new Date()).getFullYear(),
+            registrable:true,
+            medidor:asc
+          });
+          await queryRunner.manager.save(gestionCreada);
+        }
+      }else { //RECONEXION POR PAGAR MULTAS Y LECTURAS, ESTANDO AL DIA
+        const conexion = this.dataSource.getRepository(HistorialConexiones).create({
+          tipoAccion:TipoAccion.conexion,
+          fechaRealizada:new Date(),
+          motivo:'Reconexión de servicio por pagos de deudas al dia',
+          asociacion:asc
+        });
+        reconexiones.push(conexion);
+        await queryRunner.manager.update(MedidorAsociado,asc.id,{motivoTipoConexion:null,reconexion:false,corte:false,estadoMedidorAsociado:EstadoAsociacion.conectado});
+        const gestion = asc.planillas?.find(plan=>plan.gestion === (new Date()).getFullYear());
+        if(gestion){
+          await queryRunner.manager.update(PlanillaLecturas,gestion.id,{registrable:true});
+        }else{
+          const gestionCreada = queryRunner.manager.create(PlanillaLecturas,{
+            gestion:(new Date()).getFullYear(),
+            registrable:true,
+            medidor:asc
+          });
+          await queryRunner.manager.save(gestionCreada);
+        }
+      }
+    };
+    try {
+      await queryRunner.manager.save(reconexiones);
+      await queryRunner.commitTransaction()
+      return{
+        OK:true,
+        message:'Se han registrados las reconexiones correctamente!',
+      }
+    } catch (error) {
+      
+      await queryRunner.rollbackTransaction();
+      this.commonService.handbleDbErrors(error);
+    } finally{
+      await queryRunner.release();
+    }
   }
 }

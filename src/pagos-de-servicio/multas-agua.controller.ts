@@ -16,52 +16,52 @@ export class MultasAguaController {
     constructor(private readonly multasAguaService: MultasServicioAguaService) {}
 
 
-    @Post('create')
-    @MenusProtected(ValidMenu.cobros)
-    @ItemMenuProtected(ValidItemMenu.cobrosMultasRegistrarNuevo)
-    createMulta(@Body() multasDto: CreateMultaDto){
-        return this.multasAguaService.createMultaServicioAgua(multasDto);
-    }
-    @Post('pago')
-    @MenusProtected(ValidMenu.cobros)
-    @ItemMenuProtected(ValidItemMenu.cobrosRegistrarPagoMultasSelected)
-    registrarPagoDeMultaWithLecturas(@Body() registros: RegistrarPagoMultasDto){
-        return this.multasAguaService.registrarPagoMultaWithMesLectura(registros)
-    }
+    // @Post('create')
+    // @MenusProtected(ValidMenu.cobros)
+    // @ItemMenuProtected(ValidItemMenu.cobrosMultasRegistrarNuevo)
+    // createMulta(@Body() multasDto: CreateMultaDto){
+    //     return this.multasAguaService.createMultaServicioAgua(multasDto);
+    // }
+    // @Post('pago')
+    // @MenusProtected(ValidMenu.cobros)
+    // @ItemMenuProtected(ValidItemMenu.cobrosRegistrarPagoMultasSelected)
+    // registrarPagoDeMultaWithLecturas(@Body() registros: RegistrarPagoMultasDto){
+    //     return this.multasAguaService.registrarPagoMultaWithMesLectura(registros)
+    // }
     
-    @MenusProtected(ValidMenu.cobros)
-    @ItemMenuProtected(ValidItemMenu.cobrosMultasActivas)
-    @Get('activos/:id')
-    multasActivas(@Param('id', ParseIntPipe) id: number){
+    // @MenusProtected(ValidMenu.cobros)
+    // @ItemMenuProtected(ValidItemMenu.cobrosMultasActivas)
+    // @Get('activos/:id')
+    // multasActivas(@Param('id', ParseIntPipe) id: number){
         
-        return this.multasAguaService.findMultas(id);
-    }
-    @Get('historial/:id')
-    @MenusProtected(ValidMenu.cobros)
-    @ItemMenuProtected(ValidItemMenu.cobrosMultasHistorial)
-    historialMultas(@Param('id', ParseIntPipe) id: number,@Query() paginationDto:PaginationDto){
-        return this.multasAguaService.historialMultas(id,paginationDto);
+    //     return this.multasAguaService.findMultas(id);
+    // }
+    // @Get('historial/:id')
+    // @MenusProtected(ValidMenu.cobros)
+    // @ItemMenuProtected(ValidItemMenu.cobrosMultasHistorial)
+    // historialMultas(@Param('id', ParseIntPipe) id: number,@Query() paginationDto:PaginationDto){
+    //     return this.multasAguaService.historialMultas(id,paginationDto);
         
-    }
-    @Get('lecturas-retrasos/:perfilId/:medidorAscId')
-    @MenusProtected(ValidMenu.cobros)
-    findLecturasRetrasados(@Param('perfilId', ParseIntPipe) perfilId: number,@Param('medidorAscId', ParseIntPipe) medidorAscId: number){
-        return this.multasAguaService.obtenerMesLecturasConRetrasoDePago(perfilId,medidorAscId);
-    }
-    @Get('medidores-perfil/:id')
-    @MenusProtected(ValidMenu.cobros)
-    findMedidoresAsociados(@Param('id', ParseIntPipe) id: number){
-        return this.multasAguaService.obtenerMedidoresPerfil(id);
-    }
+    // }
+    // @Get('lecturas-retrasos/:perfilId/:medidorAscId')
+    // @MenusProtected(ValidMenu.cobros)
+    // findLecturasRetrasados(@Param('perfilId', ParseIntPipe) perfilId: number,@Param('medidorAscId', ParseIntPipe) medidorAscId: number){
+    //     return this.multasAguaService.obtenerMesLecturasConRetrasoDePago(perfilId,medidorAscId);
+    // }
+    // @Get('medidores-perfil/:id')
+    // @MenusProtected(ValidMenu.cobros)
+    // findMedidoresAsociados(@Param('id', ParseIntPipe) id: number){
+    //     return this.multasAguaService.obtenerMedidoresPerfil(id);
+    // }
     
-    @Get('multa-perfil/:id')
-    @MenusProtected(ValidMenu.cobros)
-    findMulta(@Param('id', ParseIntPipe) id: number){
-        return this.multasAguaService.findMulta(id);
-    }
-    @Get('multas-perfil/:id')
-    @MenusProtected(ValidMenu.cobros)
-    findMultasIds(@Param('id', ParseIntPipe) perfilId: number,@Query() query: QueryMultasIds){
-        return this.multasAguaService.findMultaIds(perfilId,query);
-    }
+    // @Get('multa-perfil/:id')
+    // @MenusProtected(ValidMenu.cobros)
+    // findMulta(@Param('id', ParseIntPipe) id: number){
+    //     return this.multasAguaService.findMulta(id);
+    // }
+    // @Get('multas-perfil/:id')
+    // @MenusProtected(ValidMenu.cobros)
+    // findMultasIds(@Param('id', ParseIntPipe) perfilId: number,@Query() query: QueryMultasIds){
+    //     return this.multasAguaService.findMultaIds(perfilId,query);
+    // }
 }

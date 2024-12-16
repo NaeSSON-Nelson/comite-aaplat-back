@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { ComprobantePorPago, ComprobantePorPagoAdicional, PorPagarToPagado } from "./";
+import { ComprobantePorPago, PorPagarToPagado } from "./";
 import { Monedas } from "src/interfaces/enum/enum-entityes";
+import { ColumnNumericTransformer } from "src/interfaces/class-typeORM";
 
 
 @Entity('comprobante_de_pago')
@@ -12,20 +13,14 @@ export class ComprobantePago{
     fechaEmitida:Date;
     @Column('text',{nullable:false,})
     metodoPago:string;
-    @Column('numeric',{scale:2,precision:8,nullable:false,})
+    @Column('numeric',{scale:2,precision:8,nullable:false,
+      transformer: new ColumnNumericTransformer(),
+    },)
     montoPagado:number;
     @Column('enum',{
       enum:Monedas,
       nullable:false,
     })
-    // @Column('text',{
-    //   nullable:false,
-    // })
-    // titular:string;
-    // @Column('text',{
-    //   nullable:false
-    // })
-    // ciTitular:string;
     moneda:Monedas;
     @Column('varchar',{length:100,nullable:false,})
     entidadPago:string;
@@ -36,12 +31,6 @@ export class ComprobantePago{
     @JoinColumn()
     comprobantePorPagar:ComprobantePorPago;
 
-    // @OneToOne(()=>ComprobantePorPagoAdicional,(porPagarAdd)=>porPagarAdd.comprobante)
-    // @JoinColumn()
-    // comprobantePorPagarAdd:ComprobantePorPagoAdicional;
-
-    // @OneToMany(()=>PorPagarToPagado,(toPagado)=>toPagado.comprobantePago)
-    // comprobantePorPagarToComprobantePagado:PorPagarToPagado;
     @CreateDateColumn({
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP(6)',

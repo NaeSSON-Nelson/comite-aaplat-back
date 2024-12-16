@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Ubicacion } from 'src/common/inherints-db';
-import { Barrio, Estado, Medicion, Mes, Monedas, Nivel, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
+import { Barrio, Estado, EstadoAsociacion, Medicion, Mes, Monedas, Nivel, TipoMulta, TipoPerfil } from 'src/interfaces/enum/enum-entityes';
 import { ValidItemMenu, ValidMenu, ValidRole } from 'src/interfaces/valid-auth.enum';
 
 class PerfilSeed {
@@ -62,7 +62,7 @@ class MedidorSeed {
 }
 class MedidorAsociadoSeed{
   fechaInstalacion: Date;
-  estadoMedidorAsociado:string;
+  estadoMedidorAsociado:EstadoAsociacion;
   ubicacion:Ubicacion;
   
 }
@@ -83,6 +83,26 @@ class MesSeguimientoRegistroLectura{
   fechaRegistroLecturas:Date;
   fechaFinRegistroLecturas:Date;
 }
+class TarifaConsumoAguaSeed{
+  tarifaMinima:number;
+  lecturaMinima:number;
+  tarifaAdicional:number;
+  diaLimitePago:number;
+  moneda:Monedas;
+  vigencia:Date;
+}
+class TarifaMultasPorRetrasoSeed{
+  monto:number;
+  moneda:Monedas;
+  mesesDemora:number;
+  vigencia:Date;
+  tipoMulta:TipoMulta;
+}
+class beneficiariosDecuentosSeed{
+  tipoBeneficiario:string;
+  descuento:number;
+  detalles?:string;
+}
 class SeedData {
   perfiles: PerfilSeed[];
   afiliados: AfiliadoSeed[];
@@ -93,6 +113,9 @@ class SeedData {
   planillas:PlanillaLecturasSeed[]
   medidores: MedidorSeed[];
   medidoresAsociados:MedidorAsociadoSeed[];
+  tarifaConsumoAgua:TarifaConsumoAguaSeed[];
+  tarifaMultasPorRetraso:TarifaMultasPorRetrasoSeed[];
+  benficiarios:beneficiariosDecuentosSeed[]
   // aniosSeguimiento: AnioSeguimientoLecturaSeed[];
   // mesesSeguimiento: MesSeguimientoRegistroLectura[];
 }
@@ -146,7 +169,7 @@ export const initialData: SeedData = {
       apellidoPrimero: 'Gato',
       CI: '6352478',
       estado: Estado.ACTIVO,
-      fechaNacimiento: new Date(1998, 7, 24),
+      fechaNacimiento: new Date(1960, 7, 24),
       genero: 'MASCULINO',
       profesion: 'Contaduria',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
@@ -158,7 +181,7 @@ export const initialData: SeedData = {
       apellidoSegundo: 'Zacapata',
       CI: '752401254',
       estado: Estado.ACTIVO,
-      fechaNacimiento: new Date(1995, 1, 18),
+      fechaNacimiento: new Date(1954, 1, 18),
       genero: 'MASCULINO',
       profesion: 'comerciante',
       tipoPerfil: [TipoPerfil.afiliado,TipoPerfil.usuario],
@@ -635,10 +658,10 @@ export const initialData: SeedData = {
       ]
     },
     {
-      nombre: 'Medidres de agua',
+      nombre: 'Medidores de agua',
       linkMenu: ValidMenu.medidores,
       estado: Estado.ACTIVO,
-      prioridad:70,
+      prioridad:60,
       items:[
         
     // MENUS DE MEDIDORES DE AGUA
@@ -665,6 +688,11 @@ export const initialData: SeedData = {
       linkMenu:ValidItemMenu.medidorUpdate,
       visible:false,
       estado:Estado.ACTIVO
+    },{
+      nombre:'Modificar estado de medidor de agua',
+      linkMenu:ValidItemMenu.medidorUpdateStatus,
+      visible:false,
+      estado:Estado.ACTIVO
     },
     {
       nombre:'Historial de asociaciones',
@@ -679,7 +707,7 @@ export const initialData: SeedData = {
       linkMenu:ValidMenu.asociaciones,
       estado:Estado.ACTIVO,
       
-      prioridad:70,
+      prioridad:60,
       items:[
         
     //ASOCIACIONES
@@ -739,7 +767,7 @@ export const initialData: SeedData = {
       nombre:'Perfiles',
       linkMenu:ValidMenu.perfiles,
       estado:Estado.ACTIVO,
-      prioridad:70,
+      prioridad:80,
       items:[
         //Menus de Perfiles
     {
@@ -824,14 +852,26 @@ export const initialData: SeedData = {
       linkMenu:ValidMenu.cobros,
       estado:Estado.ACTIVO,
       
-      prioridad:75,
+      prioridad:70,
       items:[
     //COBROS DE SERVICIO
     {
-      nombre:'Listar afiliados asociados',
+      nombre:'Cobros de servicio',
       linkMenu:ValidItemMenu.cobrosListarAsociacionesAfiliados,
       visible:true,
     },
+    {
+// RECORTES EN COBROS
+      nombre:'Cortes del servicio de agua',
+    linkMenu:ValidItemMenu.cobrosRecortesDeServicio,
+    visible:true
+  },
+    {
+    nombre:'Reconexiones del servicio de agua',
+    linkMenu:ValidItemMenu.cobrosReconexionesDeServicio,
+    visible:true
+    },
+
     {
       nombre:'Mostrar deudas de afiliado',
       linkMenu:ValidItemMenu.cobrosDeudasPorPagarAsociacion,
@@ -872,10 +912,10 @@ export const initialData: SeedData = {
       ]
     },
     {
-      nombre:'Registrar lecturas de afiliados',
+      nombre:'Registrar lecturas',
       linkMenu:ValidMenu.lecturas,
       estado:Estado.ACTIVO,
-      prioridad:70,
+      prioridad:50,
       items:[
         //MENUS DE REGISTRO DE LECTURAS
     {
@@ -927,6 +967,85 @@ export const initialData: SeedData = {
           estado:Estado.ACTIVO
         },
       ]
+    },
+    {
+      nombre:'Configuraciones',
+      linkMenu:ValidMenu.opciones,
+      prioridad:31,
+      items:[
+        {
+          nombre:'Tarifas de consumo de agua',
+          linkMenu:ValidItemMenu.opcionesConfiguracionlistarTarifasPorConsumoAgua,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Tarifas de multas por retraso de pago de servicio',
+          linkMenu:ValidItemMenu.opcionesConfiguracionlistarTarifasMultasPorRetrasoDePago,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Descuentos de beneficiarios',
+          linkMenu:ValidItemMenu.opcionesConfiguracionlistarBeneficiarios,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Nueva tarifa de consumo de agua',
+          linkMenu:ValidItemMenu.opcionesConfiguracionRegistrarTarifaPorConsumoAgua,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Actualizar datos de tarifa de consumo de agua',
+          linkMenu:ValidItemMenu.opcionesConfiguracionUpdateTarifaPorConsumoAgua,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Actualizar estado tarifa de consumo de agua',
+          linkMenu:ValidItemMenu.opcionesConfiguracionUpdateStautsTarifaPorConsumoAgua,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Nueva tarifa de multa por retrasos de pago de servicio',
+          linkMenu:ValidItemMenu.opcionesConfiguracionRegistrarTarifaMultaPorRetrasoDePago,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Actualizar datos de tarifa de multa por retrasos de pago de servicio',
+          linkMenu:ValidItemMenu.opcionesConfiguracionUpdateTarifaMultaPorRetrasoDePago,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Actualizar estado tarifa de multa por retrasos de pago de servicio',
+          linkMenu:ValidItemMenu.opcionesConfiguracionUpdateStautsTarifaMultaPorRetrasoDePago,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Nuevo beneficiario de descuentos',
+          linkMenu:ValidItemMenu.opcionesConfiguracionRegistrarBeneficiarioPagos,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Actualizar datos de beneficiario',
+          linkMenu:ValidItemMenu.opcionesConfiguracionUpdateBeneficiario,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+        {
+          nombre:'Actualizar estado de beneficiario',
+          linkMenu:ValidItemMenu.opcionesConfiguracionUpdateStautsBeneficiario,
+          visible:false,
+          estado:Estado.ACTIVO
+        },
+      ]
     }
   ],
   roles: [
@@ -935,11 +1054,6 @@ export const initialData: SeedData = {
       estado: Estado.ACTIVO,
       nivel:Nivel.root
     },
-    // {
-    //   nombre: ValidRole.admin,
-    //   estado: Estado.ACTIVO,
-    //   nivel:Nivel.administrativo,
-    // },
     {
       nombre: ValidRole.administrativo,
       estado: Estado.ACTIVO,
@@ -948,23 +1062,13 @@ export const initialData: SeedData = {
     {
       nombre: ValidRole.secretaria,
       estado: Estado.ACTIVO,
-      nivel:Nivel.contador,
+      nivel:Nivel.secreataria,
     },
-    // {
-    //   nombre: 'lecturador',
-    //   estado: Estado.ACTIVO,
-    //   nivel:Nivel.contador,
-    // },
     {
       nombre: ValidRole.afiliado,
       estado: Estado.ACTIVO,
       nivel:Nivel.afiliado,
     },
-    // {
-    //   nombre: 'user',
-    //   estado: Estado.ACTIVO,
-    //   nivel:Nivel.afiliado,
-    // },
   ],
   medidores: [
     {
@@ -1221,7 +1325,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:1,
       },
-      estadoMedidorAsociado:'uso',
+      estadoMedidorAsociado:EstadoAsociacion.conectado,
     },
     {
       fechaInstalacion: new Date(2012, 8, 16),
@@ -1231,7 +1335,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:2,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },
     {
       fechaInstalacion: new Date(2015, 9, 9),
@@ -1241,7 +1345,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:3,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },
     {
       fechaInstalacion: new Date(2019, 5, 18),
@@ -1251,7 +1355,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:1,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },
     {
       fechaInstalacion: new Date(2018, 8, 8),
@@ -1261,7 +1365,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:2,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2014, 2, 24),
       ubicacion:{
@@ -1270,7 +1374,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:3,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2019, 11, 11),
       ubicacion:{
@@ -1279,7 +1383,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:1,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2021, 2, 18),
       ubicacion:{
@@ -1288,7 +1392,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:2,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2020, 11, 11),
       ubicacion:{
@@ -1297,7 +1401,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:3,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2022, 8, 9),
       ubicacion:{
@@ -1306,7 +1410,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:1,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2020, 8, 9),
       ubicacion:{
@@ -1315,7 +1419,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:2,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2019, 5, 5),
       ubicacion:{
@@ -1324,7 +1428,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:3,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2020, 2, 9),
       ubicacion:{
@@ -1333,7 +1437,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:1,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2020, 7, 2),
       ubicacion:{
@@ -1342,7 +1446,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:2,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2019, 1, 2),
       ubicacion:{
@@ -1351,7 +1455,7 @@ export const initialData: SeedData = {
         numeroManzano:1,
         nroLote:3,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2020, 6, 6),
       ubicacion:{
@@ -1360,7 +1464,7 @@ export const initialData: SeedData = {
         numeroManzano:2,
         nroLote:1,
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     },{
       fechaInstalacion: new Date(2020, 4, 7),
       ubicacion:{
@@ -1370,24 +1474,81 @@ export const initialData: SeedData = {
         nroLote:2,
 
       },
-      estadoMedidorAsociado:'uso'
+      estadoMedidorAsociado:EstadoAsociacion.conectado
     }
   ],
   planillas:[
-    {
-      gestion:2020
-    },
-    {
-      gestion:2021
-    },
-    {
-      gestion:2022
-    },
-    {
-      gestion:2023
-    },
+    // {
+    //   gestion:2020
+    // },
+    // {
+    //   gestion:2021
+    // },
+    // {
+    //   gestion:2022
+    // },
+    // {
+    //   gestion:2023
+    // },
     {
       gestion:2024
     },
-  ]
+  ],
+  tarifaConsumoAgua:[
+    {
+      lecturaMinima:10,
+      tarifaMinima:8,
+      moneda:Monedas.Bs,
+      tarifaAdicional:1.5,
+      diaLimitePago:20,
+      vigencia:new Date(2022,0,1,0,0,0,0) //VIGENCIA EN FECHA 1/01/2024 00:00
+    },
+    {
+      lecturaMinima:10,
+      tarifaMinima:10,
+      moneda:Monedas.Bs,
+      tarifaAdicional:2,
+      vigencia:new Date(2024,0,1,0,0,0,0), //VIGENCIA EN FECHA 1/01/2024 00:00
+      diaLimitePago:25,
+    },
+  ],
+  tarifaMultasPorRetraso:[
+    {mesesDemora:6,
+      moneda:Monedas.Bs,
+      monto:30,
+      vigencia:new Date(2022,0,1,0,0,0,0), //VIGENCIA EN FECHA 1/01/2024 00:00
+      tipoMulta:TipoMulta.retrasoPago
+    },
+    {
+      mesesDemora:3,
+      moneda:Monedas.Bs,
+      monto:50,
+      vigencia:new Date(2024,0,1,0,0,0,0),
+      tipoMulta:TipoMulta.retrasoPago
+    },
+    {mesesDemora:6,
+      moneda:Monedas.Bs,
+      monto:30,
+      vigencia:new Date(2022,0,1,0,0,0,0), //VIGENCIA EN FECHA 1/01/2024 00:00
+      tipoMulta:TipoMulta.reconexion
+    },
+    {
+      mesesDemora:3,
+      moneda:Monedas.Bs,
+      monto:50,
+      vigencia:new Date(2024,0,1,0,0,0,0),
+      tipoMulta:TipoMulta.reconexion
+    },
+  ],
+  benficiarios:[
+    {
+      descuento:20,
+      tipoBeneficiario:'Adulto mayor',
+    },
+    {
+      descuento:10,
+      tipoBeneficiario:'Discapacidades Físicas',
+      detalles:'Personas con deficiencias anatómicas y neuromúsculofuncionales'
+    }
+  ],
 };

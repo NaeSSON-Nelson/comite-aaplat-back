@@ -29,16 +29,20 @@ export class UsuarioController {
     ObtenerDetallesMedidor(@GetUser() user:Usuario,@Param('id') id: number){
         return this.userService.medidorAsociadoDetalles(user,id);
     }
-    @Get('medidores/asociacion/:id')
+    @Get('medidores/multas/:id')
     ObtenerMultasAsociacion(@GetUser() user:Usuario,@Param('id') id: number, @Query() paginationDto:PaginationDto){
         return this.userService.multasMedidorAsociado(user,id,paginationDto);
     }
-    @Get('medidores/:nro')
-    ObtenerMedidorAsociado(@GetUser() user:Usuario,@Param('nro') nro: string){
-        return this.userService.medidorAsociadoSelect(user,nro);
+    @Get('medidores/:id')
+    ObtenerMedidorAsociado(@GetUser() user:Usuario,@Param('id',ParseIntPipe) id: number){
+        return this.userService.medidorAsociadoSelect(user,id);
     }
     @Get('profile')
     obtenerPerfil(@GetUser() user:Usuario){
         return this.userService.profileUser(user);
+    }
+    @Get('deudas-medidor/:id')
+    obtenerDeudasPendientesMedidorAgua(@GetUser() user:Usuario,@Param('id',ParseIntPipe) id: number){
+        return this.userService.obtenerDeudasPendientesMedidorAgua(user,id)
     }
 }

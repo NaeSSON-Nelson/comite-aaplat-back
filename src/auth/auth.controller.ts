@@ -26,12 +26,13 @@ export class AuthController {
   @Authentication()
   // @MenuValid(ValidMenu.itemsMenu)
   user(@GetUser() usuario:Usuario){
-    const {username,roleToUsuario} = usuario;
+    const {username,roleToUsuario,perfil} = usuario;
     return {
       message:'user',
       OK:true,
       data:{
         username,
+        perfil,
         roles:roleToUsuario.map(toUsuario=>{
           const {menuToRole,roleToUsuario,updated_at,created_at,...dataRole}=toUsuario.role;
           return{

@@ -1,18 +1,23 @@
 import { Estado, Monedas } from "src/interfaces/enum/enum-entityes";
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 import { PlanillaMesLectura } from "src/medidores-agua/entities/planilla-mes-lectura.entity";
 import { ComprobantePago } from "./comprobante-de-pago";
-import { ComprobantePorPagoAdicional } from "./comprobante-por-pagar-add";
-import { PorPagarToPagado } from "./por-pagar-to-pagado";
+import { ColumnNumericTransformer } from "src/interfaces/class-typeORM";
+import { TarifaPorConsumoAgua } from "../../configuraciones-applat/entities/tarifa-por-consumo-agua";
+import { DescuentosAplicadosPorPagar } from "./descuentos-aplicados-por-pagar";
 
 @Entity('comprobante_por_pagar')
 export class ComprobantePorPago{
 
     @PrimaryGeneratedColumn()
     id:number;
-    @Column('integer',{
+    @Column({
         nullable:false,
+        type:'numeric',
+        scale:2,
+        precision:5,
+        transformer: new ColumnNumericTransformer(),
     })
     monto:number;
     @Column('enum',{
@@ -58,10 +63,12 @@ export class ComprobantePorPago{
     @OneToOne(()=>PlanillaMesLectura,{nullable:false})
     @JoinColumn()
     lectura:PlanillaMesLectura;
-
+    @OneToMany(()=>DescuentosAplicadosPorPagar,(descuentos)=>descuentos.comprobante,{cascade:true})
+    descuentos:DescuentosAplicadosPorPagar[]
     // @OneToOne(()=>ComprobantePorPagoAdicional,(pagoAdd)=>pagoAdd.primerComprobante)
-    // comprobantesAdd:ComprobantePorPagoAdicional;
-
+    // comprobantesAdd:ComprobantePorPagoAdicional; 
+    @ManyToOne(()=>TarifaPorConsumoAgua,(tarifa)=>tarifa.comprobantesLecturas,{nullable:false})
+    tarifaConsumoCalculo:TarifaPorConsumoAgua;
     @OneToOne(()=>ComprobantePago,(pagado)=>pagado.comprobantePorPagar)
     comprobante:ComprobantePago;
 

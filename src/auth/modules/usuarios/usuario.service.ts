@@ -12,6 +12,7 @@ import { PaginationDto } from "src/common/dto/pagination.dto";
 
 @Injectable()
 export class UserService{
+   
 
     constructor(private readonly dataSource:DataSource,
         
@@ -86,11 +87,16 @@ export class UserService{
     },
     select:{id:true,isActive:true,gestion:true,lecturas:{
       consumoTotal:true,lectura:true,PlanillaMesLecturar:true,id:true,
-      editable:true,isMulta:true,registrable:true,registrado:true,medicion:true,
+      isMulta:true,registrable:true,registrado:true,medicion:true,
       isActive:true,estado:true,
       pagar:{monto:true,moneda:true,pagado:true,}
     }},
-    relations:{lecturas:{pagar:true}}
+    relations:{lecturas:{pagar:true}},
+    order:{
+      lecturas:{
+        id:'ASC'
+      }
+    }
     })
     if(!planilla) throw new BadRequestException(`Planilla ${id} not found`)    
     return {
@@ -123,7 +129,7 @@ export class UserService{
     }
   }
 
-  async medidorAsociadoSelect(user:Usuario,nroMedidor:string){
+  async medidorAsociadoSelect(user:Usuario,idAsociacion:number){
     const medidorAsc = await this.dataSource.getRepository(MedidorAsociado).findOne(
       {
         where:{
@@ -134,9 +140,7 @@ export class UserService{
               },
               // isActive:true
             },
-          medidor:{
-            nroMedidor
-          }
+            id:idAsociacion
         },
         select:{
           medidor:{
@@ -157,7 +161,7 @@ export class UserService{
           },
         relations:{afiliado:{perfil:{usuario:true}},planillas:true,medidor:true,}
       })
-      if(!medidorAsc) throw new BadRequestException(`No se encontro ningun medidor con el Nro. ${nroMedidor} relacionado al usuario`)
+      if(!medidorAsc) throw new BadRequestException(`No se encontro ningun medidor asociado ${idAsociacion} relacionado al usuario`)
       const {afiliado,...dataAsc} = medidorAsc;
       return {
         OK:true,
@@ -171,11 +175,11 @@ export class UserService{
         usuario:{id:user.id,isActive:true},
         isActive:true,
       },
-      select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
+      select:{nombrePrimero:true,nombreSegundo:true,apellidoPrimero:true,apellidoSegundo:true,CI:true,accessAcount:true,defaultClientImage:true,isAfiliado:true,profileImageUri:true,urlImage:true,estado:true,contacto:true,direccion:true,fechaNacimiento:true,genero:true,id:true,isActive:true,tipoPerfil:true,profesion:true,
         usuario:{id:true,correo:true,username:true,roleToUsuario:{id:true,role:{nombre:true,id:true}},correoVerify:true,},
-        afiliado:{id:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true},}
+        afiliado:{id:true,isActive:true,ubicacion:{barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true},monedaAfiliacion:true,montoAfiliacion:true,estado:true,descuentos:{id:true,tipoBeneficiario:true,descuento:true,estado:true,isActive:true,detalles:true}}
       },
-      relations:{usuario:{roleToUsuario:{role:true}},afiliado:true}
+      relations:{usuario:{roleToUsuario:{role:true}},afiliado:{ubicacion:true,descuentos:true}}
     });
     // const {usuario,...dataPerfil} = perfil;
     const usuario = perfil.usuario;
@@ -238,12 +242,8 @@ export class UserService{
                 }
             }
         },
-        relations:{
-            lecturasMultadas:true
-        },
         select:{
-            id:true,motivo:true,moneda:true,pagado:true,isActive:true,estado:true,monto:true,
-
+            id:true,motivo:true,moneda:true,pagado:true,isActive:true,estado:true,monto:true,created_at:true,tipoMulta:true
         },
         order:{
             id:order,pagado:'ASC'
@@ -263,4 +263,72 @@ export class UserService{
         }
     }
   }
+  async obtenerDeudasPendientesMedidorAgua(user: Usuario, id:number) {
+    const asociacion = await this.dataSource.getRepository(MedidorAsociado).findOne({
+      where:{
+        id,
+        afiliado:{
+          perfil:{
+            usuario:{
+              id:user.id
+            }
+          }
+        }
+      },
+    });
+    if(!asociacion) throw new NotFoundException(`No se encontró el medidor asociado o no esta asociado al usuario`);
+    const planillas = await this.dataSource.getRepository(PlanillaLecturas).find({
+      where:{
+        medidor:{
+          id:asociacion.id,
+        },
+        lecturas:{
+          registrado:true,
+          pagar:{
+            pagado:false
+          }
+        }
+      },
+      select:{
+        id:true,
+        gestion:true,
+        lecturas:{
+          id:true,estado:true,isActive:true,consumoTotal:true,PlanillaMesLecturar:true,estadoMedidor:true,lectura:true,medicion:true,
+          pagar:{id:true,estado:true,estadoComprobate:true,fechaLimitePago:true,pagado:true,moneda:true,monto:true,descuentos:{id:true,descuento:true,tipoDescuentoBeneficiario:true,detalles:true},}
+        }
+      },
+      relations:{
+        lecturas:{
+          pagar:true
+        }
+      },
+      order:{
+        gestion:'ASC',
+        lecturas:{
+          id:'ASC'
+        }
+      }
+    });
+    const multas = await this.dataSource.getRepository(MultaServicio).find({
+      where:{
+        medidorAsociado:{
+          id:asociacion.id
+        },
+        pagado:false
+      },
+      select:{id:true,isActive:true,estado:true,monto:true,moneda:true,created_at:true,motivo:true,pagado:true,tipoMulta:true},
+      order:{
+        id:'ASC'
+      }
+    });
+
+    return{
+      OK:true,
+      message:'deudas pendientes de la asociación',
+      data:{
+        multas,
+        planillas
+      }
+    }
+}
 }

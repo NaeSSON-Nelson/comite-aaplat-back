@@ -4,6 +4,8 @@ import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
 import { MultaServicio } from 'src/pagos-de-servicio/entities';
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { HistorialConexiones } from './historial-cortes.entity';
+import { EstadoAsociacion } from 'src/interfaces/enum/enum-entityes';
 
 
 @Entity('medidor_asociado')
@@ -26,10 +28,11 @@ export class MedidorAsociado extends ColumnsAlways {
   
   @Column({
     name: 'estado_medidor_asociado',
-    type: 'text',
-    nullable: false,
+    type: 'enum',
+    enum:EstadoAsociacion,
+    default:EstadoAsociacion.conectado
   })
-  estadoMedidorAsociado:string;
+  estadoMedidorAsociado:EstadoAsociacion;
   @Column(() => Ubicacion)
   ubicacion: Ubicacion;
   @Column({
@@ -38,7 +41,22 @@ export class MedidorAsociado extends ColumnsAlways {
     nullable:false,
   })
   lecturaSeguimiento: number;
+  @Column({ //PARA REALIZAR EL CORTE DE SERVICIO
+    type:'bool',
+    default:false,
+  })
+  corte:boolean;
+  @Column({
+    type:'text',
+    default:null,
+  })
+  motivoTipoConexion:string;
 
+  @Column({ // PARA SOLICITAR RECONECCIÓN DE SERVICIO
+    type:'bool',
+    default:false,
+  })
+  reconexion:boolean;
   @Column({
     type:'bool',
     default:true,
@@ -53,4 +71,7 @@ export class MedidorAsociado extends ColumnsAlways {
   medidor:Medidor;
   @OneToMany(() => MultaServicio, (multas) => multas.medidorAsociado)
   multasAsociadas:MultaServicio [];
+
+  @OneToMany(()=>HistorialConexiones,(conexiones)=>conexiones.asociacion)
+  historial:HistorialConexiones[]
 }

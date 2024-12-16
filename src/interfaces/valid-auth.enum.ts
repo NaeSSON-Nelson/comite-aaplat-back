@@ -22,6 +22,7 @@ export enum ValidMenu{
     lecturas="lecturas",
     consultar="user",
     reportes="reportes",
+    opciones="opciones-configuracion"
     // multasRetrasoPago="multas-de-servicio"
     // afiliados="afiliados",
     //  usuarios="usuarios",
@@ -110,6 +111,13 @@ export enum ValidItemMenu{
     cobrosMultasHistorial="multas-afiliado-historial",
     cobrosMultaDetails="multa-afiliado-details",
 
+    // RECORTES EN COBROS
+    cobrosRecortesDeServicio="listar-recortes",
+    cobrosRecortesRegistrarCortes="registrar-cortes",
+
+    //RECONEXIONES EN COBROS
+    cobrosReconexionesDeServicio="listar-reconexiones",
+    cobrosReconexionesRegistrarReconexiones="registrar-reconexiones",
 
     //MODULO DE REGISTRO DE LECTURAS
     lecturasListarAfiliadosPlanillasLecturas="planillas-afiliados-lecturas",
@@ -124,5 +132,23 @@ export enum ValidItemMenu{
     //FUNCIONES DE USUARIO AFILIADO
 
     consultarConsultarMedidoresAgua="consultar-medidores-de-agua",
-    consultarDeudas="consultar-deudas"
+    consultarDeudas="consultar-deudas",
+
+    //TARIFA POR CONSUMO DE AGUA
+    opcionesConfiguracionlistarTarifasPorConsumoAgua="opciones-configuracion-listar-tarifas-por-consumo-agua",
+    opcionesConfiguracionRegistrarTarifaPorConsumoAgua="opciones-configuracion-registrar-tarifa-por-consumo-agua",
+    opcionesConfiguracionUpdateTarifaPorConsumoAgua="opciones-configuracion-update-tarifa-por-consumo-agua",
+    opcionesConfiguracionUpdateStautsTarifaPorConsumoAgua="opciones-configuracion-update-status-tarifa-por-consumo-agua",
+    //TARIFA MULTA POR RETRASO DE PAGO DE SERVICIO
+    opcionesConfiguracionlistarTarifasMultasPorRetrasoDePago="opciones-configuracion-listar-tarifas-multas-por-retraso-de-pago",
+    opcionesConfiguracionRegistrarTarifaMultaPorRetrasoDePago="opciones-configuracion-registrar-tarifa-multa-por-retraso-de-pago",
+    opcionesConfiguracionUpdateTarifaMultaPorRetrasoDePago="opciones-configuracion-update-tarifa-multa-por-retraso-de-pago",
+    opcionesConfiguracionUpdateStautsTarifaMultaPorRetrasoDePago="opciones-configuracion-update-status-tarifa-multa-por-retraso-de-pago",
+    
+    //BENEFICIARIOS
+    opcionesConfiguracionlistarBeneficiarios="opciones-configuracion-listar-beneficiarios",
+    opcionesConfiguracionRegistrarBeneficiarioPagos="opciones-configuracion-registrar-beneficiario",
+    opcionesConfiguracionUpdateBeneficiario="opciones-configuracion-update-beneficiario",
+    opcionesConfiguracionUpdateStautsBeneficiario="opciones-configuracion-update-status-beneficiario",
+
 }

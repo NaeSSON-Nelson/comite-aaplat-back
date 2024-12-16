@@ -11,6 +11,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MulterModule } from '@nestjs/platform-express';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { AsociacionesModule } from './asociaciones/asociaciones.module';
+import { ConfiguracionesApplatModule } from './configuraciones-applat/configuraciones-applat.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AsociacionesModule } from './asociaciones/asociaciones.module';
     PagosDeServicioModule,
     CloudinaryModule,
     AsociacionesModule,
+    ConfiguracionesApplatModule,
   ],
 })
 export class AppModule {}

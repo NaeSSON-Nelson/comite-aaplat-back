@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, IsEnum, IsNotEmptyObject, IsNumberString, IsNumber, Min, Length, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsEnum, IsNotEmptyObject, IsNumberString, IsNumber, Min, Length, MinLength, MaxLength, IsArray } from 'class-validator';
 import { Barrio, Estado, MetodoPago, Monedas } from 'src/interfaces/enum/enum-entityes';
 import { Type } from 'class-transformer';
 
@@ -37,5 +37,10 @@ export class CreateAfiliadoDto {
   numeroManzano:number;
   @Min(1)
   nroLote:number;
-
+  @IsNumber({allowInfinity:false,allowNaN:false},{
+    each:true
+  })
+  @Min(1,{each:true})
+  @IsArray()
+  beneficiado:number[];
 }

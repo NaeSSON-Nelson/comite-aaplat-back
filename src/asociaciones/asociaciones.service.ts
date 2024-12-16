@@ -7,7 +7,7 @@ import { CommonService } from 'src/common/common.service';
 import { Afiliado, Perfil } from 'src/auth/modules/usuarios/entities';
 import { Medidor } from 'src/medidores-agua/entities/medidor.entity';
 import { UpdateMedidorAsociadoDto } from './dto/update-medidor-asociado.dto';
-import { Estado } from 'src/interfaces/enum/enum-entityes';
+import { Estado, EstadoAsociacion, TipoMulta } from 'src/interfaces/enum/enum-entityes';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { SearchPerfil } from 'src/auth/modules/usuarios/querys/search-perfil';
 import { PlanillaLecturas } from 'src/medidores-agua/entities/planilla-lecturas.entity';
@@ -16,17 +16,20 @@ import { CreateGestionMedidorAsociadoDto } from './dto/create-gestion-medidor-as
 import { UpdateStatusGestion } from './dto/update-status-planilla.dto';
 import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
 import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
+import { MultaServicio } from 'src/pagos-de-servicio/entities';
+import { MultasVariosDto } from './dto/multas-varios.dto';
+import { UpdateMultasVariosDto } from './dto/update-multas-varios.dto';
+import { HistorialConexiones } from './entities/historial-cortes.entity';
+import { MotivoReconexionDto } from './dto/motivo-corte.dto';
 
 @Injectable()
 export class AsociacionesService {
   constructor(
-    // @InjectRepository(Perfil)
-    // private readonly perfilRepository: Repository<Perfil>,
-    // @InjectRepository(Medidor)
-    // private readonly medidorRepository: Repository<Medidor>,
     
     @InjectRepository(MedidorAsociado)
     private readonly medidorAsociadoRepository:Repository<MedidorAsociado>,
+    @InjectRepository(HistorialConexiones)
+    private readonly historialConexionesRepository:Repository<HistorialConexiones>,
     private readonly commonService: CommonService,
     private readonly dataSource: DataSource,
   ){}
@@ -53,10 +56,16 @@ export class AsociacionesService {
       ...dataAsociacion
     })
     try {
-      await this.medidorAsociadoRepository.save(asociacion);
+      const asociacionCreated=await this.medidorAsociadoRepository.save(asociacion);
+      const planilla = this.dataSource.getRepository(PlanillaLecturas).create({
+        gestion:(new Date()).getFullYear(),
+        registrable:true,
+        medidor:asociacionCreated
+      });
+      await this.dataSource.getRepository(PlanillaLecturas).save(planilla);
       return {
         OK:true,
-        message:`Asociacion Exitosa!`,
+        message:`Asociacion creata con exito!. Planilla de gestión ${planilla.gestion} generada`,
         data:asociacion,
       }
     } catch (error) {
@@ -82,28 +91,28 @@ export class AsociacionesService {
   }
   async updateStatus(idAsociacion:number,updateMedidorAsociadoDto:UpdateMedidorAsociadoDto){
     const {estado} =updateMedidorAsociadoDto;
-    if(estado === null || estado === undefined) throw new BadRequestException(`Debe Enviar un estado!`);
+    if(estado === null || estado === undefined) throw new BadRequestException(`Debe enviar el estado`);
     if(estado !== Estado.DESHABILITADO) throw new BadRequestException(`Solamente se puede deshabilitar la asociación`);
 
-    const asociacion = await this.medidorAsociadoRepository.findOne({where:{id:idAsociacion},relations:{medidor:true,planillas:{lecturas:{pagar:true,multa:true}}}});
+    const asociacion = await this.medidorAsociadoRepository.findOne({where:{id:idAsociacion},relations:{medidor:true,multasAsociadas:true,planillas:{lecturas:{pagar:true}}}});
     if(!asociacion) throw new NotFoundException(`Asociacion ${idAsociacion} not found`);
     for(const planilla of asociacion.planillas){
       for(const lectura of planilla.lecturas){
         if(lectura.pagar){
           if(!lectura.pagar.pagado) throw new BadRequestException(`La asociación tiene deudas pendientes por pagar, no se puede deshabilitar`);
         }
-        if(lectura.multa){
-          if(!lectura.multa.pagado) throw new BadRequestException(`La asociación tienes lecturas con multas por pagar, no se puede deshabilitar`);
-          
-        }
+        
       }
+    }
+    for(const multa of asociacion.multasAsociadas){
+          if(!multa.pagado) throw new BadRequestException(`La asociación tiene multas por pagar, no se pude deshabilitar`);
     }
 
     try {
-      await this.medidorAsociadoRepository.update(asociacion.id,{isActive:false,estado,estadoMedidorAsociado:'Asociación cerrada'});
+      await this.medidorAsociadoRepository.update(asociacion.id,{isActive:false,estado});
       return {
         OK:true,
-        message:'Se ha deshabilitado el estado de asocición entre medidor de agua y el afiliado',
+        message:'Se ha deshabilitado el estado de asocición entre el medidor de agua  y el afiliado',
         data:await this.findAsociacionnAfiliado(asociacion.id),
       }
     } catch (error) {
@@ -200,7 +209,9 @@ export class AsociacionesService {
   }
   async getLecturasAsociacion(id:number){
     const data = await this.dataSource.getRepository(PlanillaLecturas).findOne({
-      where:{id},
+      where:{id,lecturas:{
+        registrado:true
+      }},
       select:{
         id:true,gestion:true,isActive:true,estado:true,
         lecturas:{
@@ -221,7 +232,7 @@ export class AsociacionesService {
         }
       }
     })
-    if(!data) throw new BadRequestException(`no asociacion`);
+    if(!data) throw new BadRequestException(`La gestión no tiene ninguna lectura registrada.`);
     return {
       OK:true,
       message:`lecturas de gestion ${data.gestion}`,
@@ -416,9 +427,7 @@ export class AsociacionesService {
     })
     if(!asociacion) throw new BadRequestException(`Asociacion not found`);
     else if(!asociacion.isActive) throw new BadRequestException(`La asociacion no se encuentra disponible`);
-    // else if()
-    // if(asociacion.planillas.includes({gestion,}))
-    // console.log(asociacion);
+    
     for(const gest of asociacion.planillas){
       if(gest.gestion===gestion){
         return {
@@ -497,10 +506,10 @@ export class AsociacionesService {
     };
   }
   async findGestiones(idAsociacion:number,paginationDto: PaginationDto){
-    const gestion = new Date().getFullYear();
+   
     const {limit=10,offset=0} = paginationDto;
     const {"0":data,"1":size} = await this.dataSource.getRepository(PlanillaLecturas).findAndCount({
-      where:[{gestion:LessThan(gestion),
+      where:[{
         medidor:{id:idAsociacion}}],
         select:{
           id:true,estado:true,gestion:true,registrable:true,isActive:true,medidor:{id:true,}
@@ -510,7 +519,7 @@ export class AsociacionesService {
     })
     return {
       OK:true,
-      message:'gestiones pasadas',
+      message:'lista de planillas de gestiones de la asociación',
       data:{
         size,
         data,
@@ -560,7 +569,7 @@ export class AsociacionesService {
         }
       },
       select:{
-        id:true,estado:true,estadoMedidorAsociado:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,lecturaSeguimiento:true,registrable:true,ubicacion:{barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true,},
+        id:true,estado:true,estadoMedidorAsociado:true,corte:true,reconexion:true,fechaInstalacion:true,isActive:true,lecturaInicial:true,lecturaSeguimiento:true,registrable:true,ubicacion:{barrio:true,latitud:true,longitud:true,manzano:true,nroLote:true,numeroManzano:true,numeroVivienda:true,},
         medidor:{id:true,estado:true,isActive:true,funcionamiento:true,nroMedidor:true,medicion:true,}
       },
       relations:{
@@ -669,10 +678,13 @@ export class AsociacionesService {
   async ComprobanteDetalles(idLectura: number) {
     const lecturaPorPagar = await this.dataSource.getRepository(PlanillaMesLectura).findOne({
       where: { id:idLectura},
-      relations: { pagar:{comprobante:true} },
+      relations: { pagar:{comprobante:true,descuentos:true} },
       select:{
         consumoTotal:true,created_at:true,estadoMedidor:true,id:true,isActive:true,lectura:true,PlanillaMesLecturar:true,estado:true,medicion:true,
-        pagar: {created_at:true,estado:true,estadoComprobate:true,fechaPagada:true,id:true,metodoRegistro:true,moneda:true,monto:true,fechaLimitePago:true,motivo:true,pagado:true,
+        pagar: {created_at:true,estado:true,estadoComprobate:true,
+          fechaPagada:true,id:true,metodoRegistro:true,moneda:true,
+          monto:true,fechaLimitePago:true,motivo:true,pagado:true,
+          descuentos:true,
           comprobante:{created_at:true,entidadPago:true,fechaEmitida:true,id:true,metodoPago:true,montoPagado:true,nroRecibo:true,moneda:true,},
         },
       }
@@ -686,5 +698,262 @@ export class AsociacionesService {
       message: 'lectura con comprobante de pago ',
       data: lecturaPorPagar,
     };
+  }
+
+  async listarMultasAsociacion(idAsociacion:number,paginator:PaginationDto){
+    const {offset=0,limit=10} =paginator;
+    const {"0":data,"1":size} = await this.dataSource.getRepository(MultaServicio).findAndCount({
+      where:{id:idAsociacion},
+      select:{
+        id:true,estado:true,isActive:true,pagado:true,monto:true,moneda:true,motivo:true,created_at:true,
+      },
+      take:limit,
+      skip:offset,
+      order:{
+        pagado:'ASC',
+        id:'DESC'
+      }
+    });
+    return{
+      OK:true,
+      message:'Multas de medidor de agua asociado',
+      data:{
+        data,
+        size,
+        limit,
+        offset,
+      }
+    }
+  }
+  async getMultaAsociacion(idMulta:number){
+    const multa = await this.dataSource.getRepository(MultaServicio).findOne({
+      where:{id:idMulta},
+      select:{
+        id:true,isActive:true,estado:true,moneda:true,monto:true,motivo:true,pagado:true,
+        created_at:true,tipoMulta:true,
+        comprobante:{
+          id:true,entidadPago:true,fechaEmitida:true,metodoPago:true,moneda:true,montoPagado:true,nroRecibo:true,
+        }
+      },
+      relations:{
+        comprobante:true
+      }
+    });
+    if(!multa) throw new NotFoundException(`Multa con N° ${idMulta} no encontrada`);
+    return{
+      OK:true,
+      message:'Multa encontrada',
+      data:multa
+    }
+  }
+
+
+  //OBTENER HISTORIAL DE CORTES DE ASOCIACION
+  async obtenerHistorialConexiones(idAsociacion:number,paginatorDto:PaginationDto){
+    const {limit,offset} = paginatorDto;
+    const {"0":data,"1":size} = await this.historialConexionesRepository.findAndCount({
+      where:{
+        asociacion:{
+          id:idAsociacion
+        }
+      },
+      select:{
+        id:true,created_at:true,fechaRealizada:true,isActive:true,motivo:true,estado:true,tipoAccion:true,
+        
+      },
+      order:{
+        id:'DESC',
+      },
+      take:limit,
+      skip:offset
+    });
+
+    return {
+      OK:true,
+      message:'HISTORIAL DE CORTES DE SERVICIO REALIZADO',
+      data:{
+        data,
+        size,
+        limit,
+        offset
+      }
+    }
+  }
+  //REGISTRAR CORTE POR CIERRE DE ASOCIACION
+
+  async cancelarCorteServicio(idAsociacion:number){
+    const asociacion = await this.medidorAsociadoRepository.findOne({
+      where:{id:idAsociacion},
+      relations:{
+        multasAsociadas:true,
+        planillas:{
+          lecturas:{
+            pagar:true
+          }
+        }
+      }
+    });
+    if(!asociacion) throw new NotFoundException(`ASOCIACION CON ID ${idAsociacion} NO ENCONTRADA`);
+    if(!asociacion.isActive) throw new BadRequestException(`NO SE PUEDE REALIZAR LA ACCION DE CORTE, LA ASOCIACION SE ENCUENTRA DESHABILITADA`);
+    if(!asociacion.corte) throw new BadRequestException(`NO SE PUEDE REALIZAR LA ACCION DE CORTE, LA ASOCIACION YA RECIBIO LA ORDEN DE CORTE`);
+    if(asociacion.estadoMedidorAsociado !==EstadoAsociacion.conectado) throw new BadRequestException(`NO SE PUEDE REALIZAR LA ACCION DE CORTE, YA SE ENCUENTRA DESCONECTADO`);
+    
+    try {
+      await this.medidorAsociadoRepository.update(asociacion.id,{corte:false,motivoTipoConexion:null});
+      return{
+        OK:true,
+        message:'Se canceló la solicitud de corte de servicio de agua'
+      }
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+    //REGISTRAR MULTAS TIPO VARIOS
+  // async registrarMultaVarios(multaDto:MultasVariosDto){
+  //   const {idAsociacion,...dataMulta} =multaDto;
+  //   const asociacion = await this.medidorAsociadoRepository.findOne({
+  //     where:{id:idAsociacion}
+  //   });
+  //   if(!asociacion) throw new BadRequestException(`Asociacion no encontrada`);
+  //   if(!asociacion.isActive) throw new BadRequestException(`No se puede realizar multas a asociaciones deshabilitadas`);
+  //   //MULTA TIPO VARIOS
+  //   const multa = this.dataSource.getRepository(MultaServicio).create({...dataMulta,tipoMulta:TipoMulta.varios,medidorAsociado:asociacion});
+  //   try {
+  //     await this.dataSource.getRepository(MultaServicio).save(multa);
+  //     return{
+  //       OK:true,
+  //       messagE:'LA MULTA FUE CREADA CON EXITO',
+  //       data:multa
+  //     }
+  //   } catch (error) {
+  //     this.commonService.handbleDbErrors(error);
+  //   }
+  // }
+  async updateMultaAsociado(idMulta:number,updateMultasDto:UpdateMultasVariosDto){
+    const {estado,idAsociacion:idAds,...dataMultaUpdate} = updateMultasDto;
+
+    const multaPreload = await this.dataSource.getRepository(MultaServicio).preload({
+      id:idMulta,
+      ...dataMultaUpdate,
+      estado,
+      isActive:estado===Estado.ACTIVO?true:false,
+    });
+    if(!multaPreload) throw new NotFoundException(`MULTA ${idMulta} NO ENCONTRADA`);
+    if(multaPreload.pagado) throw new BadRequestException(`LA MULTA YA FUE PAGADA, NO SE PUEDE MODIFICAR LOS DATOS`);
+    try {
+      await this.dataSource.getRepository(MultaServicio).save(multaPreload);
+      return{
+        OK:true,
+        message:'MULTA ACTUALIZADA',
+        data:multaPreload
+      }
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+
+  }
+
+  async solicitudCorte(idAsociacion:number,{motivo}:MotivoReconexionDto){
+    const asociacion = await this.medidorAsociadoRepository.findOne({
+      where:{id:idAsociacion},
+      relations:{
+        planillas:{
+          lecturas:{
+            pagar:true,
+            
+          }
+        },
+        multasAsociadas:true,
+        medidor:true
+      }
+    });
+    if(!asociacion) throw new NotFoundException(`Asociacion with ID ${idAsociacion} not found`);
+    if(!asociacion.isActive) throw new BadRequestException(`No se puede realizar solicitud de corte a una asociacion cerrada`);
+    if(asociacion.corte) throw new BadRequestException(`No se puede solicitar un corte a la sociacion que ya solicito nuevamente el corte`);
+    if(asociacion.estadoMedidorAsociado ===EstadoAsociacion.desconectado) throw new BadRequestException(`No se puede solicitar un corte a una asociacion que ya ha sido cortada`);
+    if(!asociacion.medidor.isActive) throw new BadRequestException(`No se puede realizar una solicitud de desconeccion al medidor deshabilitado`);
+    //AGREGANDO SOLICITUD DE CORTE
+    for(const planilla of asociacion.planillas){
+      for(const lectura of planilla.lecturas){
+        if(lectura.registrado)
+        if(!lectura.pagar.pagado) throw new BadRequestException(`No se puede solicitar un corte de servicio sin haber pagado todos los pagos de lecturas`);
+      }
+    }
+    for(const multas of asociacion.multasAsociadas){
+      if(!multas.pagado) throw new BadRequestException(`No se puede solicitar un corte de servicio sin haber pagado las multas por pagar`);
+    }
+    try {
+      await this.medidorAsociadoRepository.update(asociacion.id,{corte:true,motivoTipoConexion:motivo}); // SOLCIITUD DE CORTE, SE AÑADIRA EN LA FUNCION DE LISTAR AFILIADOS PARA CORTES DE SERVICIO
+      return{
+        OK:true,
+        message:'Solicitud de corte realizado'
+      }
+    } catch (error) {
+      throw this.commonService.handbleDbErrors(error)
+    }
+  }
+  async realizarSolicitudReconexion(idAsociado:number,{motivo}:MotivoReconexionDto){
+    const asociacion = await this.medidorAsociadoRepository.findOne({
+      where:{id:idAsociado},
+      relations:{
+        multasAsociadas:true,
+        planillas:{
+          lecturas:{
+            pagar:true
+          }
+        }
+      }
+    });
+    if(!asociacion) throw new NotFoundException(`Asociacion no encontrada`);
+    if(!asociacion.isActive) throw new BadRequestException(`La asociacion esta deshabilitada`);
+    if(asociacion.corte) throw new BadRequestException(`La asociacion se encuentra en proceso de corte de servicio`);
+    if(asociacion.reconexion) throw new BadRequestException(`Ya se ha solicitado la reconexión de servicio`);
+    // SOLAMENTE SI SE SOLICTA RECONECION TRUE
+      for(const multas of asociacion.multasAsociadas){
+        if(!multas.pagado) throw new BadRequestException(`No se puede solicitar una reconexión hasta que se paguen deudas por pagar`);
+      }
+      for(const planilla of asociacion.planillas){
+        for(const lectura of planilla.lecturas){
+          if(lectura.registrado)
+            if(!lectura.pagar.pagado) throw new BadRequestException(`No se puede solicitar una reconexión hasta que se paguen deudas por pagar`);
+        }
+      }
+    
+    try {
+      await this.medidorAsociadoRepository.update(asociacion.id,{reconexion:true,motivoTipoConexion:motivo});
+      return{
+        OK:true,
+        message:'SE REALIZARA LA RECONEXIÓN DEL MEDIDOR DE AGUA'
+      }
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
+  }
+  async cancelarReconexion(idAsociacion:number){
+    const asociacion = await this.medidorAsociadoRepository.findOne({
+      where:{id:idAsociacion},
+      relations:{
+        multasAsociadas:true,
+        planillas:{
+          lecturas:{
+            pagar:true
+          }
+        }
+      }
+    });
+    if(!asociacion) throw new NotFoundException(`ASOCIACION CON ID ${idAsociacion} NO ENCONTRADA`);
+    if(!asociacion.isActive) throw new BadRequestException(`NO SE PUEDE REALIZAR LA ACCION , LA ASOCIACION SE ENCUENTRA DESHABILITADA`);
+    if(!asociacion.reconexion) throw new BadRequestException(`NO SE PUEDE REALIZAR LA ACCION, NO TIENE SOLICITUD DE ORDEN DE RECONEXIÓN`);
+    if(asociacion.estadoMedidorAsociado !==EstadoAsociacion.desconectado) throw new BadRequestException(`NO SE PUEDE REALIZAR LA ACCION DE CANCELAR SOLICITUD DE RECONEXIÓN, YA SE ENCUENTRA CONECTADO`);
+    
+    try {
+      await this.medidorAsociadoRepository.update(asociacion.id,{reconexion:false,motivoTipoConexion:null});
+      return{
+        OK:true,
+        message:'Se canceló la solicitud de reconexión del servicio de agua'
+      }
+    } catch (error) {
+      this.commonService.handbleDbErrors(error);
+    }
   }
 }

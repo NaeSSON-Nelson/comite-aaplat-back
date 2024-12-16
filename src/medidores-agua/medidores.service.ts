@@ -8,7 +8,7 @@ import {
 import { CreateMedidorDto } from './dto/create-medidor.dto';
 import { UpdateMedidorDto } from './dto/update-medidor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOperator, FindOptionsOrder, FindOptionsWhere, ILike, IsNull, Like, Repository, SelectQueryBuilder, MoreThanOrEqual } from 'typeorm';
+import { DataSource, FindOperator, FindOptionsOrder, FindOptionsWhere, ILike, IsNull, Like, Repository, SelectQueryBuilder, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Medidor } from './entities/medidor.entity';
 import { CommonService } from '../common/common.service';
 import { Afiliado } from '../auth/modules/usuarios/entities/afiliado.entity';
@@ -27,6 +27,8 @@ import { isNotEmpty } from 'class-validator';
 import { MedidorAsociado } from 'src/asociaciones/entities/medidor-asociado.entity';
 import { CreateTarifaPorPagarDto } from './dto/create-tarifa-por-pagar.dto';
 import { ComprobantePorPago } from 'src/pagos-de-servicio/entities';
+import { TarifaPorConsumoAgua } from 'src/configuraciones-applat/entities/tarifa-por-consumo-agua';
+import { DescuentosAplicadosPorPagar } from 'src/pagos-de-servicio/entities/descuentos-aplicados-por-pagar';
 
 @Injectable()
 export class MedidoresService {
@@ -158,7 +160,7 @@ export class MedidoresService {
   }
 
   async update(id: number, updateMedidoreDto: UpdateMedidorDto) {
-    const  dataMedidor  = updateMedidoreDto;
+    const  {estado,...dataMedidor}  = updateMedidoreDto;
     const medidor = await this.medidorRepository.preload({
       id,
       ...dataMedidor,
@@ -193,7 +195,7 @@ export class MedidoresService {
       medidor.isActive=true;
     }else{
       for(const asc of medidor.medidorAsociado){
-        if(asc.isActive) throw new BadRequestException(`El medidor con nro: ${id} tiene una asociacion, no se puede deshabilitar un medidor con una asociacion activa`);
+        if(asc.isActive) throw new BadRequestException(`El medidor con id ${id} tiene una asociacion activa, no se puede deshabilitar un medidor con una asociacion activa`);
       }
       medidor.isActive=false;
     }
@@ -315,9 +317,20 @@ export class MedidoresService {
           isActive:true,
         }
       },
-      relations:{planilla:{medidor:true}},
+      relations:{planilla:{medidor:{medidor:true}}},
     });
     if(planillasLecturas.length===0) throw new NotFoundException(`NO HAY PLANILLAS DE MES PARA REGISTRAR DE: GESTION ${gestion}, MES ${mes}`);
+    const tarifarioVigente = (await this.dataSource.getRepository(TarifaPorConsumoAgua).find({
+      where:{
+        vigencia:LessThanOrEqual(fechaLecturas),
+        isActive:true
+      },
+      order:{
+        id:'DESC'
+      }
+    }))[0];
+    if(!tarifarioVigente) throw new NotFoundException(`NO EXISTE UNA TARIFA DE CALCULO PARA CALCULAR EL COSTE DE CONSUMO DE AGUA POTABLE`);
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -326,38 +339,114 @@ export class MedidoresService {
       const lect = planillasLecturas.find(lect=>lect.id === reg.id);
       const medidor = lect.planilla.medidor;
       if(lect){
+        const perfilDescuentos= await this.perfilRepository.findOne(
+          {where:{
+            afiliado:{
+              medidorAsociado:{
+                planillas:{
+                  lecturas:{
+                    id:lect.id
+                  }
+                }
+              },
+              descuentos:{
+                isActive:true
+              }
+            }
+          },
+        relations:{
+          afiliado:{
+            medidorAsociado:{
+              planillas:{
+                lecturas:true
+              }
+            },
+            descuentos:true
+          }
+        }}
+        )
+        console.log('descuentos',perfilDescuentos);
+        if(perfilDescuentos?.afiliado){
+        console.log('LOS DESCUENTOS',perfilDescuentos.afiliado.descuentos);
         const consumoTotal=(reg.lectura-lect.planilla.medidor.lecturaSeguimiento);
-        console.log('consumo total',consumoTotal);
-        console.log('registro lectura',reg.lectura);
-        console.log('lectura seguimiento',lect.planilla.medidor.lecturaSeguimiento);
-        const monto=consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA;
-        console.log(monto);
-        const predt = await queryRunner.manager.preload(PlanillaMesLectura,{
-          id:reg.id,  
-          consumoTotal,
-          estadoMedidor:reg.estadoMedidor,
-          lectura:reg.lectura,
-          medicion:reg.medicion,
-          registrado:true,
-          tarifaGenerada:true,
+          let totalDescuentos=0;
+          perfilDescuentos.afiliado.descuentos.forEach(des=>{
+            totalDescuentos=totalDescuentos+des.descuento
+          })
+          console.log('TIENE DESCUENTO :D');
+          //EL MONTO CALCULADO ORIGINALMENTE
+          const montoOriginal= consumoTotal>tarifarioVigente.lecturaMinima?tarifarioVigente.tarifaMinima +((consumoTotal-tarifarioVigente.lecturaMinima)*tarifarioVigente.tarifaAdicional):tarifarioVigente.tarifaMinima;
+          const descontado = (montoOriginal*totalDescuentos)/100;
+          const montoCalculado= montoOriginal-descontado;
+          const predt = await queryRunner.manager.preload(PlanillaMesLectura,{
+            id:reg.id,  
+            consumoTotal,
+            estadoMedidor:reg.estadoMedidor,
+            lectura:reg.lectura,
+            medicion:reg.medicion,
+            registrado:true,
+          });
+          lecturas.push(predt);
+          const comp = this.comprobantePorPagarService.create({
+            monto:montoCalculado,
+            metodoRegistro:'GENERADO POR LA CAJA',
+            // consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA,
+            motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
+            moneda: tarifarioVigente.moneda,
+            pagado:false,
+            fechaLimitePago: new Date(fechaLecturas.getFullYear(),fechaLecturas.getMonth(),tarifarioVigente.diaLimitePago),
+            lectura:predt,
+            estadoComprobate:'SIN PAGAR',
+            descuentos:perfilDescuentos.afiliado.descuentos.map(res=>{
+              return queryRunner.manager.create(DescuentosAplicadosPorPagar,{
+                tipoDescuentoBeneficiario:res.tipoBeneficiario,
+                descuento:res.descuento,
+                detalles:res.detalles,
+              })
+            }),
+            tarifaConsumoCalculo:tarifarioVigente
+          })
+          medidor.lecturaSeguimiento=(medidor.lecturaSeguimiento+consumoTotal);
+          medidor.medidor.lecturaMedidor=(medidor.lecturaSeguimiento+consumoTotal);
+          await queryRunner.manager.save(medidor.medidor);
+          await queryRunner.manager.save(medidor);
+          await queryRunner.manager.save(comp);
+        
+      }else{
+          console.log('SIN DESCUENTO :(((');
+          const consumoTotal=(reg.lectura-lect.planilla.medidor.lecturaSeguimiento);
           
-        });
-        lecturas.push(predt);
-        const comp = this.comprobantePorPagarService.create({
-          monto,
-          metodoRegistro:'GENERADO POR LA CAJA',
-          // consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA,
-          motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
-          moneda: Monedas.Bs,
-          pagado:false,
-          fechaLimitePago: new Date(fechaLecturas.getFullYear(),fechaLecturas.getMonth(),28),
-          lectura:predt,
-          estadoComprobate:'SIN PAGAR',
-          
-        })
-        medidor.lecturaSeguimiento=(medidor.lecturaSeguimiento+consumoTotal);
-        await queryRunner.manager.save(medidor)
-        await queryRunner.manager.save(comp);
+          const monto=consumoTotal>tarifarioVigente.lecturaMinima?tarifarioVigente.tarifaMinima +((consumoTotal-tarifarioVigente.lecturaMinima)*tarifarioVigente.tarifaAdicional):tarifarioVigente.tarifaMinima;
+          const predt = await queryRunner.manager.preload(PlanillaMesLectura,{
+            id:reg.id,  
+            consumoTotal,
+            estadoMedidor:reg.estadoMedidor,
+            lectura:reg.lectura,
+            medicion:reg.medicion,
+            registrado:true,
+            
+          });
+          lecturas.push(predt);
+          const comp = this.comprobantePorPagarService.create({
+            monto,
+            metodoRegistro:'GENERADO POR LA CAJA',
+            // consumoTotal>this.LECTURA_MINIMA?this.TARIFA_MINIMA +((consumoTotal-this.LECTURA_MINIMA)*this.COSTO_ADICIONAL):this.TARIFA_MINIMA,
+            motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
+            moneda: tarifarioVigente.moneda,
+            pagado:false,
+            fechaLimitePago: new Date(fechaLecturas.getFullYear(),fechaLecturas.getMonth(),tarifarioVigente.diaLimitePago),
+            lectura:predt,
+            estadoComprobate:'SIN PAGAR',
+            tarifaConsumoCalculo:tarifarioVigente
+            
+          })
+          medidor.lecturaSeguimiento=(medidor.lecturaSeguimiento+consumoTotal);
+          medidor.medidor.lecturaMedidor=(medidor.lecturaSeguimiento+consumoTotal);
+          await queryRunner.manager.save(medidor.medidor)
+          await queryRunner.manager.save(medidor)
+          await queryRunner.manager.save(comp);
+        }
+        
       }
     }
     try {
@@ -480,7 +569,7 @@ export class MedidoresService {
               id:true,isActive:true,estado:true,registrable:true,gestion:true,
               lecturas:{
                 id:true,registrado:true,registrable:true,PlanillaMesLecturar:true,medicion:true,
-                lectura:true,isActive:true,estadoMedidor:true,estado:true,editable:true,consumoTotal:true,
+                lectura:true,isActive:true,estadoMedidor:true,estado:true,consumoTotal:true,
               }
             }
           }}
@@ -502,97 +591,97 @@ export class MedidoresService {
     };
     
   }
-  private readonly TARIFA_MINIMA = 10;
-  private readonly LECTURA_MINIMA = 10;
-  private readonly COSTO_ADICIONAL = 2;
-  async generarTarfiasPorPagar(createTarifaPorPagarDto:CreateTarifaPorPagarDto){
-    const {lecturas} =createTarifaPorPagarDto;
-    const lecturasCreate:PlanillaMesLectura[]=[];
-    for(const lct of lecturas){
-      const dc = await this.planillaMesLecturasRepository.findOne({
-        where:{id:lct.id,tarifaGenerada:false,isActive:true,registrado:true}
-      })
-      if(dc) lecturasCreate.push(dc);
-    }
-    if(lecturasCreate.length===0) throw new NotFoundException(`SIN PLANILLAS POR GENERAR`);
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+  // private readonly TARIFA_MINIMA = 10;
+  // private readonly LECTURA_MINIMA = 10;
+  // private readonly COSTO_ADICIONAL = 2;
+  // async generarTarfiasPorPagar(createTarifaPorPagarDto:CreateTarifaPorPagarDto){
+  //   const {lecturas} =createTarifaPorPagarDto;
+  //   const lecturasCreate:PlanillaMesLectura[]=[];
+  //   for(const lct of lecturas){
+  //     const dc = await this.planillaMesLecturasRepository.findOne({
+  //       where:{id:lct.id,isActive:true,registrado:true}
+  //     })
+  //     if(dc) lecturasCreate.push(dc);
+  //   }
+  //   if(lecturasCreate.length===0) throw new NotFoundException(`SIN PLANILLAS POR GENERAR`);
+  //   const queryRunner = this.dataSource.createQueryRunner();
+  //   await queryRunner.connect();
+  //   await queryRunner.startTransaction();
     
-    try {
-    for(const lectu of lecturasCreate){
-      const comp = queryRunner.manager.create(ComprobantePorPago,{
-        lectura:lectu,
-        metodoRegistro:'GENERADO POR LA CAJA',
-        monto:lectu.consumoTotal >this.LECTURA_MINIMA
-                ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
-                : this.TARIFA_MINIMA,
-        motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
-        moneda: Monedas.Bs,
+  //   try {
+  //   for(const lectu of lecturasCreate){
+  //     const comp = queryRunner.manager.create(ComprobantePorPago,{
+  //       lectura:lectu,
+  //       metodoRegistro:'GENERADO POR LA CAJA',
+  //       monto:lectu.consumoTotal >this.LECTURA_MINIMA
+  //               ? this.TARIFA_MINIMA +(lectu.consumoTotal -this.LECTURA_MINIMA) *this.COSTO_ADICIONAL
+  //               : this.TARIFA_MINIMA,
+  //       motivo: `PAGO DE SERVICIO DE AGUA POTABLE`,
+  //       moneda: Monedas.Bs,
         
-      })
-      console.log('lectura',lectu);
-      console.log('comprobante',comp);
-        await queryRunner.manager.save(comp);
-        await queryRunner.manager.update(PlanillaMesLectura,lectu.id,{tarifaGenerada:true});
-        // comprobantesGenerados.push(comp);
+  //     })
+  //     console.log('lectura',lectu);
+  //     console.log('comprobante',comp);
+  //       await queryRunner.manager.save(comp);
+  //       await queryRunner.manager.update(PlanillaMesLectura,lectu.id,{tarifaGenerada:true});
+  //       // comprobantesGenerados.push(comp);
 
-      }
-      await queryRunner.commitTransaction();
-      return {
-        OK:true,
-        message:'Comprobantes por pagar creados con exito',
-      };
-    } catch (error) {
-      this.logger.error('error al registrar un comprobante',error);
-      await queryRunner.rollbackTransaction();
-      this.commonService.handbleDbErrors(error);
-    } finally{
-      await queryRunner.release();
-    }
+  //     }
+  //     await queryRunner.commitTransaction();
+  //     return {
+  //       OK:true,
+  //       message:'Comprobantes por pagar creados con exito',
+  //     };
+  //   } catch (error) {
+  //     this.logger.error('error al registrar un comprobante',error);
+  //     await queryRunner.rollbackTransaction();
+  //     this.commonService.handbleDbErrors(error);
+  //   } finally{
+  //     await queryRunner.release();
+  //   }
     
-  }
-  async afiliadosPorGenerarComprobantes(paginationDto: PaginationDto){
-    const {offset=0,limit=10} = paginationDto;
-    const fechaLecturas = new Date();
-    let gestion = fechaLecturas.getFullYear();
-    let index = fechaLecturas.getMonth()-1;
-    let mes = new Date(gestion,fechaLecturas.getMonth()-1).toLocaleString('default', { month: 'long' }).toUpperCase();
-    if(fechaLecturas.getMonth() === 0){
-      gestion = fechaLecturas.getFullYear()-1;
-      mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
-      index = 11;
-    }
-    const {"0":data,"1":size} = await this.perfilRepository.findAndCount({
-      where:{afiliado:{medidorAsociado:{planillas:{lecturas:{tarifaGenerada:false,isActive:true},isActive:true,registrable:true},isActive:true,registrable:true,},isActive:true},isActive:true}
-      ,relations:{afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:true}}}},
-      select:{
-        apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,id:true,isActive:true,estado:true,
-        afiliado:{id:true,isActive:true,
-          medidorAsociado:{ id:true,isActive:true,
-            medidor:{id:true,isActive:true,nroMedidor:true},planillas:{id:true,isActive:true,gestion:true,
-          lecturas:{lectura:true,tarifaGenerada:true,consumoTotal:true,id:true,isActive:true,updated_at:true,PlanillaMesLecturar:true,}}}}
-      },
-      skip:offset,
-      take:limit,
-      order:{
-        afiliado:{
-          medidorAsociado:{
-            planillas:{
-              lecturas:{
-                updated_at:'ASC'
-              }
-            }
-          }
-        }
-      }
-    })
-      return {
-        OK: true,
-        message: `LISTADO DE LOS MEDIDORES DE AFILIADOS SIN GENERACION DE PAGOS DEL MES: ${mes} ${gestion}`,
-        data:{data,limit,offset,size},
-      };
-  }
+  // }
+  // async afiliadosPorGenerarComprobantes(paginationDto: PaginationDto){
+  //   const {offset=0,limit=10} = paginationDto;
+  //   const fechaLecturas = new Date();
+  //   let gestion = fechaLecturas.getFullYear();
+  //   let index = fechaLecturas.getMonth()-1;
+  //   let mes = new Date(gestion,fechaLecturas.getMonth()-1).toLocaleString('default', { month: 'long' }).toUpperCase();
+  //   if(fechaLecturas.getMonth() === 0){
+  //     gestion = fechaLecturas.getFullYear()-1;
+  //     mes = new Date(gestion,11).toLocaleString('default', { month: 'long' }).toUpperCase();
+  //     index = 11;
+  //   }
+  //   const {"0":data,"1":size} = await this.perfilRepository.findAndCount({
+  //     where:{afiliado:{medidorAsociado:{planillas:{lecturas:{tarifaGenerada:false,isActive:true},isActive:true,registrable:true},isActive:true,registrable:true,},isActive:true},isActive:true}
+  //     ,relations:{afiliado:{medidorAsociado:{medidor:true,planillas:{lecturas:true}}}},
+  //     select:{
+  //       apellidoPrimero:true,apellidoSegundo:true,nombrePrimero:true,nombreSegundo:true,CI:true,id:true,isActive:true,estado:true,
+  //       afiliado:{id:true,isActive:true,
+  //         medidorAsociado:{ id:true,isActive:true,
+  //           medidor:{id:true,isActive:true,nroMedidor:true},planillas:{id:true,isActive:true,gestion:true,
+  //         lecturas:{lectura:true,tarifaGenerada:true,consumoTotal:true,id:true,isActive:true,updated_at:true,PlanillaMesLecturar:true,}}}}
+  //     },
+  //     skip:offset,
+  //     take:limit,
+  //     order:{
+  //       afiliado:{
+  //         medidorAsociado:{
+  //           planillas:{
+  //             lecturas:{
+  //               updated_at:'ASC'
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   })
+  //     return {
+  //       OK: true,
+  //       message: `LISTADO DE LOS MEDIDORES DE AFILIADOS SIN GENERACION DE PAGOS DEL MES: ${mes} ${gestion}`,
+  //       data:{data,limit,offset,size},
+  //     };
+  // }
   async getAniosSeguimientos() {
     const data = await this.anioSeguimientoLecturaRepository.find({
       order: { anio: 'DESC', meses: { mes: 'ASC' } },
@@ -865,7 +954,6 @@ export class MedidoresService {
           }else{
             const mesPorLecturar = this.planillaMesLecturasRepository.create({
               PlanillaMesLecturar:dataSeguimiento[0].meses[0].mes,
-              editable:true,
               planilla,
               registrable:true,
               registrado:false,
@@ -892,7 +980,6 @@ export class MedidoresService {
         await this.planillaMesLecturasRepository.update(lectura.id,{
           isActive:false,
           estado:Estado.DESHABILITADO,
-          editable:false,
         })
       } catch (error) {
         this.logger.warn(`ERROR GENERADO EN LA FUNCION`, this.removePlanillasMesGestonNoRegistradas.name);

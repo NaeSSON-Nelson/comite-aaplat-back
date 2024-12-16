@@ -11,6 +11,8 @@ import { ItemMenuProtected, MenusProtected } from 'src/auth/decorators/valid-pro
 import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
 import { FechasParametrosDto } from './dto/fechas-parametros.dto';
 import { RetrasosPagosDto } from './dto/retrasos-pagos.dto';
+import { RegistrarCortesRealizadosDto } from './dto/registrar-cortes-realizados.dto';
+import { RegistrarReconexionesRealizadasDto } from './dto/registrar-reconecciones-realizadas.dto';
 
 @Controller('pagos-de-servicio')
 @AuthorizationResource()
@@ -73,6 +75,10 @@ export class PagosDeServicioController {
   registerPagoComprobantes(@Body() pagosAfiliado: PagosServicesDto){
     return this.pagosDeServicioService.pagarComprobantes(pagosAfiliado);
   }
+  @Post('register/cortes')
+  registrarCortes(@Body() cortesDto:RegistrarCortesRealizadosDto){
+    return this.pagosDeServicioService.registrarCortesRealizados(cortesDto);
+  }
 
 
   @Get('exportar/pagos')
@@ -83,4 +89,19 @@ export class PagosDeServicioController {
   mostrarAfiliadosRetrasoPagos(@Query() retrasosDto:RetrasosPagosDto){
     return this.pagosDeServicioService.reportAfiliadosConRetrasoPago(retrasosDto);
   }
+  @Get('afiliados/reconexiones')
+  mostrarAfiliadosReconeccion(){
+    return this.pagosDeServicioService.listarAfiliadosParaReconexion();
+  }
+  
+
+  @Get('afiliados/cortes')
+  listarAfiliadosParaRecorteServicio(){
+    return this.pagosDeServicioService.listarAfiliadosParaCorteServicio();
+  }
+  @Post('register/reconexiones')
+  registrarReconecciones(@Body() reconeccionesDto:RegistrarReconexionesRealizadasDto){
+    return this.pagosDeServicioService.registrarReconexiones(reconeccionesDto);
+  }
+
 }

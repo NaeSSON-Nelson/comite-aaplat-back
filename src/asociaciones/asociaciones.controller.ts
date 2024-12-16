@@ -10,6 +10,9 @@ import { ValidItemMenu, ValidMenu } from 'src/interfaces/valid-auth.enum';
 import { ItemMenuProtected, MenusProtected } from 'src/auth/decorators/valid-protected.decorator';
 import { UpdatePlanillaMedidorDto } from './dto/update-planilla-medidor.dto';
 import { CreatePlanillaMedidorDto } from './dto/create-planilla-medidor.dto';
+import { MultasVariosDto } from './dto/multas-varios.dto';
+import { UpdateMultasVariosDto } from './dto/update-multas-varios.dto';
+import { MotivoReconexionDto } from './dto/motivo-corte.dto';
 
 @Controller('asociaciones')
 @AuthorizationResource()
@@ -36,6 +39,12 @@ export class AsociacionesController {
   createPanilla(@Body() createPlanillaMedidorDto:CreatePlanillaMedidorDto){
     return this.asociacionesService.createPlanillaMedidor(createPlanillaMedidorDto);
   }
+
+  //CREAR MULTA TIPO VARIOS
+  // @Post('multas')
+  // createMultaTipoVarios(@Body() multaDto:MultasVariosDto){
+  //   return this.asociacionesService.registrarMultaVarios(multaDto);
+  // }
   @Get()
   @MenusProtected(ValidMenu.asociaciones)
   @ItemMenuProtected(ValidItemMenu.asociacionList)
@@ -113,17 +122,30 @@ export class AsociacionesController {
   ObtenerComprobante(@Param('id', ParseIntPipe) id: number){
     return this.asociacionesService.ComprobanteDetalles(id);
   }
+//MULTAS A ASOCICAION ENTRE MEDIDOR DE AGUA Y AFILIADO
+  @Get('multas/:id')
+  listarMultasDeAsociacion(
+    @Param('id', ParseIntPipe) id: number,@Query() paginationDto: PaginationDto
+  ){
+    return this.asociacionesService.listarMultasAsociacion(id,paginationDto);
+  }
+
+  @Get('multa/:id')
+  getMultaAsociacion(@Param('id', ParseIntPipe) id: number){
+    return this.asociacionesService.getMultaAsociacion(id);
+  }
+
+  //HISTORIAL DE CORTES DE ASOCIACION
+  @Get('historial-conexiones/:id')
+  obtenerHistorialCortes(@Param('id', ParseIntPipe) id: number,@Query() paginationDto: PaginationDto){
+    return this.asociacionesService.obtenerHistorialConexiones(id,paginationDto)
+  }
+  
   @Get(':id')
   @MenusProtected(ValidMenu.asociaciones)
   @ItemMenuProtected(ValidItemMenu.asociacionDetails)
   findAsociacion(@Param('id', ParseIntPipe) id: number){
     return this.asociacionesService.findOne(id);
-  }
-  @Patch(':id')
-  @MenusProtected(ValidMenu.asociaciones)
-  @ItemMenuProtected(ValidItemMenu.asociacionUpdate)
-  updateAsociacion(@Param('id', ParseIntPipe) id: number,@Body() updst: UpdateMedidorAsociadoDto){
-    return this.asociacionesService.update(id,updst);
   }
   
   @Patch('status/:id')
@@ -148,5 +170,34 @@ export class AsociacionesController {
   @ItemMenuProtected(ValidItemMenu.asociacionGestiones)
   updateStatusPanilla(@Param('id', ParseIntPipe) id: number,@Body() updatePlanillaMedidorDto:UpdatePlanillaMedidorDto){
     return this.asociacionesService.updateStatusPlanillaMedidor(id,updatePlanillaMedidorDto);
+  }
+  //ACTUALIZACION DE DATOS DE MULTA
+  @Patch('multas/:id')
+  updateMulta(@Param('id', ParseIntPipe) id: number,@Body() updateMultaDto:UpdateMultasVariosDto){
+    return this.asociacionesService.updateMultaAsociado(id,updateMultaDto);
+  }
+
+  //SOBRE SOLICIUTED DE CORTES Y RECONECCIONES DEL SERVICIO
+  @Patch('solicitar-corte/:id')
+  solitudCorte(@Param('id', ParseIntPipe) id: number,@Body() motivoCorteDto:MotivoReconexionDto){
+    return this.asociacionesService.solicitudCorte(id,motivoCorteDto)
+  }
+  @Get('corte-cancelar/:id')
+  cancelarSolicitudCorte(@Param('id', ParseIntPipe) id: number){
+    return this.asociacionesService.cancelarCorteServicio(id);
+  }
+  @Patch('solicitar-reconexion/:id')
+  realizarReconexion(@Param('id', ParseIntPipe) id: number,@Body() motivoReconexion:MotivoReconexionDto){
+    return this.asociacionesService.realizarSolicitudReconexion(id,motivoReconexion);
+  }
+  @Get('reconexion-cancelar/:id')
+  cancelarSolicitudReconexion(@Param('id', ParseIntPipe) id: number){
+    return this.asociacionesService.cancelarReconexion(id);
+  }
+  @Patch(':id')
+  @MenusProtected(ValidMenu.asociaciones)
+  @ItemMenuProtected(ValidItemMenu.asociacionUpdate)
+  updateAsociacion(@Param('id', ParseIntPipe) id: number,@Body() updst: UpdateMedidorAsociadoDto){
+    return this.asociacionesService.update(id,updst);
   }
 }

@@ -2,7 +2,7 @@ import { ColumnsAlways } from "src/common/inherints-db";
 import { Medicion, Mes } from "src/interfaces/enum/enum-entityes";
 import { AfterUpdate, Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { PlanillaLecturas } from "./planilla-lecturas.entity";
-import { ComprobantePorPago, MultaServicio } from "src/pagos-de-servicio/entities";
+import { ComprobantePorPago } from "src/pagos-de-servicio/entities";
 
 @Entity('mes_lecturas')
 export class PlanillaMesLectura extends ColumnsAlways{
@@ -33,12 +33,12 @@ export class PlanillaMesLectura extends ColumnsAlways{
         nullable:true,
     })
     medicion:Medicion;
-    @Column({
-        type:'bool',
-        nullable:false,
-        default:true,
-    })
-    editable:boolean;
+    // @Column({
+    //     type:'bool',
+    //     nullable:false,
+    //     default:true,
+    // })
+    // editable:boolean;
     @Column({
         type:"enum",
         enum:Mes,
@@ -58,11 +58,11 @@ export class PlanillaMesLectura extends ColumnsAlways{
         nullable:false
     })
     registrado:boolean;
-    @Column({
-        type:'bool',
-        nullable:true
-    })
-    tarifaGenerada:boolean;
+    // @Column({
+    //     type:'bool',
+    //     nullable:true
+    // })
+    // tarifaGenerada:boolean;
     @Column({
         type:'bool',
         nullable:false,
@@ -78,6 +78,6 @@ export class PlanillaMesLectura extends ColumnsAlways{
 
     // @OneToMany(() => MultaToPlanillaLecturas,multasToPlanillaLecturas  => multasToPlanillaLecturas.planillaMesLectura)
     // multasToPlanillas: MultaToPlanillaLecturas[];
-    @ManyToOne(() => MultaServicio, multa => multa.lecturasMultadas)
-    multa:MultaServicio;
+    // @ManyToOne(() => MultaServicio, multa => multa.lecturasMultadas)
+    // multa:MultaServicio;
 }
