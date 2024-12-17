@@ -72,33 +72,44 @@ export class MultasServicioAguaService{
             }
         }
     });
-    console.log('medidores asociados con retraso de pagos de servicio',medidoresAsociados);
+    const multasAgregadas:MultaServicio[]=[];
+    let lecturasIdsMultadas:number[]=[];
     for(const asc of medidoresAsociados){
         let totalRetrasos=0;
         for(const planilla of asc.planillas){
-            totalRetrasos=totalRetrasos+planilla.lecturas.length;
-        }
-        if(totalRetrasos>=vigenciaTarifaMulta.mesesDemora){
-            const createMultaRetraso = this.dataSource.getRepository(MultaServicio).create({
-                tipoMulta:TipoMulta.retrasoPago,
-                monto:vigenciaTarifaMulta.monto,
-                moneda:vigenciaTarifaMulta.moneda,
-                medidorAsociado:asc,
-                motivo:`Retraso de pagos de servicio por ${totalRetrasos} meses`,
-                tarifaRetraso:vigenciaTarifaMulta,
-                pagado:false,
-            });
-            const multaSaved=await this.dataSource.getRepository(MultaServicio).save(createMultaRetraso);
-            this.logger.log('multa por retraso de pago creada',multaSaved)
-            for(const planilla of asc.planillas){
-                for(const lectura of planilla.lecturas){
-                    await this.dataSource.getRepository(PlanillaMesLectura).update(lectura.id,{
+            for(const lectura of planilla.lecturas){
+                if(!lectura.pagar.pagado){
+                     totalRetrasos=totalRetrasos+1;
+                     lecturasIdsMultadas.push(lectura.id);
+                    };
+                if(totalRetrasos>=vigenciaTarifaMulta.mesesDemora){
+                    const createMultaRetraso = this.dataSource.getRepository(MultaServicio).create({
+                        tipoMulta:TipoMulta.retrasoPago,
+                        monto:vigenciaTarifaMulta.monto,
+                        moneda:vigenciaTarifaMulta.moneda,
+                        medidorAsociado:asc,
+                        motivo:`Retraso de pagos de servicio por ${totalRetrasos} meses`,
+                        tarifaRetraso:vigenciaTarifaMulta,
+                        pagado:false,
+                    });
+                    multasAgregadas.push(createMultaRetraso);
+                    // await this.dataSource.getRepository(MultaServicio).save(createMultaRetraso);
+                    await this.dataSource.getRepository(PlanillaMesLectura).update(lecturasIdsMultadas,{
                         isMulta:true
-                    })
+                    });
+                    this.logger.log('multa creada',asc.id);
+                    totalRetrasos=0;
+                    lecturasIdsMultadas=[];
                 }
-            }this.logger.log('lecturas afectadas')
+            }
         }
     }
+    if(multasAgregadas.length>0){
+
+        await this.dataSource.getRepository(MultaServicio).save(multasAgregadas);
+        
+    }
+    this.logger.log('total multas creadas',multasAgregadas.length)
   }
     // async createMultaServicioAgua(multasDto: CreateMultaDto){
     //     const {lecturasMultadas,perfilMultadoId,medidorAsociadoId,...dataMultas} = multasDto;

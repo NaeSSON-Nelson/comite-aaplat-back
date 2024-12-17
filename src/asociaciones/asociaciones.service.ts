@@ -703,7 +703,9 @@ export class AsociacionesService {
   async listarMultasAsociacion(idAsociacion:number,paginator:PaginationDto){
     const {offset=0,limit=10} =paginator;
     const {"0":data,"1":size} = await this.dataSource.getRepository(MultaServicio).findAndCount({
-      where:{id:idAsociacion},
+      where:{medidorAsociado:{
+        id:idAsociacion
+      }},
       select:{
         id:true,estado:true,isActive:true,pagado:true,monto:true,moneda:true,motivo:true,created_at:true,
       },

@@ -762,10 +762,10 @@ export class SeedsService {
       const menuToRoleRelationsRoot = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.consultar,ValidMenu.reportes,ValidMenu.opciones],ValidRole.root);
       await queryRunner.manager.save(menuToRoleRelationsRoot);
       
-      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.reportes],ValidRole.administrativo);
+      const menuToRoleRelationsAdmin = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.reportes,ValidMenu.opciones],ValidRole.administrativo);
       await queryRunner.manager.save(menuToRoleRelationsAdmin);
       
-      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole([ValidMenu.perfiles,ValidMenu.roles,ValidMenu.medidores,ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.reportes],ValidRole.secretaria);
+      const menuToRoleRelationsContador = await this.insertRelationsMenuToRole([ValidMenu.asociaciones,ValidMenu.cobros,ValidMenu.lecturas,ValidMenu.reportes,ValidMenu.medidores],ValidRole.secretaria);
       await queryRunner.manager.save(menuToRoleRelationsContador);
 
       // const menuToRoleRelationsLecturador = await this.insertRelationsMenuToRole(['medidores-agua','asociaciones','lecturas'],'lecturador');
@@ -776,7 +776,7 @@ export class SeedsService {
       
 
       //ADD ROLES TO USUARIO
-      const roleToUsuarioAdmin = await this.insertRolesToUsuario([ValidRole.root,ValidRole.administrativo],'admin');
+      const roleToUsuarioAdmin = await this.insertRolesToUsuario([ValidRole.administrativo],'admin');
       await queryRunner.manager.save(roleToUsuarioAdmin);
 
       const roleToUsuarioAdministrativo = await this.insertRolesToUsuario([ValidRole.administrativo],'administrativo');
